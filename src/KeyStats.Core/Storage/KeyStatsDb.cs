@@ -4,19 +4,6 @@ using Microsoft.Data.Sqlite;
 
 namespace KeyStats.Core.Storage;
 
-/// <summary>Une protection de la clé privée (ligne de <c>key_store</c>).</summary>
-public sealed record KeyStoreEntry(
-    long Id, KeyStoreKind Kind, long CreatedMs, byte[] Salt, int Iterations, byte[] Nonce, byte[] Wrapped, string? CredentialId);
-
-/// <summary>Un titre de fenêtre chiffré, tel qu'il est stocké.</summary>
-public sealed record StoredTitle(long Id, int AppId, int EpochId, byte[] Nonce, byte[] Encrypted);
-
-/// <summary>Un bloc brut chiffré, tel qu'il est stocké.</summary>
-public sealed record StoredRawBlock(long Id, long StartMs, long EndMs, long? FocusId, int EventCount, int EpochId, byte[] Nonce, byte[] Payload);
-
-/// <summary>Une ligne de la chronologie des fenêtres.</summary>
-public sealed record StoredFocus(long Id, long Ms, int AppId, long? TitleId, int? LayoutId, FocusState Flags);
-
 /// <summary>
 /// Accès à <c>keystats.db</c> : ouverture, migrations, référentiels (avec cache) et chronologie.
 /// Une instance par thread. Les écritures groupées passent par <see cref="BeginTransaction"/>.
@@ -31,6 +18,12 @@ public sealed class KeyStatsDb : IDisposable
     private readonly Dictionary<string, int> _layoutIds = new(StringComparer.Ordinal);
     private readonly Dictionary<int, LayoutTable> _layouts = [];
     private bool _inTransaction;
+
+    /// <summary>
+    /// Nombre de transactions annulées. Un objet qui garde en mémoire un id créé dans une transaction
+    /// (époque de chiffrement par exemple) le compare pour savoir si cet id existe encore.
+    /// </summary>
+    public long RollbackCount { get; private set; }
 
     private KeyStatsDb(SqliteConnection conn) => _conn = conn;
 
@@ -129,7 +122,17 @@ public sealed class KeyStatsDb : IDisposable
             _db = null;
             db._inTransaction = false;
             db.Exec("ROLLBACK");
+            db.OnRollback();
         }
+    }
+
+    /// <summary>Les ids mis en cache pendant la transaction annulée n'existent plus.</summary>
+    private void OnRollback()
+    {
+        RollbackCount++;
+        _apps.Clear();
+        _layoutIds.Clear();
+        _layouts.Clear();
     }
 
     // ---- Méta ----
@@ -223,143 +226,6 @@ public sealed class KeyStatsDb : IDisposable
         var layout = LayoutTable.Deserialize(data);
         _layouts[id] = layout;
         return layout;
-    }
-
-    // ---- Chiffrement ----
-
-    public int AddEpoch(long createdMs, byte[] ephemeralPublicKey)
-    {
-        using var cmd = Command("INSERT INTO key_epoch(created_ms, ephemeral_pub) VALUES($c, $p) RETURNING id", createdMs, ephemeralPublicKey);
-        return (int)(long)cmd.ExecuteScalar()!;
-    }
-
-    public byte[]? GetEpochPublicKey(int epochId)
-    {
-        using var cmd = Command("SELECT ephemeral_pub FROM key_epoch WHERE id = $id", epochId);
-        return cmd.ExecuteScalar() as byte[];
-    }
-
-    public void AddKeyStore(KeyStoreEntry e)
-    {
-        using var cmd = Command(
-            "INSERT INTO key_store(kind, created_ms, salt, iterations, nonce, wrapped, cred_id) VALUES($k, $c, $s, $i, $n, $w, $cid)",
-            (int)e.Kind, e.CreatedMs, e.Salt, e.Iterations, e.Nonce, e.Wrapped, e.CredentialId);
-        cmd.ExecuteNonQuery();
-    }
-
-    public void DeleteKeyStore(KeyStoreKind kind)
-    {
-        using var cmd = Command("DELETE FROM key_store WHERE kind = $k", (int)kind);
-        cmd.ExecuteNonQuery();
-    }
-
-    public IReadOnlyList<KeyStoreEntry> GetKeyStore()
-    {
-        var list = new List<KeyStoreEntry>();
-        using var cmd = Command("SELECT id, kind, created_ms, salt, iterations, nonce, wrapped, cred_id FROM key_store ORDER BY id");
-        using var r = cmd.ExecuteReader();
-        while (r.Read())
-        {
-            list.Add(new KeyStoreEntry(
-                r.GetInt64(0), (KeyStoreKind)r.GetInt32(1), r.GetInt64(2), Blob(r, 3), r.GetInt32(4), Blob(r, 5), Blob(r, 6),
-                r.IsDBNull(7) ? null : r.GetString(7)));
-        }
-        return list;
-    }
-
-    // ---- Titres ----
-
-    public long? FindTitle(byte[] titleHash)
-    {
-        using var cmd = Command("SELECT id FROM window_title WHERE title_hash = $h", titleHash);
-        return cmd.ExecuteScalar() is long id ? id : null;
-    }
-
-    public long AddTitle(int appId, byte[] titleHash, int epochId, byte[] nonce, byte[] encrypted)
-    {
-        using var cmd = Command(
-            "INSERT INTO window_title(app_id, title_hash, epoch_id, nonce, title_enc) VALUES($a, $h, $e, $n, $t) RETURNING id",
-            appId, titleHash, epochId, nonce, encrypted);
-        return (long)cmd.ExecuteScalar()!;
-    }
-
-    public StoredTitle? GetTitle(long id)
-    {
-        using var cmd = Command("SELECT app_id, epoch_id, nonce, title_enc FROM window_title WHERE id = $id", id);
-        using var r = cmd.ExecuteReader();
-        return r.Read() ? new StoredTitle(id, r.GetInt32(0), r.GetInt32(1), Blob(r, 2), Blob(r, 3)) : null;
-    }
-
-    /// <summary>Empreinte stockée d'un titre (sert de données associées au déchiffrement).</summary>
-    public byte[]? GetTitleHash(long id)
-    {
-        using var cmd = Command("SELECT title_hash FROM window_title WHERE id = $id", id);
-        return cmd.ExecuteScalar() as byte[];
-    }
-
-    public int CountTitles() => (int)(long)Scalar("SELECT count(*) FROM window_title")!;
-
-    // ---- Chronologie ----
-
-    public long AddFocus(long ms, int appId, long? titleId, int? layoutId, FocusState flags)
-    {
-        using var cmd = Command(
-            "INSERT INTO focus(ts_ms, app_id, title_id, layout_id, flags) VALUES($t, $a, $ti, $l, $f) RETURNING id",
-            ms, appId, titleId, layoutId, (int)flags);
-        return (long)cmd.ExecuteScalar()!;
-    }
-
-    /// <summary>Changements de fenêtre de [from, to), précédés du dernier avant <paramref name="fromMs"/>.</summary>
-    public IReadOnlyList<StoredFocus> GetFocus(long fromMs, long toMs)
-    {
-        var list = new List<StoredFocus>();
-        using var cmd = Command(
-            """
-            SELECT id, ts_ms, app_id, title_id, layout_id, flags FROM (
-                SELECT * FROM (SELECT * FROM focus WHERE ts_ms < $f ORDER BY ts_ms DESC, id DESC LIMIT 1)
-                UNION ALL
-                SELECT * FROM focus WHERE ts_ms >= $f AND ts_ms < $t
-            ) ORDER BY ts_ms, id
-            """,
-            fromMs, toMs);
-        using var r = cmd.ExecuteReader();
-        while (r.Read())
-        {
-            list.Add(new StoredFocus(
-                r.GetInt64(0), r.GetInt64(1), r.GetInt32(2), r.IsDBNull(3) ? null : r.GetInt64(3),
-                r.IsDBNull(4) ? null : r.GetInt32(4), (FocusState)r.GetInt32(5)));
-        }
-        return list;
-    }
-
-    public long AddRawBlock(long startMs, long endMs, long? focusId, int eventCount, int epochId, byte[] nonce, byte[] payload)
-    {
-        using var cmd = Command(
-            "INSERT INTO raw_block(start_ms, end_ms, focus_id, n_events, epoch_id, nonce, payload) VALUES($s, $e, $f, $n, $ep, $no, $p) RETURNING id",
-            startMs, endMs, focusId, eventCount, epochId, nonce, payload);
-        return (long)cmd.ExecuteScalar()!;
-    }
-
-    public IReadOnlyList<StoredRawBlock> GetRawBlocks(long fromMs, long toMs)
-    {
-        var list = new List<StoredRawBlock>();
-        using var cmd = Command(
-            "SELECT id, start_ms, end_ms, focus_id, n_events, epoch_id, nonce, payload FROM raw_block WHERE start_ms >= $f AND start_ms < $t ORDER BY start_ms, id",
-            fromMs, toMs);
-        using var r = cmd.ExecuteReader();
-        while (r.Read())
-        {
-            list.Add(new StoredRawBlock(
-                r.GetInt64(0), r.GetInt64(1), r.GetInt64(2), r.IsDBNull(3) ? null : r.GetInt64(3),
-                r.GetInt32(4), r.GetInt32(5), Blob(r, 6), Blob(r, 7)));
-        }
-        return list;
-    }
-
-    public void AddPause(long startMs, long endMs, PauseReason reason)
-    {
-        using var cmd = Command("INSERT INTO pause(start_ms, end_ms, reason) VALUES($s, $e, $r)", startMs, endMs, (int)reason);
-        cmd.ExecuteNonQuery();
     }
 
     // ---- Outils ----

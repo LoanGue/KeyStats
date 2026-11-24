@@ -219,6 +219,34 @@ public sealed class StorageTests
     }
 
     [Fact]
+    public void Ids_crees_dans_une_transaction_annulee_ne_sont_pas_reutilises()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        var events = new Typist().Type("abc").ToArray();
+        using var writer = new RawArchiveWriter(tmp.Db, master.PublicKey, new TitleHasher(TitleHasher.NewKey()));
+
+        using (tmp.Db.BeginTransaction())
+        {
+            tmp.Db.GetOrAddApp("notepad.exe");
+            writer.WriteBlock(events, null, Typist.Start);
+        }
+
+        using (var tx = tmp.Db.BeginTransaction())
+        {
+            int app = tmp.Db.GetOrAddApp("notepad.exe");
+            writer.GetOrAddTitle(app, "notepad.exe", "Sans titre", Typist.Start + 1000);
+            writer.WriteBlock(events, null, Typist.Start + 1000);
+            tx.Commit();
+        }
+
+        Assert.Equal(1, tmp.Count("SELECT count(*) FROM key_epoch"));
+        Assert.Equal(1, tmp.Count("SELECT count(*) FROM app"));
+        using var reader = new RawArchiveReader(tmp.Db, master);
+        Assert.Equal(events, Assert.Single(reader.ReadBlocks(0, long.MaxValue)).Events);
+    }
+
+    [Fact]
     public void Pauses_et_meta()
     {
         using var tmp = new TempDb();

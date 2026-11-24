@@ -16,6 +16,7 @@ public sealed class RawArchiveWriter : IDisposable
     private readonly TitleHasher _hasher;
     private EpochCipher? _cipher;
     private long _epochStartMs;
+    private long _epochRollbacks;
 
     public RawArchiveWriter(KeyStatsDb db, byte[] masterPublicKey, TitleHasher hasher)
     {
@@ -27,7 +28,9 @@ public sealed class RawArchiveWriter : IDisposable
     /// <summary>Époque en cours ; une nouvelle est créée au premier usage et après une heure.</summary>
     private EpochCipher Cipher(long nowMs)
     {
-        if (_cipher is null || nowMs - _epochStartMs >= EpochLifetimeMs || nowMs < _epochStartMs)
+        // Une époque créée dans une transaction annulée n'a plus de ligne key_epoch : on en refait une.
+        if (_cipher is null || nowMs - _epochStartMs >= EpochLifetimeMs || nowMs < _epochStartMs
+            || _db.RollbackCount != _epochRollbacks)
         {
             var (ephemeral, key) = EpochKeys.Create(_masterPublicKey);
             try
@@ -36,6 +39,7 @@ public sealed class RawArchiveWriter : IDisposable
                 _cipher?.Dispose();
                 _cipher = new EpochCipher(id, key);
                 _epochStartMs = nowMs;
+                _epochRollbacks = _db.RollbackCount;
             }
             finally
             {
