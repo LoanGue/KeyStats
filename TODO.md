@@ -4,8 +4,7 @@ Build plan for KeyStats. One issue and one PR per step.
 
 - [x] 1. Solution skeleton: three projects, tests, `CLAUDE.md`
 - [x] 2. Capture prototype: Raw Input, NativeAOT with SQLite, bytes per raw event (throwaway, not kept)
-- [ ] 3. Core: analysis, SQLite storage, encrypted raw archive, unit tests (#2)
-  - [ ] PR reviewed and merged
+- [x] 3. Core: analysis, SQLite storage, encrypted raw archive, unit tests (#2)
 - [ ] 4. Agent: Raw Input capture, key-state resets, foreground window and title, batched writes
   - [ ] Notification icon with stackable 5-minute snooze
   - [ ] Single instance, named pipe, settings, nightly backup
