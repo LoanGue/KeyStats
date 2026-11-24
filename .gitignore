@@ -1,0 +1,14 @@
+bin/
+obj/
+publish/
+artifacts/
+TestResults/
+.vs/
+*.user
+*.suo
+
+# Données : jamais dans le dépôt
+*.db
+*.db-wal
+*.db-shm
+*.ksraw

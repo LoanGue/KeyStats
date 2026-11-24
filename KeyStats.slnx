@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KeyStats.Agent/KeyStats.Agent.csproj" />
+    <Project Path="src/KeyStats.Core/KeyStats.Core.csproj" />
+    <Project Path="src/KeyStats.Dashboard/KeyStats.Dashboard.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KeyStats.Core.Tests/KeyStats.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/KeyStats.Tools/KeyStats.Tools.csproj" />
+  </Folder>
+</Solution>

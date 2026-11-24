@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Agent permanent : Win32 pur (LibraryImport), publié en NativeAOT. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>KeyStats.Agent</RootNamespace>
+    <AssemblyName>KeyStats.Agent</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <StackTraceSupport>true</StackTraceSupport>
+
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <!-- Le compilateur NativeAOT livré avec le SDK 10.0.102 (10.0.2) a une faille connue
+       (GHSA-p3jp-9v83-76w9) : on épingle le correctif, et le runtime de la même version. -->
+  <PropertyGroup>
+    <KsNativeAotVersion>10.0.15</KsNativeAotVersion>
+    <RuntimeFrameworkVersion>$(KsNativeAotVersion)</RuntimeFrameworkVersion>
+    <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" VersionOverride="$(KsNativeAotVersion)" />
+    <ProjectReference Include="..\KeyStats.Core\KeyStats.Core.csproj" />
+  </ItemGroup>
+
+</Project>
