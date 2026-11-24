@@ -4,14 +4,14 @@ Analyse continue de la frappe clavier sous Windows (AZERTY), avec un agent perma
 
 ## Structure
 
-| Dossier | Rôle | Cible |
-|---|---|---|
-| `src/KeyStats.Core` | Algorithmes (sessions, vitesse, fautes, bigrammes), stockage SQLite, format brut, chiffrement | `net10.0`, sans dépendance Windows, compatible AOT |
-| `src/KeyStats.Agent` | Capture Raw Input, fenêtre active, icône de notification, compteur en direct | `net10.0-windows`, NativeAOT, Win32 via `LibraryImport` |
-| `src/KeyStats.Dashboard` | Fenêtre WinForms + WebView2, API JSON interne, Windows Hello | `net10.0-windows10.0.19041.0` |
-| `src/KeyStats.Dashboard/wwwroot` | Interface HTML/CSS/JS, ECharts en local | servi par `WebResourceRequested` sur `https://keystats.app/` |
-| `tests/KeyStats.Core.Tests` | Tests xUnit sur des flux d'événements synthétiques | `net10.0` |
-| `tools/` | `keystats-tools` (rejeu, recalcul), `install.ps1`, `uninstall.ps1` | |
+| Dossier                          | Rôle                                                                                          | Cible                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `src/KeyStats.Core`              | Algorithmes (sessions, vitesse, fautes, bigrammes), stockage SQLite, format brut, chiffrement | `net10.0`, sans dépendance Windows, compatible AOT           |
+| `src/KeyStats.Agent`             | Capture Raw Input, fenêtre active, icône de notification, compteur en direct                  | `net10.0-windows`, NativeAOT, Win32 via `LibraryImport`      |
+| `src/KeyStats.Dashboard`         | Fenêtre WinForms + WebView2, API JSON interne, Windows Hello                                  | `net10.0-windows10.0.19041.0`                                |
+| `src/KeyStats.Dashboard/wwwroot` | Interface HTML/CSS/JS, ECharts en local                                                       | servi par `WebResourceRequested` sur `https://keystats.app/` |
+| `tests/KeyStats.Core.Tests`      | Tests xUnit sur des flux d'événements synthétiques                                            | `net10.0`                                                    |
+| `tools/`                         | `keystats-tools` (rejeu, recalcul), `install.ps1`, `uninstall.ps1`                            |                                                              |
 
 ## Règles impératives
 
@@ -34,12 +34,14 @@ Analyse continue de la frappe clavier sous Windows (AZERTY), avec un agent perma
 
 ```powershell
 dotnet build KeyStats.slnx
-dotnet test tests/KeyStats.Core.Tests
+dotnet format KeyStats.slnx --verify-no-changes
+dotnet test --project tests/KeyStats.Core.Tests
 dotnet publish src/KeyStats.Agent -c Release   # NativeAOT
 ```
 
 ## Méthode de travail
 
-- Un commit par étape, poussé sur `main` (`https://github.com/LoanGue/KeyStats.git`). Les tests passent avant chaque commit.
+- `main` est en lecture seule. Une issue, une branche et une PR par étape du plan (`TODO.md`), fusionnée par squash après revue. La CI (`.github/workflows/ci.yml`) vérifie format, compilation sans avertissement et tests ; au-delà de 400 lignes, la PR porte le label `large-pr` et une justification.
+- Les tests passent avant chaque commit.
 - Interface du tableau de bord : skill `frontend-design:frontend-design`. Tester les pages dans le navigateur intégré avec des données d'exemple (`wwwroot` fonctionne aussi hors WebView2).
 - Textes de l'interface en français, sans formules creuses ni chiffres inventés.

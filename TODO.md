@@ -1,0 +1,17 @@
+# TODO
+
+Build plan for KeyStats. One issue and one PR per step.
+
+- [x] 1. Solution skeleton: three projects, tests, `CLAUDE.md`
+- [x] 2. Capture prototype: Raw Input, NativeAOT with SQLite, bytes per raw event (throwaway, not kept)
+- [ ] 3. Core: analysis, SQLite storage, encrypted raw archive, unit tests (#2)
+  - [ ] PR reviewed and merged
+- [ ] 4. Agent: Raw Input capture, key-state resets, foreground window and title, batched writes
+  - [ ] Notification icon with stackable 5-minute snooze
+  - [ ] Single instance, named pipe, settings, nightly backup
+- [ ] 5. Live wpm/cpm counter, bottom right
+- [ ] 6. Dashboard: WebView2 host and JSON API, Windows Hello and setup wizard
+  - [ ] Pages and charts, AZERTY heatmap
+  - [ ] Millisecond view and history recalculation
+- [ ] 7. `install.ps1`, `uninstall.ps1`, README
+- [ ] Repository standards: LICENSE, SECURITY.md, CONTRIBUTING.md
