@@ -34,6 +34,10 @@ public sealed class RawCodecTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Marqueur_de_fenetre_refuse() =>
+        Assert.Throws<ArgumentException>(() => RawCodec.Encode([new InputEvent(5, EventKind.Focus, 1)], 0));
+
+    [Fact]
     public void Bloc_vide()
     {
         Assert.Empty(RawCodec.Decode(RawCodec.Encode([], 42), 42));

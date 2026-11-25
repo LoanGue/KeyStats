@@ -17,6 +17,12 @@ public enum EventKind : byte
     Reset = 5,
     /// <summary>Touche vue relâchée par le système alors qu'on la croyait enfoncée (relâchement perdu).</summary>
     ForcedUp = 6,
+    /// <summary>
+    /// Interne à l'agent, jamais écrit dans le brut : un changement de fenêtre attend dans le
+    /// <see cref="KeyStats.Core.Focus.FocusChannel"/>, à cette place dans l'ordre des frappes.
+    /// <see cref="InputEvent.Key"/> porte les 16 bits bas de son numéro.
+    /// </summary>
+    Focus = 7,
 }
 
 /// <summary>État des verrous clavier, porté par les événements <see cref="EventKind.Reset"/>.</summary>
