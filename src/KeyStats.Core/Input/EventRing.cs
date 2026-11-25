@@ -5,8 +5,8 @@ namespace KeyStats.Core.Input;
 /// <summary>
 /// File circulaire d'événements entre le thread de capture (seul producteur) et le thread d'analyse
 /// (seul consommateur). Préallouée, sans verrou ni allocation par événement. Pleine, elle refuse
-/// l'événement et le compte dans <see cref="Dropped"/> : le consommateur qui voit ce compteur bouger
-/// remet l'état des touches à zéro, car un relâchement a pu se perdre.
+/// l'événement et le compte dans <see cref="Dropped"/>. La remise à zéro de l'état des touches qui
+/// doit suivre une perte est écrite par le producteur (<see cref="RingWriter"/>).
 /// </summary>
 public sealed class EventRing
 {
@@ -52,6 +52,9 @@ public sealed class EventRing
         Volatile.Write(ref _head, head + 1);
         return true;
     }
+
+    /// <summary>Producteur seulement : événement écarté avant d'être écrit, compté comme un refus.</summary>
+    public void CountDropped() => Volatile.Write(ref _dropped, _dropped + 1);
 
     /// <summary>Consommateur seulement. Copie au plus <c>dest.Length</c> événements, dans l'ordre.</summary>
     public int Read(Span<InputEvent> dest)
