@@ -33,12 +33,17 @@ public sealed class StatsWriter
     }
 
     /// <summary>
-    /// Avant un recalcul depuis le brut : efface les statistiques de la période [fromMs, toMs),
-    /// qui doit couvrir les jours locaux [fromDay, toDay] entiers. Les touches des applis exclues
-    /// n'ont pas de brut : leurs compteurs sont gardés.
+    /// Avant un recalcul depuis le brut : efface les statistiques des jours locaux [fromDay, toDay]
+    /// entiers, bornes en ms calculées par <paramref name="clock"/> pour que les tables à la minute et
+    /// les tables par jour couvrent la même période. Les touches des applis exclues n'ont pas de brut :
+    /// leurs compteurs sont gardés. Renvoie la période effacée, à rejouer.
     /// </summary>
-    public void DeleteRange(long fromMs, long toMs, int fromDay, int toDay)
+    public (long FromMs, long ToMs) DeleteDays(int fromDay, int toDay, LocalDayClock clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(fromDay, toDay);
+        long fromMs = clock.MidnightUtcMs(LocalDayClock.DateOf(fromDay));
+        long toMs = clock.MidnightUtcMs(LocalDayClock.DateOf(toDay).AddDays(1));
         long fromMin = LocalDayClock.MinuteOf(fromMs), toMin = LocalDayClock.MinuteOf(toMs);
         long fromHour = LocalDayClock.HourOf(fromMs), toHour = LocalDayClock.HourOf(toMs);
         Run("DELETE FROM key_minute WHERE ts_min >= $a AND ts_min < $b", fromMin, toMin);
@@ -49,6 +54,7 @@ public sealed class StatsWriter
         foreach (string table in (string[])["day_char", "day_bigram", "day_wordlen", "day_shortcut", "day_error_pair", "day_hist"])
             Run($"DELETE FROM {table} WHERE day >= $a AND day <= $b", fromDay, toDay);
         Run("DELETE FROM day_metric WHERE day >= $a AND day <= $b AND metric <> $m", fromDay, toDay, (int)DayMetric.ExcludedKeys);
+        return (fromMs, toMs);
     }
 
     private void Run(string sql, params object?[] values)

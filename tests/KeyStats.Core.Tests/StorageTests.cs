@@ -195,10 +195,13 @@ public sealed class StorageTests
         stats.AddExcludedKey(Typist.Start);
         stats.AddExcludedKey(Typist.Start + 1);
         writer.Write(stats);
-        int day = new LocalDayClock(TimeZoneInfo.Utc).DayKey(Typist.Start);
-        long dayStart = Typist.Start - 10 * 3_600_000;
+        var clock = new LocalDayClock(TimeZoneInfo.Utc);
+        int day = clock.DayKey(Typist.Start);
 
-        writer.DeleteRange(dayStart, dayStart + 86_400_000, day, day);
+        var (fromMs, toMs) = writer.DeleteDays(day, day, clock);
+
+        Assert.True(fromMs <= Typist.Start && Typist.Start < toMs);
+        Assert.Equal(86_400_000, toMs - fromMs);
 
         Assert.Equal(0, tmp.Count("SELECT count(*) FROM session"));
         Assert.Equal(0, tmp.Count("SELECT count(*) FROM key_minute"));
