@@ -87,19 +87,39 @@ public sealed class RecorderTests
     }
 
     [Fact]
-    public void Pause_exterieure_rien_n_est_compte()
+    public void Pause_exterieure_session_conclue_puis_rien_n_est_compte()
     {
         using var tmp = new TempDb();
         var rec = Recorder(tmp, null);
         rec.OnFocus(Focus(Typist.Start, "winword.exe"));
-        rec.BeginPause(PauseReason.Snooze, Typist.Start + 5);
-        long end = Feed(rec, Text, Typist.Start + 10);
+        long start = Feed(rec, Text, Typist.Start + 10) + 5;
+        rec.BeginPause(PauseReason.Snooze, start);
+        Assert.True(rec.Flush(start));
+        Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM session"));
+        long keys = tmp.Count("SELECT SUM(keys) FROM minute_total");
+        long end = Feed(rec, Text, start + 5);
         rec.EndPause(end + 1);
         Assert.True(rec.Close(end + 2));
 
-        Assert.True(rec.Counters.PausedEvents > 0);
-        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM minute_total WHERE keys > 0"));
-        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Snooze} AND start_ms = {Typist.Start + 5} AND end_ms = {end + 1}"));
+        Assert.Equal(new Typist().Type(Text).Events.Count, rec.Counters.PausedEvents);
+        Assert.Equal(keys, tmp.Count("SELECT SUM(keys) FROM minute_total"));
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Snooze} AND start_ms = {start} AND end_ms = {end + 1}"));
+    }
+
+    [Fact]
+    public void Remise_a_zero_pendant_la_pause_relache_les_touches()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        var held = new Typist(Typist.Start + 10).Down(KeyCode.LeftCtrl);
+        foreach (var e in held.Events) rec.OnEvent(e);
+        rec.BeginPause(PauseReason.Locked, held.Ms + 10);
+        rec.OnEvent(new Typist(held.Ms + 20).Reset().Events[0]);
+        rec.EndPause(held.Ms + 30);
+        Assert.True(rec.Close(Feed(rec, "abc", held.Ms + 40)));
+
+        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM day_shortcut"));
     }
 
     private static void Fail(TempDb tmp, string table) =>
@@ -253,6 +273,7 @@ public sealed class RecorderTests
         Assert.Equal(batches + 1, rec.Counters.Batches);
         Assert.True(rec.Close(Feed(rec, Text, end + 100)));
 
-        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM day_metric"));
+        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM session"));
+        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM day_char"));
     }
 }
