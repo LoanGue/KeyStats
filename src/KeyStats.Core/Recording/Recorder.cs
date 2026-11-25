@@ -2,12 +2,13 @@ using KeyStats.Core.Analysis;
 using KeyStats.Core.Focus;
 using KeyStats.Core.Input;
 using KeyStats.Core.Storage;
+using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
 
 namespace KeyStats.Core.Recording;
 
 /// <summary>Compteurs de diagnostic de l'enregistreur : aucun contenu, seulement des nombres.</summary>
-public readonly record struct RecorderCounters(long Batches, long WriteErrors, long RawDropped, long UnknownMarkers, long PausedEvents);
+public readonly record struct RecorderCounters(long Batches, long WriteErrors, long RawDropped, long PausedEvents);
 
 /// <summary>
 /// Thread d'analyse de l'agent : fait passer les événements et les changements de fenêtre dans
@@ -23,17 +24,19 @@ public sealed class Recorder
     public const int RawCapacity = 4096;
 
     private readonly KeyStatsDb _db;
-    private readonly RawArchiveWriter? _archive;
+    private RawArchiveWriter? _archive;
     private readonly LocalDayClock _clock;
     private readonly StatsWriter _writer;
     private readonly InputEvent[] _raw = new InputEvent[RawCapacity];
     private readonly PauseLog _pauses = new();
     private int _rawCount;
     private long? _focusId;
+    // Fenêtre des événements du tampon : un bloc brut n'en mélange jamais deux.
+    private long _rawFocusId;
     // Tant qu'aucune fenêtre n'est connue, on ne garde pas de brut : il pourrait venir d'une appli exclue.
     private bool _countersOnly = true;
     private long _lastWriteMs;
-    private long _batches, _writeErrors, _rawDropped, _unknownMarkers, _pausedEvents;
+    private long _batches, _writeErrors, _rawDropped, _pausedEvents;
 
     /// <param name="archive">Écriture du brut et des titres ; nul tant que le chiffrement n'est pas configuré.</param>
     public Recorder(KeyStatsDb db, RawArchiveWriter? archive, LocalDayClock clock, long nowMs,
@@ -49,18 +52,10 @@ public sealed class Recorder
 
     public Analyzer Analyzer { get; }
 
-    public RecorderCounters Counters => new(_batches, _writeErrors, _rawDropped, _unknownMarkers, _pausedEvents);
+    /// <summary>Faux sans chiffrement configuré, ou après une clé publique maîtresse illisible.</summary>
+    public bool Encrypting => _archive is not null;
 
-    /// <summary>Un lot lu dans la file : les marqueurs de fenêtre sont résolus par le canal.</summary>
-    public void Consume(ReadOnlySpan<InputEvent> events, FocusChannel focus)
-    {
-        foreach (ref readonly var e in events)
-        {
-            if (e.Kind != EventKind.Focus) OnEvent(e);
-            else if (focus.Take(e) is { } change) OnFocus(change);
-            else _unknownMarkers++;
-        }
-    }
+    public RecorderCounters Counters => new(_batches, _writeErrors, _rawDropped, _pausedEvents);
 
     public void OnEvent(in InputEvent e)
     {
@@ -71,13 +66,15 @@ public sealed class Recorder
             return;
         }
         Analyzer.Process(e);
-        if (_archive is null || _countersOnly) return;
-        if (_rawCount == _raw.Length && !Flush(e.Ms))
+        // Sans ligne focus (écriture ratée), pas de brut : il ne pourrait être rattaché à aucune fenêtre.
+        if (_archive is null || _countersOnly || _focusId is not long focusId) return;
+        if (_rawCount > 0 && (_rawCount == _raw.Length || _rawFocusId != focusId) && !Flush(e.Ms))
         {
             // La base refuse d'écrire : on perd ce brut plutôt que de grossir sans limite.
             _rawDropped += _rawCount;
             ClearRaw();
         }
+        if (_rawCount == 0) _rawFocusId = focusId;
         _raw[_rawCount++] = e;
     }
 
@@ -85,6 +82,10 @@ public sealed class Recorder
     public void OnFocus(FocusChange change)
     {
         ArgumentNullException.ThrowIfNull(change);
+        // Fermé par défaut : si quoi que ce soit échoue plus bas, rien de cette fenêtre n'entre dans le brut.
+        _countersOnly = true;
+        _focusId = null;
+        _pauses.SetFocusReason(change.Ms, PauseFor(change.Flags));
         var info = new FocusInfo(change.Ms, 0, 0, null, change.Flags);
         long? focusId = null;
         bool ok = Write(change.Ms, () =>
@@ -97,17 +98,18 @@ public sealed class Recorder
         });
         // En cas d'échec, la fenêtre reste inconnue (appli 0) : ses frappes sont comptées, le brut n'a pas de focus.
         if (!ok) info = new FocusInfo(change.Ms, 0, 0, null, change.Flags);
+        Analyzer.SetFocus(info);
         _focusId = ok ? focusId : null;
         _countersOnly = change.Flags.CountersOnly();
-        _pauses.SetFocusReason(change.Ms, PauseFor(change.Flags));
-        Analyzer.SetFocus(info);
     }
 
     /// <summary>Appelé quand la file est vide : conclut ce qui doit l'être et écrit toutes les 60 s.</summary>
     public void Tick(long nowMs)
     {
         Analyzer.Tick(nowMs);
-        if (nowMs - _lastWriteMs >= FlushIntervalMs || nowMs < _lastWriteMs) Flush(nowMs);
+        // Horloge revenue en arrière : on repart d'ici au lieu d'écrire à chaque Tick.
+        if (nowMs < _lastWriteMs) _lastWriteMs = nowMs;
+        if (nowMs - _lastWriteMs >= FlushIntervalMs) Flush(nowMs);
     }
 
     /// <summary>Écrit tout ce qui est en attente. Renvoie faux si la base a refusé (rien n'est perdu).</summary>
@@ -156,14 +158,21 @@ public sealed class Recorder
             using (var tx = _db.BeginTransaction())
             {
                 _writer.Write(Analyzer.Stats);
-                if (_archive is not null && _rawCount > 0) _archive.WriteBlock(_raw.AsSpan(0, _rawCount), _focusId, nowMs);
+                if (_archive is not null && _rawCount > 0) _archive.WriteBlock(_raw.AsSpan(0, _rawCount), _rawFocusId, nowMs);
                 _pauses.Write(_db);
                 inTransaction?.Invoke();
                 tx.Commit();
             }
         }
-        catch (Exception e) when (e is SqliteException or InvalidOperationException or IOException)
+        catch (Exception e) when (e is SqliteException or IOException or CryptographicException
+            || (e is InvalidOperationException && _db.IsFaulted))
         {
+            if (e is CryptographicException)
+            {
+                // Clé publique maîtresse illisible : plus de brut ni de titre, les statistiques continuent.
+                _archive = null;
+                ClearRaw();
+            }
             // Tout reste en mémoire pour le lot suivant ; le message d'erreur n'est pas gardé.
             _writeErrors++;
             return false;

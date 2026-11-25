@@ -28,13 +28,17 @@ public sealed class RecorderTests
     }
 
     [Fact]
-    public void Sans_chiffrement_seules_les_statistiques_sont_ecrites()
+    public void Sans_chiffrement_statistiques_seules_toutes_les_60_secondes()
     {
         using var tmp = new TempDb();
         var rec = Recorder(tmp, null);
         rec.OnFocus(Focus(Typist.Start, "winword.exe"));
-        long end = Feed(rec, Text, Typist.Start + 10);
-        Assert.True(rec.Close(end));
+        Feed(rec, Text, Typist.Start + 10);
+        long batches = rec.Counters.Batches;
+        rec.Tick(Typist.Start + 30_000);
+        Assert.Equal(batches, rec.Counters.Batches);
+        rec.Tick(Typist.Start + Recording.Recorder.FlushIntervalMs + 1);
+        Assert.Equal(batches + 1, rec.Counters.Batches);
 
         Assert.True(tmp.Count("SELECT SUM(keys) FROM minute_total") > 0);
         Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM focus WHERE title_id IS NULL"));
@@ -56,42 +60,30 @@ public sealed class RecorderTests
 
         Assert.Equal(2, tmp.Count("SELECT COUNT(*) FROM window_title"));
         Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT focus_id) FROM raw_block WHERE focus_id IS NOT NULL"));
-        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM raw_block b JOIN focus f ON f.id = b.focus_id WHERE b.start_ms < f.ts_ms"));
+        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM raw_block b JOIN focus f ON f.id = b.focus_id WHERE b.start_ms < f.ts_ms"
+            + " OR EXISTS (SELECT 1 FROM focus n WHERE n.ts_ms > f.ts_ms AND n.ts_ms <= b.end_ms)"));
         byte[] bytes = tmp.ReadAllBytesClosed();
         foreach (var enc in (Encoding[])[Encoding.UTF8, Encoding.Unicode])
             Assert.Equal(-1, bytes.AsSpan().IndexOf(enc.GetBytes(Title)));
     }
 
-    [Fact]
-    public void Appli_exclue_compteurs_seulement_et_pause_notee()
+    [Theory]
+    [InlineData("keepass.exe", FocusState.Excluded, PauseReason.Excluded)]
+    [InlineData("", FocusState.Excluded, PauseReason.Excluded)]
+    [InlineData("chrome.exe", FocusState.Secret, PauseReason.Secret)]
+    public void Fenetre_compteurs_seulement_et_pause_notee(string exe, FocusState flags, PauseReason reason)
     {
         using var tmp = new TempDb();
         using var master = MasterKey.Generate();
         var rec = Recorder(tmp, master);
-        rec.OnFocus(Focus(Typist.Start, "keepass.exe", null, FocusState.NewWindow | FocusState.Excluded));
+        rec.OnFocus(Focus(Typist.Start, exe, null, FocusState.NewWindow | flags));
         long end = Feed(rec, "motdepasse", Typist.Start + 10);
         rec.OnFocus(Focus(end + 100, "notepad.exe"));
         Assert.True(rec.Close(end + 200));
 
         Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM raw_block"));
         Assert.True(tmp.Count("SELECT SUM(excluded_keys) FROM minute_total") > 0);
-        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Excluded} AND start_ms = {Typist.Start} AND end_ms = {end + 100}"));
-    }
-
-    [Fact]
-    public void Ecriture_toutes_les_60_secondes()
-    {
-        using var tmp = new TempDb();
-        var rec = Recorder(tmp, null);
-        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
-        Feed(rec, Text, Typist.Start + 10);
-        long batches = rec.Counters.Batches;
-
-        rec.Tick(Typist.Start + 30_000);
-        Assert.Equal(batches, rec.Counters.Batches);
-        rec.Tick(Typist.Start + Recording.Recorder.FlushIntervalMs + 1);
-        Assert.Equal(batches + 1, rec.Counters.Batches);
-        Assert.True(tmp.Count("SELECT SUM(keys) FROM minute_total") > 0);
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)reason} AND start_ms = {Typist.Start} AND end_ms = {end + 100}"));
     }
 
     [Fact]
@@ -107,35 +99,83 @@ public sealed class RecorderTests
 
         Assert.True(rec.Counters.PausedEvents > 0);
         Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM minute_total WHERE keys > 0"));
-        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Snooze} AND end_ms = {end + 1}"));
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Snooze} AND start_ms = {Typist.Start + 5} AND end_ms = {end + 1}"));
+    }
+
+    private static void Fail(TempDb tmp, string table) =>
+        tmp.Db.Exec($"CREATE TEMP TRIGGER fail_{table} BEFORE INSERT ON {table} BEGIN SELECT RAISE(ABORT, 'x'); END");
+
+    private static void Heal(TempDb tmp, string table) => tmp.Db.Exec($"DROP TRIGGER fail_{table}");
+
+    [Fact]
+    public void Ecriture_ratee_tout_garde_et_rien_en_double()
+    {
+        using var control = new TempDb();
+        var expected = Recorder(control, null);
+        expected.OnFocus(Focus(Typist.Start, "winword.exe"));
+        expected.Close(Feed(expected, Text, Typist.Start + 10));
+
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        Fail(tmp, "minute_total");
+        Assert.False(rec.Flush(end));
+        Heal(tmp, "minute_total");
+        Assert.True(rec.Close(end));
+
+        Assert.Equal(1, rec.Counters.WriteErrors);
+        Assert.Equal(control.Count("SELECT SUM(keys) FROM minute_total"), tmp.Count("SELECT SUM(keys) FROM minute_total"));
     }
 
     [Fact]
-    public void Marqueurs_de_la_file_resolus_par_le_canal()
+    public void Focus_rate_le_brut_reste_a_la_fenetre_precedente()
     {
         using var tmp = new TempDb();
-        var rec = Recorder(tmp, null);
-        var ring = new EventRing(64);
-        var channel = new FocusChannel();
-        Assert.True(channel.Publish(Focus(Typist.Start, "winword.exe"), ring));
-        var batch = new InputEvent[64];
-        int n = ring.Read(batch);
-        rec.Consume(batch.AsSpan(0, n), channel);
-        rec.Consume([new InputEvent(Typist.Start + 1, EventKind.Focus, 999)], channel);
-        Assert.True(rec.Close(Typist.Start + 2));
+        using var master = MasterKey.Generate();
+        var rec = Recorder(tmp, master);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        long switchMs = end + 100;
+        Fail(tmp, "focus");
+        rec.OnFocus(Focus(switchMs, "notepad.exe", null));
+        end = Feed(rec, Text, switchMs + 100);
+        Heal(tmp, "focus");
+        Assert.True(rec.Close(end));
 
-        Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM focus f JOIN app a ON a.id = f.app_id WHERE a.exe = 'winword.exe'"));
-        Assert.Equal(1, rec.Counters.UnknownMarkers);
-    }
-
-    [Fact]
-    public void Appli_inconnue_acceptee()
-    {
-        using var tmp = new TempDb();
-        var rec = Recorder(tmp, null);
-        rec.OnFocus(Focus(Typist.Start, "", null, FocusState.NewWindow | FocusState.Excluded));
-        Assert.True(rec.Close(Typist.Start + 1));
-        Assert.Equal(0, rec.Counters.WriteErrors);
         Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM focus"));
+        Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM raw_block"));
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM raw_block WHERE focus_id = (SELECT id FROM focus) AND end_ms < {switchMs}"));
+    }
+
+    [Fact]
+    public void Tampon_plein_et_base_refusee_brut_perdu_et_compte()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        var rec = Recorder(tmp, master);
+        Feed(rec, "avant la fenetre", Typist.Start - 5000);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        Fail(tmp, "raw_block");
+        Feed(rec, new string('a', Recording.Recorder.RawCapacity / 2 + 10), Typist.Start + 10);
+        Assert.Equal(Recording.Recorder.RawCapacity, rec.Counters.RawDropped);
+        Heal(tmp, "raw_block");
+        Assert.True(rec.Close(Typist.Start + 10_000_000));
+        Assert.Equal(0, tmp.Count($"SELECT COUNT(*) FROM raw_block WHERE start_ms < {Typist.Start}"));
+    }
+
+    [Fact]
+    public void Cle_maitresse_illisible_statistiques_seulement()
+    {
+        using var tmp = new TempDb();
+        var rec = new Recorder(tmp.Db, new RawArchiveWriter(tmp.Db, new byte[65], new TitleHasher(TitleHasher.NewKey())),
+            new LocalDayClock(TimeZoneInfo.Utc), Typist.Start);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        rec.OnFocus(Focus(Typist.Start + 1, "winword.exe"));
+        Assert.True(rec.Close(Feed(rec, Text, Typist.Start + 10)));
+
+        Assert.False(rec.Encrypting);
+        Assert.True(tmp.Count("SELECT SUM(keys) FROM minute_total") > 0);
+        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM raw_block") + tmp.Count("SELECT COUNT(*) FROM window_title"));
     }
 }
