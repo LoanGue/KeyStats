@@ -277,4 +277,23 @@ public sealed class RecorderTests
         Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM session"));
         Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM day_char"));
     }
+
+    [Fact]
+    public void Horloge_qui_recule_ecriture_60_secondes_apres_le_recul()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        rec.Tick(end + Recording.Recorder.FlushIntervalMs);
+        long batches = rec.Counters.Batches;
+        Feed(rec, Text, end + Recording.Recorder.FlushIntervalMs + 10);
+        long back = Typist.Start - 10_000;
+        rec.Tick(back);
+        rec.Tick(back);
+        rec.Tick(back + Recording.Recorder.FlushIntervalMs - 1);
+        Assert.Equal(batches, rec.Counters.Batches);
+        rec.Tick(back + Recording.Recorder.FlushIntervalMs);
+        Assert.Equal(batches + 1, rec.Counters.Batches);
+    }
 }
