@@ -143,6 +143,8 @@ public sealed class RecorderTests
         Fail(tmp, "raw_block");
         Feed(rec, new string('a', Recording.Recorder.RawCapacity / 2 + 10), Typist.Start + 10);
         Assert.Equal(Recording.Recorder.RawCapacity, rec.Counters.RawDropped);
+        Assert.False(rec.Close(Typist.Start + 10_000_000));
+        Assert.True(rec.Counters.RawDropped > Recording.Recorder.RawCapacity);
         Heal(tmp, "raw_block");
         Assert.True(rec.Close(Typist.Start + 10_000_000));
         Assert.Equal(0, tmp.Count($"SELECT COUNT(*) FROM raw_block WHERE start_ms < {Typist.Start}"));
