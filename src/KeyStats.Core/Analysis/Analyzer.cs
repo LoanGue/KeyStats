@@ -16,12 +16,6 @@ public readonly record struct FocusInfo(long Ms, int AppId, long TitleId, Layout
 /// </summary>
 public sealed class Analyzer
 {
-    private enum TextAction : byte
-    {
-        Neutral, Char, DeadKey, Backspace, WordBackspace, AltDigit,
-        Tab, Escape, Delete, Navigate, Shortcut, OtherKey,
-    }
-
     private readonly AnalysisSettings _s;
     private readonly StatsAccumulator _stats;
     private readonly SessionBuilder _session;
@@ -225,7 +219,7 @@ public sealed class Analyzer
             else if (k == KeyCode.NumLock) _numLock = !_numLock;
         }
 
-        TextAction action = Translate(k, out char c, out ShortcutModifiers mods);
+        TextAction action = KeyTranslator.Translate(_down, _layout, _capsLock, _numLock, k, out char c, out ShortcutModifiers mods);
         Dispatch(action, k, c, mods, ms, e.Device, repeat);
     }
 
@@ -294,66 +288,6 @@ public sealed class Analyzer
 
     /// <summary>Alt qui n'est pas AltGr.</summary>
     private bool IsPlainAlt(ushort k) => k == KeyCode.LeftAlt || (k == KeyCode.RightAlt && !_layout.HasAltGr);
-
-    private TextAction Translate(ushort k, out char c, out ShortcutModifiers mods)
-    {
-        c = '\0';
-        mods = ShortcutModifiers.None;
-        if (KeyCode.IsModifier(k) || KeyCode.IsLock(k) || KeyCode.IsNeutral(k)) return TextAction.Neutral;
-
-        bool ctrl = _down[KeyCode.LeftCtrl] || _down[KeyCode.RightCtrl];
-        bool altGrKey = _down[KeyCode.RightAlt] && _layout.HasAltGr;
-        bool alt = _down[KeyCode.LeftAlt] || (_down[KeyCode.RightAlt] && !_layout.HasAltGr);
-        bool win = _down[KeyCode.LeftWin] || _down[KeyCode.RightWin];
-        bool shift = _down[KeyCode.LeftShift] || _down[KeyCode.RightShift];
-
-        if (alt && !ctrl && !altGrKey && !win && KeyCode.NumpadDigit(k) >= 0) return TextAction.AltDigit;
-
-        if (!win && (altGrKey || (ctrl && alt)))
-        {
-            int slot = (int)ShiftState.AltGr | (shift ? (int)ShiftState.Shift : 0) | (_capsLock ? (int)ShiftState.Caps : 0);
-            c = _layout.Get(k, slot, out bool isDead);
-            if (c != '\0') return isDead ? TextAction.DeadKey : TextAction.Char;
-            mods = ShortcutModifiers.Ctrl | ShortcutModifiers.Alt | (shift ? ShortcutModifiers.Shift : 0);
-            return TextAction.Shortcut;
-        }
-        if (ctrl || alt || win)
-        {
-            if (k == KeyCode.Backspace && ctrl && !alt && !win) return TextAction.WordBackspace;
-            mods = (ctrl ? ShortcutModifiers.Ctrl : 0) | (alt || altGrKey ? ShortcutModifiers.Alt : 0)
-                | (shift ? ShortcutModifiers.Shift : 0) | (win ? ShortcutModifiers.Win : 0);
-            return TextAction.Shortcut;
-        }
-
-        switch (k)
-        {
-            case KeyCode.Backspace: return TextAction.Backspace;
-            case KeyCode.Tab: return TextAction.Tab;
-            case KeyCode.Escape: return TextAction.Escape;
-            case KeyCode.Enter or KeyCode.NumEnter:
-                c = '\n';
-                return TextAction.Char;
-            case KeyCode.Delete: return TextAction.Delete;
-            case KeyCode.Apps: return TextAction.OtherKey;
-        }
-        if (KeyCode.IsNavigation(k)) return TextAction.Navigate;
-        if (KeyCode.IsNumpadDual(k))
-        {
-            // Verr Num actif : chiffres, sauf avec Maj qui rend temporairement les flèches.
-            if (_numLock && !shift)
-            {
-                c = _layout.Get(k, LayoutTable.NumLockSlot, out _);
-                if (c != '\0') return TextAction.Char;
-            }
-            return k == KeyCode.NumDecimal ? TextAction.Delete : TextAction.Navigate;
-        }
-        if (KeyCode.IsFunctionKey(k)) return TextAction.OtherKey;
-
-        int plain = (shift ? (int)ShiftState.Shift : 0) | (_capsLock ? (int)ShiftState.Caps : 0);
-        c = _layout.Get(k, plain, out bool dead);
-        if (c == '\0') return TextAction.OtherKey;
-        return dead ? TextAction.DeadKey : TextAction.Char;
-    }
 
     private void Dispatch(TextAction action, ushort k, char c, ShortcutModifiers mods, long ms, ushort device, bool repeat)
     {
