@@ -59,6 +59,17 @@ public enum FocusState : byte
     Excluded = 2,
     /// <summary>Fenêtre lancée en administrateur : les touches ne nous parviennent sans doute pas.</summary>
     Elevated = 4,
+    /// <summary>
+    /// Champ de mot de passe au premier plan (détection au mieux par l'agent). Traité comme une appli
+    /// exclue : seul le nombre de touches est gardé, ni brut ni statistique de texte.
+    /// </summary>
+    Secret = 8,
+}
+
+public static class FocusStateExtensions
+{
+    /// <summary>Vrai si seules les touches sont comptées : appli exclue ou champ de mot de passe. L'agent n'écrit alors aucun brut.</summary>
+    public static bool CountersOnly(this FocusState state) => (state & (FocusState.Excluded | FocusState.Secret)) != 0;
 }
 
 /// <summary>Compteurs journaliers (table <c>day_metric</c>). Valeurs enregistrées en base.</summary>

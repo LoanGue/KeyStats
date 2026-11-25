@@ -13,3 +13,5 @@ All notable changes to this project are documented here. The format follows
   correction analysis (real typos versus collateral deletions), SQLite schema
   and stats writer, encrypted raw archive, Windows Hello and passphrase key
   wrapping, reference letter frequencies.
+- `FocusState.Secret`: keystrokes in a detected password field only count
+  keys, like an excluded app.

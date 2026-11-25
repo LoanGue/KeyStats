@@ -30,6 +30,9 @@ public sealed class Analyzer
     private readonly bool[] _down = new bool[KeyCode.Count];
     private readonly long[] _downMs = new long[KeyCode.Count];
     private readonly bool[] _textDown = new bool[KeyCode.Count];
+    // Touches tenues au passage en mode compteurs seuls (ou à sa sortie) : leurs répétitions et leur
+    // relâchement appartiennent à l'autre mode et sont ignorés.
+    private readonly bool[] _stale = new bool[KeyCode.Count];
     private int _downCount, _textDownCount;
     private long _lastTextUpMs = long.MinValue;
     private bool _capsLock, _numLock;
@@ -61,9 +64,15 @@ public sealed class Analyzer
     /// <summary>Changement de fenêtre active, de titre ou de disposition, dans l'ordre des événements.</summary>
     public void SetFocus(in FocusInfo f)
     {
+        // Un Ctrl en attente appartient à la fenêtre qu'on quitte : il est tranché sous l'ancien mode.
+        if (_hasPendingCtrl)
+        {
+            _hasPendingCtrl = false;
+            ProcessCore(_pendingCtrl);
+        }
         CheckGap(f.Ms);
         bool newWindow = (f.Flags & FocusState.NewWindow) != 0 || f.AppId != _appId;
-        bool excluded = (f.Flags & FocusState.Excluded) != 0;
+        bool excluded = f.Flags.CountersOnly();
         if (newWindow)
         {
             EndSession();
@@ -75,7 +84,7 @@ public sealed class Analyzer
         {
             // Les touches tenues d'un côté ne doivent rien déclencher de l'autre.
             EndSession();
-            ClearKeyState();
+            IsolateHeldKeys();
             if (excluded) _live?.Reset();
         }
         _appId = f.AppId;
@@ -162,9 +171,24 @@ public sealed class Analyzer
         _session.End();
     }
 
+    /// <summary>
+    /// Bascule de mode : les touches tenues restent enfoncées (Maj garde son effet), mais leurs
+    /// répétitions et leur relâchement ne comptent plus. Rien de ce qui est en cours ne traverse.
+    /// </summary>
+    private void IsolateHeldKeys()
+    {
+        for (int k = 0; k < _down.Length; k++)
+            if (_down[k]) _stale[k] = true;
+        _lastTextUpMs = long.MinValue;
+        _altAlone = _winAlone = false;
+        _dead = '\0';
+        ResetAltCode();
+    }
+
     private void ClearKeyState()
     {
         Array.Clear(_down);
+        Array.Clear(_stale);
         Array.Clear(_textDown);
         _downCount = _textDownCount = 0;
         _lastTextUpMs = long.MinValue;
@@ -186,6 +210,7 @@ public sealed class Analyzer
         ushort k = e.Key;
         if (k == 0 || k >= KeyCode.Count) return;
         long ms = e.Ms;
+        if (_stale[k]) return; // répétition d'une touche tenue depuis l'autre mode
         bool repeat = _down[k];
         if (!repeat)
         {
@@ -242,7 +267,9 @@ public sealed class Analyzer
             _textDownCount--;
             if (e.Kind != EventKind.ForcedUp) _lastTextUpMs = ms;
         }
-        if (e.Kind == EventKind.ForcedUp)
+        bool stale = _stale[k];
+        _stale[k] = false;
+        if (e.Kind == EventKind.ForcedUp || stale)
         {
             // Relâchement perdu : on corrige l'état sans rien en déduire.
             if (IsPlainAlt(k)) ResetAltCode();
