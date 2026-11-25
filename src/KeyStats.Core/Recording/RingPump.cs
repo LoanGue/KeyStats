@@ -15,6 +15,7 @@ public sealed class RingPump(EventRing ring, FocusChannel focus, Recorder record
 {
     public const int BatchSize = 256;
     // L'heure donnée au Tick a un léger retard, pour qu'une frappe encore en route ne paraisse pas en avance.
+    // Un thread de capture suspendu plus longtemps entre l'horodatage et l'écriture reste possible : rare.
     public const int TickLagMs = 250;
 
     private readonly InputEvent[] _batch = new InputEvent[BatchSize];
@@ -32,7 +33,7 @@ public sealed class RingPump(EventRing ring, FocusChannel focus, Recorder record
             foreach (ref readonly var e in batch) Dispatch(e);
             _lastMs = Math.Max(_lastMs, batch[^1].Ms);
             Volatile.Write(ref _events, _events + n);
-            // Le brut en clair ne reste pas dans le lot.
+            // Le brut en clair ne reste pas dans le lot (la file, elle, le garde jusqu'à ce que la place resserve).
             batch.Clear();
         }
     }

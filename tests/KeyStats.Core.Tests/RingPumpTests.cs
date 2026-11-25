@@ -47,6 +47,7 @@ public sealed class RingWriterTests
         Assert.False(writer.Write(Key(3))); // une place, il en faut deux
         Assert.True(writer.ResetOwed);
         Assert.Equal(2, ring.Dropped);
+        Assert.Equal(1, ring.Count); // rien d'écrit : pas de remise orpheline
     }
 
     [Fact]
@@ -77,6 +78,20 @@ public sealed class EventClockPeekTests
         clock.Resync();
         Assert.Equal(5_000_000, clock.PeekMs());
         Assert.Equal(5_000_000, clock.NowMs());
+    }
+
+    [Fact]
+    public void Recalage_en_arriere_apres_une_lecture_sans_frappe_le_temps_ne_recule_pas()
+    {
+        var clock = new EventClock(() => _ticks, () => _utc, frequency: 10_000);
+        _ticks += 360_000; // 36 s sans frappe, lues par l'autre thread
+        long peek = clock.PeekMs();
+        Assert.Equal(1_036_000, peek);
+
+        _utc = 1_000_000; // horloge système reculée
+        clock.Resync();
+        Assert.True(clock.PeekMs() >= peek);
+        Assert.True(clock.NowMs() >= peek);
     }
 }
 
@@ -152,8 +167,12 @@ public sealed class RingPumpTests
         Assert.Equal(batches, rec.Counters.Batches);
         pump.Tick(Typist.Start + Recorder.FlushIntervalMs + RingPump.TickLagMs);
         Assert.Equal(batches + 1, rec.Counters.Batches);
-        // Horloge en arrière : l'heure reste celle déjà donnée, rien n'est réécrit.
+        // Horloge en arrière : l'heure reste celle du dernier événement, le Recorder ne recule pas
+        // et n'écrit pas 60 s après l'heure reculée.
+        Write(ring, Text, Typist.Start + Recorder.FlushIntervalMs + 100);
+        pump.Drain();
         pump.Tick(Typist.Start);
+        pump.Tick(Typist.Start + Recorder.FlushIntervalMs);
         Assert.Equal(batches + 1, rec.Counters.Batches);
     }
 }

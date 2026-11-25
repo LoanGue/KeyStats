@@ -15,7 +15,7 @@ public sealed class EventClock
     private readonly Func<long> _utcMs;
     private readonly long _frequency;
     // Remplacé d'un bloc à chaque recalage : un lecteur d'un autre thread voit l'ancien ou le nouveau, jamais un mélange.
-    private Anchor _anchor = new(0, 0);
+    private Anchor? _anchor;
     private long _lastMs = long.MinValue;
 
     public EventClock()
@@ -35,26 +35,28 @@ public sealed class EventClock
     }
 
     /// <summary>
-    /// Recale sur l'horloge système. Si elle a reculé, on repart du dernier instant rendu : le temps
-    /// continue d'avancer au rythme du compteur au lieu de rester figé jusqu'au rattrapage.
+    /// Recale sur l'horloge système. Si elle a reculé, on repart de l'heure courante (déjà donnée par
+    /// <see cref="NowMs"/> ou lue par <see cref="PeekMs"/>) : le temps continue d'avancer au rythme du
+    /// compteur au lieu de reculer ou de rester figé jusqu'au rattrapage.
     /// </summary>
     public void Resync()
     {
-        Volatile.Write(ref _anchor, new Anchor(_timestamp(), Math.Max(_utcMs(), _lastMs)));
+        long floor = _anchor is { } a ? Math.Max(_lastMs, Project(a)) : _lastMs;
+        Volatile.Write(ref _anchor, new Anchor(_timestamp(), Math.Max(_utcMs(), floor)));
     }
 
     public long NowMs()
     {
-        long ms = Math.Max(Project(_anchor), _lastMs);
+        long ms = Math.Max(Project(_anchor!), _lastMs);
         _lastMs = ms;
         return ms;
     }
 
     /// <summary>
-    /// Heure courante sur l'échelle des événements, depuis n'importe quel thread. Peut être un peu
-    /// en retard sur le dernier <see cref="NowMs"/> juste après un recalage : l'appelant garde son maximum.
+    /// Heure courante sur l'échelle des événements, depuis n'importe quel thread. Ne recule pas au
+    /// recalage ; une frappe horodatée juste avant peut toutefois arriver un peu après cette heure.
     /// </summary>
-    public long PeekMs() => Project(Volatile.Read(ref _anchor));
+    public long PeekMs() => Project(Volatile.Read(ref _anchor)!);
 
     private long Project(Anchor a) => a.Ms + (_timestamp() - a.Ticks) * 1000 / _frequency;
 
