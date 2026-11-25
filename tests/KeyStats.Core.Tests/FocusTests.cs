@@ -164,13 +164,24 @@ public sealed class FocusChannelTests
     }
 
     [Fact]
-    public void File_bornee_si_le_consommateur_ne_suit_pas()
+    public void File_pleine_le_changement_attend_puis_passe_avant_la_frappe()
     {
         var ring = new EventRing(8192);
         var channel = new FocusChannel();
         for (int i = 0; i < FocusChannel.MaxQueued; i++) Assert.True(channel.Publish(Change(i), ring));
-        Assert.False(channel.Publish(Change(0), ring));
-        Assert.False(channel.HasPending);
+        var late = Change(9999);
+        Assert.False(channel.Publish(late, ring));
+        Assert.True(channel.HasPending);
+        Assert.False(channel.RepublishPending(ring));
+
+        // Le consommateur rattrape son retard, puis la frappe suivante arrive.
+        var events = Drain(ring);
+        foreach (var e in events) Assert.NotNull(channel.Take(e));
+        Assert.True(channel.RepublishPending(ring));
+        ring.TryWrite(new InputEvent(10_000, EventKind.KeyDown, KeyCode.Space));
+        events = Drain(ring);
+        Assert.Equal([EventKind.Focus, EventKind.KeyDown], events.Select(e => e.Kind));
+        Assert.Same(late, channel.Take(events[0]));
     }
 
     [Fact]
