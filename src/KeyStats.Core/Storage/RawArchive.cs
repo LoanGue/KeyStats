@@ -62,10 +62,18 @@ public sealed class RawArchiveWriter : IDisposable
         if (events.IsEmpty) return 0;
         long start = events[0].Ms, end = Math.Max(start, events[^1].Ms);
         byte[] payload = RawCodec.Encode(events, start);
-        var cipher = Cipher(nowMs);
-        var (nonce, data) = cipher.EncryptBlock(payload, start, end, events.Length, focusId);
-        // Le brut en clair ne reste pas en mémoire, d'où il pourrait finir dans le fichier d'échange.
-        System.Security.Cryptography.CryptographicOperations.ZeroMemory(payload);
+        EpochCipher cipher;
+        byte[] nonce, data;
+        try
+        {
+            cipher = Cipher(nowMs);
+            (nonce, data) = cipher.EncryptBlock(payload, start, end, events.Length, focusId);
+        }
+        finally
+        {
+            // Le brut en clair ne reste pas en mémoire, d'où il pourrait finir dans le fichier d'échange.
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(payload);
+        }
         return _db.AddRawBlock(start, end, focusId, events.Length, cipher.EpochId, nonce, data);
     }
 
