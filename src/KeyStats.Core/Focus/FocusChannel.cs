@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using KeyStats.Core.Analysis;
 using KeyStats.Core.Input;
 
 namespace KeyStats.Core.Focus;
@@ -27,7 +28,9 @@ public sealed class FocusChannel
     public bool Publish(FocusChange change, EventRing ring)
     {
         // Remplace un changement plus ancien resté sans marqueur : celui-ci est écarté au Take, ou
-        // jamais mis en file.
+        // jamais mis en file. S'il ouvrait une nouvelle fenêtre, le remplaçant le dit aussi.
+        if (_pending is { } old && (old.Flags & ~change.Flags & FocusState.NewWindow) != 0)
+            change = new FocusChange { Ms = change.Ms, Exe = change.Exe, Title = change.Title, Flags = change.Flags | FocusState.NewWindow };
         _pending = change;
         _pendingQueued = false;
         return RepublishPending(ring);

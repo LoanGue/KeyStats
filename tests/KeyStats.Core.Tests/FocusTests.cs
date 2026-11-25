@@ -164,6 +164,21 @@ public sealed class FocusChannelTests
     }
 
     [Fact]
+    public void Remplacant_garde_la_nouvelle_fenetre_du_changement_en_attente()
+    {
+        var ring = new EventRing(2);
+        var channel = new FocusChannel();
+        ring.TryWrite(new InputEvent(0, EventKind.KeyDown, KeyCode.Space));
+        ring.TryWrite(new InputEvent(0, EventKind.KeyUp, KeyCode.Space));
+        Assert.False(channel.Publish(Change(1), ring));
+        Drain(ring);
+        Assert.True(channel.Publish(new FocusChange { Ms = 2, Exe = "a.exe", Title = "t2", Flags = FocusState.None }, ring));
+        var taken = channel.Take(Drain(ring)[0])!;
+        Assert.Equal(FocusState.NewWindow, taken.Flags);
+        Assert.Equal("t2", taken.Title);
+    }
+
+    [Fact]
     public void File_pleine_le_changement_attend_puis_passe_avant_la_frappe()
     {
         var ring = new EventRing(8192);
