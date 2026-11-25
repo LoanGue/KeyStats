@@ -145,6 +145,8 @@ public sealed class Recorder
     /// <summary>Changement de fuseau (<c>WM_TIMECHANGE</c>) : les frappes suivantes vont dans le nouveau jour local.</summary>
     public void SetZone(TimeZoneInfo zone, long nowMs)
     {
+        // La session en cours est rangée dans le jour de l'ancien fuseau, où elle a été tapée.
+        Analyzer.EndAll();
         Flush(nowMs);
         _clock.SetZone(zone);
     }
@@ -155,6 +157,7 @@ public sealed class Recorder
         Analyzer.EndAll();
         _pauses.CloseAll(nowMs);
         bool ok = Flush(nowMs);
+        if (!ok) _rawDropped += _rawCount;
         ClearRaw();
         return ok;
     }
