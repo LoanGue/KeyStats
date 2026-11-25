@@ -15,3 +15,6 @@ All notable changes to this project are documented here. The format follows
   wrapping, reference letter frequencies.
 - `FocusState.Secret`: keystrokes in a detected password field only count
   keys, like an excluded app.
+- `KeyStats.Agent`: Raw Input capture thread (keyboard and mouse buttons,
+  listen-only, injected keystrokes dropped) feeding a lock-free event ring;
+  `--probe <seconds>` prints capture counters only.
