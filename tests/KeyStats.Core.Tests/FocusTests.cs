@@ -86,8 +86,17 @@ public sealed class FocusTrackerTests
     [Fact]
     public void ToString_ne_contient_pas_le_titre()
     {
-        var c = See(1, 100, "Code.exe", "secret-projet.cs")!;
-        Assert.DoesNotContain("secret", c.ToString(), StringComparison.Ordinal);
+        var w = new ForegroundWindow(1, 100, 10, "Code.exe", "secret-projet.cs", false);
+        Assert.DoesNotContain("secret", w.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("secret", _tracker.Observe(w)!.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Executable_inconnu_traite_comme_exclu()
+    {
+        var c = See(1, 100, "", "Titre quelconque")!;
+        Assert.Equal(FocusState.NewWindow | FocusState.Excluded, c.Flags);
+        Assert.Null(c.Title);
     }
 }
 
@@ -119,7 +128,28 @@ public sealed class FocusChannelTests
     }
 
     [Fact]
-    public void Marqueur_refuse_puis_saute_au_suivant()
+    public void Marqueur_refuse_republie_avant_la_frappe_suivante()
+    {
+        var ring = new EventRing(2);
+        var channel = new FocusChannel();
+        ring.TryWrite(new InputEvent(0, EventKind.KeyDown, KeyCode.Space));
+        ring.TryWrite(new InputEvent(0, EventKind.KeyUp, KeyCode.Space));
+        var a = Change(1);
+        Assert.False(channel.Publish(a, ring));
+        Assert.True(channel.HasPending);
+        Drain(ring);
+
+        // Ce que fait le producteur avant chaque frappe.
+        Assert.True(channel.RepublishPending(ring));
+        Assert.False(channel.HasPending);
+        ring.TryWrite(new InputEvent(2, EventKind.KeyDown, KeyCode.Space));
+        var events = Drain(ring);
+        Assert.Equal([EventKind.Focus, EventKind.KeyDown], events.Select(e => e.Kind));
+        Assert.Same(a, channel.Take(events[0]));
+    }
+
+    [Fact]
+    public void Changement_sans_marqueur_remplace_par_le_suivant()
     {
         var ring = new EventRing(2);
         var channel = new FocusChannel();
@@ -129,9 +159,18 @@ public sealed class FocusChannelTests
         Drain(ring);
         var b = Change(2);
         Assert.True(channel.Publish(b, ring));
-
+        Assert.False(channel.HasPending);
         Assert.Same(b, channel.Take(Drain(ring)[0]));
-        Assert.Null(channel.TakeLatest());
+    }
+
+    [Fact]
+    public void File_bornee_si_le_consommateur_ne_suit_pas()
+    {
+        var ring = new EventRing(8192);
+        var channel = new FocusChannel();
+        for (int i = 0; i < FocusChannel.MaxQueued; i++) Assert.True(channel.Publish(Change(i), ring));
+        Assert.False(channel.Publish(Change(0), ring));
+        Assert.False(channel.HasPending);
     }
 
     [Fact]
@@ -145,18 +184,5 @@ public sealed class FocusChannelTests
             channel.Publish(c, ring);
             Assert.Same(c, channel.Take(Drain(ring)[0]));
         }
-    }
-
-    [Fact]
-    public void Dernier_changement_apres_une_perte()
-    {
-        var ring = new EventRing(2);
-        var channel = new FocusChannel();
-        channel.Publish(Change(1), ring);
-        channel.Publish(Change(2), ring);
-        var last = Change(3);
-        Assert.False(channel.Publish(last, ring));
-        Assert.Same(last, channel.TakeLatest());
-        Assert.Null(channel.TakeLatest());
     }
 }
