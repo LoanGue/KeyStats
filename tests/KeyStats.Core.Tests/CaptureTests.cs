@@ -70,8 +70,10 @@ public sealed class EventRingTests
         }, TestContext.Current.CancellationToken);
         var buf = new InputEvent[16];
         long expected = 0;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
         while (expected < total)
         {
+            Assert.True(watch.Elapsed < TimeSpan.FromSeconds(30), "Le consommateur n'avance plus.");
             int n = ring.Read(buf);
             for (int i = 0; i < n; i++) Assert.Equal(expected++, buf[i].Ms);
         }
@@ -123,6 +125,13 @@ public sealed class RawInputDecoderTests
     }
 
     [Fact]
+    public void Faux_Maj_autour_des_touches_etendues_ignore()
+    {
+        Assert.False(RawInputDecoder.Keyboard(0x2A, RawInputDecoder.KeyE0, 0xFF, true, out _, out _));
+        Assert.False(RawInputDecoder.Keyboard(0x2A, RawInputDecoder.KeyE0 | RawInputDecoder.KeyBreak, 0xFF, true, out _, out _));
+    }
+
+    [Fact]
     public void Touche_sans_scan_code_gardee_par_son_code_virtuel()
     {
         Assert.True(RawInputDecoder.Keyboard(0, 0, 0xAD, true, out _, out var key));
@@ -160,6 +169,12 @@ public sealed class EventClockTests
     private EventClock Clock() => new(() => _ticks, () => _utc, frequency: 10_000);
 
     [Fact]
+    public void Frequence_trop_basse_refusee()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new EventClock(() => 0, () => 0, frequency: 999));
+    }
+
+    [Fact]
     public void Ms_UTC_suivent_le_compteur()
     {
         _utc = 1_700_000_000_000;
@@ -176,11 +191,11 @@ public sealed class EventClockTests
         _ticks += 50_000;
         Assert.Equal(1_005_000, clock.NowMs());
 
-        _utc = 1_002_000; // horloge système remise en arrière
+        _utc = 1_002_000; // horloge système remise en arrière : le temps continue depuis 1 005 000
         clock.Resync();
         Assert.Equal(1_005_000, clock.NowMs());
         _ticks += 40_000;
-        Assert.Equal(1_006_000, clock.NowMs());
+        Assert.Equal(1_009_000, clock.NowMs());
 
         _utc = 2_000_000; // et en avant
         clock.Resync();

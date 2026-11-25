@@ -31,10 +31,14 @@ public sealed class EventClock
         Resync();
     }
 
+    /// <summary>
+    /// Recale sur l'horloge système. Si elle a reculé, on repart du dernier instant rendu : le temps
+    /// continue d'avancer au rythme du compteur au lieu de rester figé jusqu'au rattrapage.
+    /// </summary>
     public void Resync()
     {
         _baseTicks = _timestamp();
-        _baseMs = _utcMs();
+        _baseMs = Math.Max(_utcMs(), _lastMs);
     }
 
     public long NowMs()

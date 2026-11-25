@@ -29,7 +29,15 @@ public sealed class EventRing
     /// <summary>Événements refusés faute de place, depuis la création.</summary>
     public long Dropped => Volatile.Read(ref _dropped);
 
-    public int Count => (int)(Volatile.Read(ref _head) - Volatile.Read(ref _tail));
+    /// <summary>Approximatif hors des deux threads propriétaires ; jamais négatif.</summary>
+    public int Count
+    {
+        get
+        {
+            long tail = Volatile.Read(ref _tail);
+            return (int)Math.Max(0, Volatile.Read(ref _head) - tail);
+        }
+    }
 
     /// <summary>Producteur seulement.</summary>
     public bool TryWrite(in InputEvent e)
