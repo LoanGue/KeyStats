@@ -28,17 +28,17 @@ public sealed class EpochCipher : IDisposable
 
     public int EpochId { get; }
 
-    public (byte[] Nonce, byte[] Ciphertext) EncryptBlock(ReadOnlySpan<byte> payload, long startMs, long endMs, int eventCount)
+    public (byte[] Nonce, byte[] Ciphertext) EncryptBlock(ReadOnlySpan<byte> payload, long startMs, long endMs, int eventCount, long? focusId)
     {
-        Span<byte> aad = stackalloc byte[24];
-        BlockAad(aad, startMs, endMs, eventCount);
+        Span<byte> aad = stackalloc byte[BlockAadSize];
+        BlockAad(aad, startMs, endMs, eventCount, focusId);
         return Encrypt(payload, aad);
     }
 
-    public byte[] DecryptBlock(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> ciphertext, long startMs, long endMs, int eventCount)
+    public byte[] DecryptBlock(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> ciphertext, long startMs, long endMs, int eventCount, long? focusId)
     {
-        Span<byte> aad = stackalloc byte[24];
-        BlockAad(aad, startMs, endMs, eventCount);
+        Span<byte> aad = stackalloc byte[BlockAadSize];
+        BlockAad(aad, startMs, endMs, eventCount, focusId);
         return Decrypt(nonce, ciphertext, aad);
     }
 
@@ -87,12 +87,16 @@ public sealed class EpochCipher : IDisposable
         return plain;
     }
 
-    private static void BlockAad(Span<byte> aad, long startMs, long endMs, int eventCount)
+    private const int BlockAadSize = 32;
+
+    /// <summary>Le bloc reste lié à ses dates, à son nombre d'événements et à sa fenêtre (0 : aucune).</summary>
+    private static void BlockAad(Span<byte> aad, long startMs, long endMs, int eventCount, long? focusId)
     {
         "KSR1"u8.CopyTo(aad);
         BinaryPrimitives.WriteInt64LittleEndian(aad[4..], startMs);
         BinaryPrimitives.WriteInt64LittleEndian(aad[12..], endMs);
         BinaryPrimitives.WriteInt32LittleEndian(aad[20..], eventCount);
+        BinaryPrimitives.WriteInt64LittleEndian(aad[24..], focusId ?? 0);
     }
 
     private static byte[] TitleAad(ReadOnlySpan<byte> titleHash)

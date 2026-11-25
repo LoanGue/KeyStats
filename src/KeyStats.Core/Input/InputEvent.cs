@@ -60,5 +60,6 @@ public struct InputEvent
 
     public readonly bool IsKeyboard => Kind is EventKind.KeyDown or EventKind.KeyUp or EventKind.ForcedUp;
 
-    public override readonly string ToString() => $"{Ms} {Kind} {KeyCode.Name(Key)} d{Device} f{Flags}";
+    /// <summary>Sans le nom de la touche : une trace ne doit pas révéler ce qui a été tapé.</summary>
+    public override readonly string ToString() => $"{Ms} {Kind} d{Device} f{Flags}";
 }

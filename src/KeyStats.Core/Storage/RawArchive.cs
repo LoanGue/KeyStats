@@ -63,7 +63,9 @@ public sealed class RawArchiveWriter : IDisposable
         long start = events[0].Ms, end = Math.Max(start, events[^1].Ms);
         byte[] payload = RawCodec.Encode(events, start);
         var cipher = Cipher(nowMs);
-        var (nonce, data) = cipher.EncryptBlock(payload, start, end, events.Length);
+        var (nonce, data) = cipher.EncryptBlock(payload, start, end, events.Length, focusId);
+        // Le brut en clair ne reste pas en mémoire, d'où il pourrait finir dans le fichier d'échange.
+        System.Security.Cryptography.CryptographicOperations.ZeroMemory(payload);
         return _db.AddRawBlock(start, end, focusId, events.Length, cipher.EpochId, nonce, data);
     }
 
@@ -117,7 +119,7 @@ public sealed class RawArchiveReader : IDisposable
     public InputEvent[] ReadBlock(StoredRawBlock block)
     {
         ArgumentNullException.ThrowIfNull(block);
-        byte[] payload = Epoch(block.EpochId).DecryptBlock(block.Nonce, block.Payload, block.StartMs, block.EndMs, block.EventCount);
+        byte[] payload = Epoch(block.EpochId).DecryptBlock(block.Nonce, block.Payload, block.StartMs, block.EndMs, block.EventCount, block.FocusId);
         var events = RawCodec.Decode(payload, block.StartMs);
         if (events.Length != block.EventCount) throw new InvalidDataException("Bloc brut incohérent.");
         return events;

@@ -22,18 +22,19 @@ public sealed class CryptoTests
     }
 
     [Fact]
-    public void Bloc_chiffre_lie_a_ses_dates_et_a_son_nombre_d_evenements()
+    public void Bloc_chiffre_lie_a_ses_dates_son_nombre_d_evenements_et_sa_fenetre()
     {
         using var cipher = new EpochCipher(1, RandomNumberGenerator.GetBytes(32));
         byte[] payload = Encoding.UTF8.GetBytes("contenu du bloc");
 
-        var (nonce, ct) = cipher.EncryptBlock(payload, 100, 200, 3);
+        var (nonce, ct) = cipher.EncryptBlock(payload, 100, 200, 3, 7);
 
-        Assert.Equal(payload, cipher.DecryptBlock(nonce, ct, 100, 200, 3));
-        Assert.ThrowsAny<CryptographicException>(() => cipher.DecryptBlock(nonce, ct, 100, 200, 4));
-        Assert.ThrowsAny<CryptographicException>(() => cipher.DecryptBlock(nonce, ct, 101, 200, 3));
+        Assert.Equal(payload, cipher.DecryptBlock(nonce, ct, 100, 200, 3, 7));
+        Assert.ThrowsAny<CryptographicException>(() => cipher.DecryptBlock(nonce, ct, 100, 200, 4, 7));
+        Assert.ThrowsAny<CryptographicException>(() => cipher.DecryptBlock(nonce, ct, 101, 200, 3, 7));
+        Assert.ThrowsAny<CryptographicException>(() => cipher.DecryptBlock(nonce, ct, 100, 200, 3, 8));
         ct[0] ^= 1;
-        Assert.ThrowsAny<CryptographicException>(() => cipher.DecryptBlock(nonce, ct, 100, 200, 3));
+        Assert.ThrowsAny<CryptographicException>(() => cipher.DecryptBlock(nonce, ct, 100, 200, 3, 7));
     }
 
     [Fact]
