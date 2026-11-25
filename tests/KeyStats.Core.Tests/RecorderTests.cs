@@ -169,6 +169,24 @@ public sealed class RecorderTests
     }
 
     [Fact]
+    public void Commit_rate_au_changement_de_fenetre_aucun_brut_orphelin()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        var rec = Recorder(tmp, master);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        // Clé étrangère différée violée : l'insertion passe, le commit échoue.
+        tmp.Db.Exec("CREATE TEMP TRIGGER bad AFTER INSERT ON focus BEGIN INSERT INTO focus(ts_ms, app_id) VALUES (0, -1); END");
+        tmp.Db.Exec("PRAGMA defer_foreign_keys = ON"); // remis à zéro par chaque commit : après le trigger
+        rec.OnFocus(Focus(Typist.Start + 1, "notepad.exe"));
+        Assert.Equal(1, rec.Counters.WriteErrors);
+        Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM focus"));
+        tmp.Db.Exec("DROP TRIGGER bad");
+        Assert.True(rec.Close(Feed(rec, Text, Typist.Start + 10)));
+        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM raw_block"));
+    }
+
+    [Fact]
     public void Tampon_plein_et_base_refusee_brut_perdu_et_compte()
     {
         using var tmp = new TempDb();
@@ -210,25 +228,6 @@ public sealed class RecorderTests
 
         Assert.True(tmp.Count("SELECT SUM(excluded_keys) FROM minute_total") > 0);
         Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM session") + tmp.Count("SELECT COUNT(*) FROM key_minute"));
-    }
-
-    [Fact]
-    public void Horloge_qui_recule_ecriture_60_secondes_apres_le_recul()
-    {
-        using var tmp = new TempDb();
-        var rec = Recorder(tmp, null);
-        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
-        long end = Feed(rec, Text, Typist.Start + 10);
-        rec.Tick(end + Recording.Recorder.FlushIntervalMs);
-        long batches = rec.Counters.Batches;
-        Feed(rec, Text, end + Recording.Recorder.FlushIntervalMs + 10);
-        long back = Typist.Start - 10_000;
-        rec.Tick(back);
-        rec.Tick(back);
-        rec.Tick(back + Recording.Recorder.FlushIntervalMs - 1);
-        Assert.Equal(batches, rec.Counters.Batches);
-        rec.Tick(back + Recording.Recorder.FlushIntervalMs);
-        Assert.Equal(batches + 1, rec.Counters.Batches);
     }
 
     [Fact]
@@ -277,5 +276,24 @@ public sealed class RecorderTests
 
         Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM session"));
         Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM day_char"));
+    }
+
+    [Fact]
+    public void Horloge_qui_recule_ecriture_60_secondes_apres_le_recul()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        rec.Tick(end + Recording.Recorder.FlushIntervalMs);
+        long batches = rec.Counters.Batches;
+        Feed(rec, Text, end + Recording.Recorder.FlushIntervalMs + 10);
+        long back = Typist.Start - 10_000;
+        rec.Tick(back);
+        rec.Tick(back);
+        rec.Tick(back + Recording.Recorder.FlushIntervalMs - 1);
+        Assert.Equal(batches, rec.Counters.Batches);
+        rec.Tick(back + Recording.Recorder.FlushIntervalMs);
+        Assert.Equal(batches + 1, rec.Counters.Batches);
     }
 }

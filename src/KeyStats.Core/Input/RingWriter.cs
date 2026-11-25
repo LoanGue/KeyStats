@@ -4,6 +4,8 @@ namespace KeyStats.Core.Input;
 /// Côté producteur de l'<see cref="EventRing"/>. Après une perte, le premier événement écrit est
 /// précédé d'une remise à zéro : elle tombe exactement à la place du trou, là où un relâchement a pu
 /// disparaître. Sans place pour les deux, l'événement est perdu lui aussi et la remise reste due.
+/// Les marqueurs de fenêtre, écrits par le <see cref="Focus.FocusChannel"/>, peuvent se glisser entre
+/// le trou et la remise : sans effet, un changement de fenêtre ne touche pas l'état des touches.
 /// </summary>
 public sealed class RingWriter(EventRing ring, Func<LockKeys> readLocks)
 {
