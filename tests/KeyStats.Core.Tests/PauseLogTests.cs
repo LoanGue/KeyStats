@@ -67,6 +67,21 @@ public sealed class PauseLogTests
     }
 
     [Fact]
-    public void Pause_sans_motif_refusee() =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PauseLog().Begin(1, 0));
+    public void Nouveau_motif_exterieur_ferme_le_precedent()
+    {
+        using var tmp = new TempDb();
+        var log = new PauseLog();
+        log.Begin(100, PauseReason.Locked);
+        log.Begin(300, PauseReason.Snooze);
+        log.End(700);
+        log.Write(tmp.Db);
+
+        Assert.Equal([(100L, 300L, (long)PauseReason.Locked), (300L, 700L, (long)PauseReason.Snooze)], Rows(tmp));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(99)]
+    public void Pause_sans_motif_connu_refusee(int reason) =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PauseLog().Begin(1, (PauseReason)reason));
 }
