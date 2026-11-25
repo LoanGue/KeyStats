@@ -5,7 +5,8 @@ namespace KeyStats.Core.Recording;
 /// <summary>
 /// Périodes non observées, en attente d'écriture dans la table <c>pause</c>. Deux sources
 /// indépendantes : la fenêtre active (admin, exclue, champ secret) et une pause extérieure
-/// (verrouillage, veille, pause par l'icône). Une période n'est écrite qu'une fois terminée.
+/// (verrouillage, veille, pause par l'icône). Une période n'est écrite qu'une fois terminée. Les heures
+/// reçues ne reculent pas (l'appelant les rend monotones) : une période de durée nulle n'est pas écrite.
 /// </summary>
 internal sealed class PauseLog
 {
@@ -28,7 +29,7 @@ internal sealed class PauseLog
 
     public void Begin(long ms, PauseReason reason)
     {
-        ArgumentOutOfRangeException.ThrowIfZero((int)reason, nameof(reason));
+        if (reason == 0 || !Enum.IsDefined(reason)) throw new ArgumentOutOfRangeException(nameof(reason));
         if (reason == _external) return;
         Close(_external, _externalStart, ms);
         _external = reason;
