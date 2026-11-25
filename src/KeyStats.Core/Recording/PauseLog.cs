@@ -28,6 +28,7 @@ internal sealed class PauseLog
 
     public void Begin(long ms, PauseReason reason)
     {
+        ArgumentOutOfRangeException.ThrowIfZero((int)reason, nameof(reason));
         if (reason == _external) return;
         Close(_external, _externalStart, ms);
         _external = reason;
