@@ -123,6 +123,7 @@ public sealed class Recorder
         Analyzer.EndAll();
         _pauses.CloseAll(nowMs);
         bool ok = Flush(nowMs);
+        if (!ok) _rawDropped += _rawCount;
         ClearRaw();
         return ok;
     }

@@ -194,14 +194,17 @@ public sealed class RecorderTests
     }
 
     [Fact]
-    public void Erreur_de_programmation_sur_base_saine_remonte()
+    public void Erreur_de_programmation_remonte_et_la_fenetre_reste_fermee()
     {
         using var tmp = new TempDb();
         var rec = Recorder(tmp, null);
         rec.OnFocus(Focus(Typist.Start, "winword.exe"));
-        long end = Feed(rec, Text, Typist.Start + 10);
         using (tmp.Db.BeginTransaction())
-            Assert.Throws<InvalidOperationException>(() => rec.Flush(end));
+            Assert.Throws<InvalidOperationException>(() => rec.OnFocus(Focus(Typist.Start + 1, "chrome.exe", null, FocusState.NewWindow | FocusState.Secret)));
+        Assert.True(rec.Close(Feed(rec, Text, Typist.Start + 10)));
+
         Assert.Equal(0, rec.Counters.WriteErrors);
+        Assert.True(tmp.Count("SELECT SUM(excluded_keys) FROM minute_total") > 0);
+        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM session") + tmp.Count("SELECT COUNT(*) FROM key_minute"));
     }
 }
