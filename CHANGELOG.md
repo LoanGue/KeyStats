@@ -18,3 +18,8 @@ All notable changes to this project are documented here. The format follows
 - `KeyStats.Agent`: Raw Input capture thread (keyboard and mouse buttons,
   listen-only, injected keystrokes dropped) feeding a lock-free event ring;
   `--probe <seconds>` prints capture counters only.
+- Foreground window tracking: `FocusTracker`, `ExclusionList` (password
+  managers, remote desktop, Windows credential prompts) and `FocusChannel`,
+  which keeps each window change in keystroke order; the agent follows the
+  active window and its title through `SetWinEventHook`, without polling, and
+  never reads the title of an excluded app.
