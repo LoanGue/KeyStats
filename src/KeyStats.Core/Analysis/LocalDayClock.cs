@@ -3,17 +3,30 @@ namespace KeyStats.Core.Analysis;
 /// <summary>
 /// Jour local (aaaammjj) d'un horodatage UTC, pour les tables <c>day_*</c>. Les bornes du jour en
 /// cours sont gardées en cache : un seul calcul de fuseau par jour. Les minutes et les heures des
-/// autres tables restent en UTC.
+/// autres tables restent en UTC. Pas sûr entre threads : il vit sur le thread d'analyse.
 /// </summary>
 public sealed class LocalDayClock
 {
-    private readonly TimeZoneInfo _zone;
+    private TimeZoneInfo _zone;
     private long _start = long.MaxValue, _end = long.MinValue;
     private int _key;
 
     public LocalDayClock(TimeZoneInfo? zone = null) => _zone = zone ?? TimeZoneInfo.Local;
 
     public TimeZoneInfo Zone => _zone;
+
+    /// <summary>
+    /// Change de fuseau, par exemple quand l'agent reçoit <c>WM_TIMECHANGE</c> (après
+    /// <see cref="TimeZoneInfo.ClearCachedData"/>). Les frappes suivantes vont dans le jour local du
+    /// nouveau fuseau ; les jours déjà écrits ne bougent pas.
+    /// </summary>
+    public void SetZone(TimeZoneInfo zone)
+    {
+        ArgumentNullException.ThrowIfNull(zone);
+        _zone = zone;
+        _start = long.MaxValue;
+        _end = long.MinValue;
+    }
 
     public int DayKey(long ms)
     {

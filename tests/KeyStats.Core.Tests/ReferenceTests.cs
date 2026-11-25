@@ -80,6 +80,18 @@ public sealed class LocalDayClockTests
     }
 
     [Fact]
+    public void Changement_de_fuseau_pris_en_compte_sans_attendre_le_jour_suivant()
+    {
+        var clock = new LocalDayClock(Paris());
+        long t = Utc(2026, 6, 10, 23); // 01:00 le 11 à Paris
+        Assert.Equal(20260611, clock.DayKey(t));
+
+        clock.SetZone(TimeZoneInfo.CreateCustomTimeZone("Montreal", TimeSpan.FromHours(-5), "Montreal", "Montreal"));
+        Assert.Equal(20260610, clock.DayKey(t)); // 18:00 le 10
+        Assert.Equal(20260610, clock.DayKey(t + 3_600_000));
+    }
+
+    [Fact]
     public void Minutes_et_heures_arrondies_vers_le_bas_meme_avant_1970()
     {
         Assert.Equal(0, LocalDayClock.MinuteOf(59_999));
