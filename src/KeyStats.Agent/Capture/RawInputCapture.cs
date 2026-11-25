@@ -10,7 +10,7 @@ namespace KeyStats.Agent.Capture;
 /// <summary>Compteurs de la capture, lus après <see cref="RawInputCapture.Stop"/>.</summary>
 internal struct CaptureCounters
 {
-    public long KeyboardMessages, MouseMessages, Injected, Ignored, ReadErrors, CallbackErrors, Written, Devices;
+    public long KeyboardMessages, MouseMessages, Injected, Ignored, ReadErrors, CallbackErrors, Written, Lost, Devices;
 }
 
 /// <summary>
@@ -26,7 +26,10 @@ internal sealed unsafe class RawInputCapture : IDisposable
     private const int ERROR_GEN_FAILURE = 31; // repli si Windows ne donne pas de code
     private static RawInputCapture? s_current;
 
+    private const int VK_CAPITAL = 0x14, VK_NUMLOCK = 0x90;
+
     private readonly EventRing _ring;
+    private readonly RingWriter _writer;
     private readonly EventWaitHandle _signal;
     private readonly EventClock _clock = new();
     private readonly Dictionary<nint, ushort> _devices = new(8);
@@ -43,11 +46,15 @@ internal sealed unsafe class RawInputCapture : IDisposable
     public RawInputCapture(EventRing ring, EventWaitHandle signal, FocusChannel? focus = null, ExclusionList? exclusions = null)
     {
         _ring = ring;
+        _writer = new RingWriter(ring, ReadLocks);
         _signal = signal;
         _focus = focus;
         if (focus is not null) _watcher = new ForegroundWatcher(focus, exclusions ?? ExclusionList.Default, ring, _clock, signal);
         _thread = new Thread(Run) { Name = "KeyStats capture", IsBackground = true, Priority = ThreadPriority.AboveNormal };
     }
+
+    /// <summary>Horloge des événements : <see cref="EventClock.PeekMs"/> se lit depuis le thread d'analyse.</summary>
+    public EventClock Clock => _clock;
 
     public CaptureCounters Counters => _counters;
     public FocusCounters FocusCounters => _watcher?.Counters ?? default;
@@ -192,14 +199,26 @@ internal sealed unsafe class RawInputCapture : IDisposable
     {
         // Un changement de fenêtre resté sans marqueur passe avant, sinon la frappe serait rangée sous
         // la fenêtre précédente. S'il n'a toujours pas de place, la frappe est perdue avec lui
-        // (l'échec est déjà compté dans ring.Dropped).
+        // et l'état des touches sera remis à zéro. Toute frappe perdue est comptée dans Lost.
         if (_focus is { HasPending: true } focus && !focus.RepublishPending(_ring))
         {
-            _signal.Set();
-            return;
+            _writer.MarkLost();
+            _counters.Lost++;
         }
-        if (_ring.TryWrite(e)) _counters.Written++;
+        else if (_writer.Write(e))
+            _counters.Written++;
+        else
+            _counters.Lost++;
         _signal.Set();
+    }
+
+    /// <summary>Verr Maj et Verr Num, lus sur le thread de capture pour la remise à zéro.</summary>
+    private static LockKeys ReadLocks()
+    {
+        var locks = LockKeys.None;
+        if ((User32.GetKeyState(VK_CAPITAL) & 1) != 0) locks |= LockKeys.CapsLock;
+        if ((User32.GetKeyState(VK_NUMLOCK) & 1) != 0) locks |= LockKeys.NumLock;
+        return locks;
     }
 
     /// <summary>Petit numéro stable par appareil, de 1 à 65535, attribué à la première frappe.</summary>

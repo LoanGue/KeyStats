@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: analysis thread that drains the event ring into the
+  recorder and writes to `%LOCALAPPDATA%\KeyStats\keystats.db`. The window-title
+  key is protected by DPAPI. `--probe N --db <path>` runs the whole pipeline
+  against a test database.
 - `KeyStats.Core`: ring pump and writer between the capture and analysis
   threads. After a lost event, a key-state reset is written at the gap on the
   producer side. Window markers are resolved on the consumer side, and an
