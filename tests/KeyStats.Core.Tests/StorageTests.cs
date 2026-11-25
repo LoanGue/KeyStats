@@ -247,6 +247,51 @@ public sealed class StorageTests
     }
 
     [Fact]
+    public void Transaction_deja_annulee_par_sqlite_vide_les_caches_sans_masquer_l_erreur()
+    {
+        using var tmp = new TempDb();
+        long before = tmp.Db.RollbackCount;
+
+        using (tmp.Db.BeginTransaction())
+        {
+            tmp.Db.GetOrAddApp("notepad.exe");
+            tmp.Db.Exec("ROLLBACK"); // comme SQLite après SQLITE_FULL ou IOERR
+        }
+
+        Assert.Equal(before + 1, tmp.Db.RollbackCount);
+        using (var tx = tmp.Db.BeginTransaction())
+        {
+            tmp.Db.GetOrAddApp("notepad.exe");
+            tx.Commit();
+        }
+        Assert.Equal(1, tmp.Count("SELECT count(*) FROM app"));
+    }
+
+    [Fact]
+    public void Commit_en_echec_annule_la_transaction_et_vide_les_caches()
+    {
+        using var tmp = new TempDb();
+        long before = tmp.Db.RollbackCount;
+
+        using (var tx = tmp.Db.BeginTransaction())
+        {
+            tmp.Db.GetOrAddApp("notepad.exe");
+            tmp.Db.Exec("PRAGMA defer_foreign_keys = ON");
+            tmp.Db.Exec("INSERT INTO focus (ts_ms, app_id) VALUES (1, 999)");
+            Assert.ThrowsAny<Microsoft.Data.Sqlite.SqliteException>(tx.Commit);
+        }
+
+        Assert.Equal(before + 1, tmp.Db.RollbackCount);
+        Assert.Equal(0, tmp.Count("SELECT count(*) FROM app"));
+        using (var tx = tmp.Db.BeginTransaction())
+        {
+            tmp.Db.GetOrAddApp("notepad.exe");
+            tx.Commit();
+        }
+        Assert.Equal(1, tmp.Count("SELECT count(*) FROM app"));
+    }
+
+    [Fact]
     public void Pauses_et_meta()
     {
         using var tmp = new TempDb();

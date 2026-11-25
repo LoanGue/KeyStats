@@ -112,7 +112,15 @@ public sealed class KeyStatsDb : IDisposable
             var db = _db ?? throw new InvalidOperationException("Transaction terminée.");
             _db = null;
             db._inTransaction = false;
-            db.Exec("COMMIT");
+            try
+            {
+                db.Exec("COMMIT");
+            }
+            catch
+            {
+                db.RollbackQuietly();
+                throw;
+            }
         }
 
         public void Dispose()
@@ -121,8 +129,28 @@ public sealed class KeyStatsDb : IDisposable
             var db = _db;
             _db = null;
             db._inTransaction = false;
-            db.Exec("ROLLBACK");
-            db.OnRollback();
+            db.RollbackQuietly();
+        }
+    }
+
+    /// <summary>
+    /// Annule la transaction en cours si SQLite ne l'a pas déjà fait (SQLITE_FULL, IOERR, BUSY l'annulent
+    /// d'office), sans masquer l'erreur d'origine. Les caches sont vidés dans tous les cas.
+    /// </summary>
+    private void RollbackQuietly()
+    {
+        try
+        {
+            if (SQLitePCL.raw.sqlite3_get_autocommit(_conn.Handle) == 0)
+                Exec("ROLLBACK");
+        }
+        catch (SqliteException)
+        {
+            // La connexion reste utilisable ; l'erreur d'origine prime.
+        }
+        finally
+        {
+            OnRollback();
         }
     }
 
