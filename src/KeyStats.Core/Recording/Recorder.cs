@@ -118,7 +118,7 @@ public sealed class Recorder
     public void Tick(long nowMs)
     {
         Analyzer.Tick(nowMs);
-        // Horloge revenue en arrière : on repart d'ici au lieu d'écrire à chaque Tick.
+        // Horloge revenue en arrière : sans cela, plus aucune écriture avant que l'heure rattrape l'ancienne.
         if (nowMs < _lastWriteMs) _lastWriteMs = nowMs;
         if (nowMs - _lastWriteMs >= FlushIntervalMs) Flush(nowMs);
     }
