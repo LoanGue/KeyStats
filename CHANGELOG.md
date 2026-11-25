@@ -1,0 +1,15 @@
+# Changelog
+
+All notable changes to this project are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
+[Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+### Added
+
+- `KeyStats.Core`: key tracking (repeats, overlaps, chords, shortcuts), AZERTY
+  layout with dead keys and Alt codes, writing-session detection and speeds,
+  correction analysis (real typos versus collateral deletions), SQLite schema
+  and stats writer, encrypted raw archive, Windows Hello and passphrase key
+  wrapping, reference letter frequencies.

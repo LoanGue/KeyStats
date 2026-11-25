@@ -1,0 +1,165 @@
+using KeyStats.Core.Analysis;
+using KeyStats.Core.Input;
+using KeyStats.Core.Text;
+
+namespace KeyStats.Core.Tests;
+
+public sealed class LiveMeterTests
+{
+    private const long T0 = 1_000_000;
+
+    /// <summary>Tape <paramref name="text"/> à intervalle régulier ; renvoie l'heure du dernier caractère.</summary>
+    private static long Type(LiveMeter meter, string text, long start, int stepMs)
+    {
+        long ms = start;
+        foreach (char c in text)
+        {
+            meter.OnChar(ms, c);
+            ms += stepMs;
+        }
+        return ms - stepMs;
+    }
+
+    [Fact]
+    public void Frappes_isolees_ne_montrent_pas_le_compteur()
+    {
+        var meter = new LiveMeter();
+        long last = Type(meter, "zqsdz", T0, 1500);
+        Assert.Equal(LiveMode.Hidden, meter.Read(last + 100).Mode);
+    }
+
+    [Fact]
+    public void Texte_regulier_a_200_ms_par_caractere_donne_60_wpm()
+    {
+        var meter = new LiveMeter();
+        long last = Type(meter, "bonjour tout le monde ici", T0, 200);
+
+        var reading = meter.Read(last + 100);
+        Assert.Equal(LiveMode.Typing, reading.Mode);
+        Assert.Equal(300, reading.Cpm, 1);
+        Assert.Equal(60, reading.Wpm, 1);
+        Assert.Equal(1, reading.Accuracy);
+    }
+
+    [Fact]
+    public void Bilan_apres_4_s_sans_frappe_puis_disparition()
+    {
+        var meter = new LiveMeter();
+        long last = Type(meter, "bonjour tout le monde ici", T0, 200);
+        meter.OnTypos(1);
+
+        var summary = meter.Read(last + LiveMeter.IdleMs + 500);
+        Assert.Equal(LiveMode.Summary, summary.Mode);
+        Assert.Equal(1 - 1.0 / 25, summary.Accuracy, 6);
+        Assert.Equal(LiveMode.Hidden, meter.Read(last + LiveMeter.IdleMs + LiveMeter.SummaryMs + 1).Mode);
+    }
+
+    [Fact]
+    public void Pause_au_dela_de_2_s_exclue_de_la_vitesse()
+    {
+        var meter = new LiveMeter();
+        long last = Type(meter, "bonjour tout", T0, 200);
+        last = Type(meter, " le monde ici", last + 3000, 200);
+
+        Assert.Equal(300, meter.Read(last + 100).Cpm, 1);
+    }
+
+    [Fact]
+    public void Reset_cache_le_compteur()
+    {
+        var meter = new LiveMeter();
+        long last = Type(meter, "bonjour tout le monde ici", T0, 200);
+        meter.Reset();
+        Assert.Equal(LiveMode.Hidden, meter.Read(last + 100).Mode);
+    }
+}
+
+public sealed class KeyboardGeometryTests
+{
+    private const ushort A = 0x10, Z = 0x11, E = 0x12, R = 0x13, Q = 0x1E, S = 0x1F, D = 0x20, J = 0x24;
+
+    [Fact]
+    public void Chaque_touche_est_placee_une_seule_fois_et_retrouvee()
+    {
+        var codes = new HashSet<ushort>();
+        foreach (var key in KeyboardGeometry.Keys)
+        {
+            Assert.True(codes.Add(key.Code), $"Touche 0x{key.Code:X} placée deux fois.");
+            Assert.True(KeyboardGeometry.TryFind(key.Code, out var found));
+            Assert.Equal(key, found);
+        }
+        Assert.False(KeyboardGeometry.TryFind(0x1FF, out _));
+    }
+
+    [Fact]
+    public void Voisines_sur_la_rangee_et_entre_rangees_decalees()
+    {
+        Assert.True(KeyboardGeometry.AreNeighbors(E, Z));
+        Assert.True(KeyboardGeometry.AreNeighbors(E, R));
+        Assert.True(KeyboardGeometry.AreNeighbors(E, S));
+        Assert.True(KeyboardGeometry.AreNeighbors(E, D));
+        Assert.True(KeyboardGeometry.AreNeighbors(A, Q));
+        Assert.False(KeyboardGeometry.AreNeighbors(E, A));
+        Assert.False(KeyboardGeometry.AreNeighbors(E, J));
+        Assert.False(KeyboardGeometry.AreNeighbors(E, E));
+    }
+
+    [Fact]
+    public void Doigte_azerty_standard()
+    {
+        Assert.Equal(Finger.LeftPinky, KeyboardGeometry.FingerOf(A));
+        Assert.Equal(Finger.LeftPinky, KeyboardGeometry.FingerOf(Q));
+        Assert.Equal(Finger.LeftMiddle, KeyboardGeometry.FingerOf(E));
+        Assert.Equal(Finger.RightIndex, KeyboardGeometry.FingerOf(J));
+        Assert.Equal(Finger.None, KeyboardGeometry.FingerOf(0x1FF));
+        Assert.True(KeyboardGeometry.TryFind(J, out var j) && j.IsRightHand && !j.IsLeftHand);
+    }
+
+    [Fact]
+    public void Pave_numerique_a_droite_du_bloc_principal()
+    {
+        Assert.True(KeyboardGeometry.TryFind(KeyCode.Enter, out var enter));
+        Assert.True(KeyboardGeometry.TryFind(KeyCode.Num5, out var num5));
+        Assert.True(num5.X > enter.X + enter.Width);
+    }
+}
+
+public sealed class LayoutTableTests
+{
+    [Fact]
+    public void Aller_retour_serialisation_identique()
+    {
+        var layout = LayoutTable.FrenchAzerty;
+        var back = LayoutTable.Deserialize(layout.Serialize());
+
+        Assert.Equal(layout.Id, back.Id);
+        Assert.Equal(layout.HasAltGr, back.HasAltGr);
+        Assert.Equal(layout.ComputeHash(), back.ComputeHash());
+        for (ushort key = 1; key < KeyCode.ScanCodeLimit; key++)
+        {
+            for (int slot = 0; slot < LayoutTable.SlotCount; slot++)
+            {
+                Assert.Equal(layout.Get(key, slot, out bool dead), back.Get(key, slot, out bool backDead));
+                Assert.Equal(dead, backDead);
+            }
+        }
+    }
+
+    [Fact]
+    public void Touche_morte_conservee()
+    {
+        var back = LayoutTable.Deserialize(LayoutTable.FrenchAzerty.Serialize());
+        Assert.Equal('^', back.Get(0x1A, 0, out bool dead));
+        Assert.True(dead);
+    }
+
+    [Fact]
+    public void Donnees_tronquees_ou_version_inconnue_refusees()
+    {
+        byte[] data = LayoutTable.FrenchAzerty.Serialize();
+        Assert.Throws<InvalidDataException>(() => LayoutTable.Deserialize(data.AsSpan(0, data.Length / 2)));
+        data[0] ^= 0xFF;
+        Assert.Throws<InvalidDataException>(() => LayoutTable.Deserialize(data));
+        Assert.Throws<InvalidDataException>(() => LayoutTable.Deserialize([]));
+    }
+}
