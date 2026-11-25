@@ -53,6 +53,9 @@ public sealed class EventRing
         return true;
     }
 
+    /// <summary>Producteur seulement : événement écarté avant d'être écrit, compté comme un refus.</summary>
+    public void CountDropped() => Volatile.Write(ref _dropped, _dropped + 1);
+
     /// <summary>Consommateur seulement. Copie au plus <c>dest.Length</c> événements, dans l'ordre.</summary>
     public int Read(Span<InputEvent> dest)
     {
