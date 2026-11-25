@@ -86,6 +86,22 @@ public sealed class RecorderTests
         Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)reason} AND start_ms = {Typist.Start} AND end_ms = {end + 100}"));
     }
 
+    [Fact]
+    public void Pause_exterieure_rien_n_est_compte()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        rec.BeginPause(PauseReason.Snooze, Typist.Start + 5);
+        long end = Feed(rec, Text, Typist.Start + 10);
+        rec.EndPause(end + 1);
+        Assert.True(rec.Close(end + 2));
+
+        Assert.True(rec.Counters.PausedEvents > 0);
+        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM minute_total WHERE keys > 0"));
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Snooze} AND start_ms = {Typist.Start + 5} AND end_ms = {end + 1}"));
+    }
+
     private static void Fail(TempDb tmp, string table) =>
         tmp.Db.Exec($"CREATE TEMP TRIGGER fail_{table} BEFORE INSERT ON {table} BEGIN SELECT RAISE(ABORT, 'x'); END");
 
@@ -203,5 +219,37 @@ public sealed class RecorderTests
         using (tmp.Db.BeginTransaction())
             Assert.Throws<InvalidOperationException>(() => rec.Flush(end));
         Assert.Equal(0, rec.Counters.WriteErrors);
+    }
+
+    [Fact]
+    public void Oubli_de_l_epoque_le_brut_suivant_en_change()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        var rec = Recorder(tmp, master);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        rec.DropEpoch(end);
+        Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM raw_block"));
+        Assert.True(rec.Close(Feed(rec, Text, end + 100)));
+
+        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT epoch_id) FROM raw_block"));
+    }
+
+    [Fact]
+    public void Changement_de_fuseau_frappes_suivantes_dans_le_nouveau_jour()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        int hour = DateTimeOffset.FromUnixTimeMilliseconds(Typist.Start).UtcDateTime.Hour;
+        var zone = TimeZoneInfo.CreateCustomTimeZone("test", TimeSpan.FromHours(hour >= 10 ? 14 : -12), "test", "test");
+        long batches = rec.Counters.Batches;
+        rec.SetZone(zone, end);
+        Assert.Equal(batches + 1, rec.Counters.Batches);
+        Assert.True(rec.Close(Feed(rec, Text, end + 100)));
+
+        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM day_metric"));
     }
 }

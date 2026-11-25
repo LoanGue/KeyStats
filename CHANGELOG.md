@@ -11,7 +11,8 @@ All notable changes to this project are documented here. The format follows
 - `KeyStats.Core`: recorder for the analysis thread. It writes statistics, the
   encrypted raw block, focus rows with encrypted titles and unobserved periods
   in one transaction, every 60 s or on window change. Before encryption is set
-  up, only statistics are written.
+  up, only statistics are written. External pauses (lock, sleep, snooze) stop
+  all counting; an epoch drop or a time zone change writes pending data first.
 - `KeyStats.Core`: key tracking (repeats, overlaps, chords, shortcuts), AZERTY
   layout with dead keys and Alt codes, writing-session detection and speeds,
   correction analysis (real typos versus collateral deletions), SQLite schema
