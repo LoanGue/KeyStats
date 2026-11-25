@@ -31,7 +31,7 @@ internal static class Probe
             seconds={seconds}
             keyboard_messages={c.KeyboardMessages} mouse_messages={c.MouseMessages}
             injected_dropped={c.Injected} ignored={c.Ignored} read_errors={c.ReadErrors} callback_errors={c.CallbackErrors}
-            written={c.Written} ring_dropped={ring.Dropped} devices={c.Devices}
+            written={c.Written} lost={c.Lost} ring_dropped={ring.Dropped} devices={c.Devices}
             focus_events={f.Foreground} name_events={f.NameChanges} focus_changes={f.Changes} excluded={f.Excluded} elevated={f.Elevated}
             markers_dropped={f.MarkersDropped} unreadable={f.Unreadable} hook_errors={f.HookErrors} focus_callback_errors={f.CallbackErrors}
             {extra}

@@ -19,7 +19,7 @@ internal sealed class AnalysisLoop(RingPump pump, EventClock clock, EventWaitHan
 
     public PumpCounters Counters => pump.Counters;
 
-    /// <summary>Exceptions levées hors des événements (avance du temps, fermeture).</summary>
+    /// <summary>Exceptions levées hors des événements (lecture de la file, avance du temps, fermeture).</summary>
     public long TickErrors => Volatile.Read(ref _tickErrors);
 
     /// <summary>Tout a été écrit à l'arrêt.</summary>
@@ -43,17 +43,16 @@ internal sealed class AnalysisLoop(RingPump pump, EventClock clock, EventWaitHan
         while (!_stop)
         {
             signal.WaitOne(IdleWaitMs);
-            pump.Drain();
-            Guard(close: false);
+            Step(close: false);
         }
-        pump.Drain();
-        Guard(close: true);
+        Step(close: true);
     }
 
-    private void Guard(bool close)
+    private void Step(bool close)
     {
         try
         {
+            pump.Drain();
             if (close) _closed = pump.Close(clock.PeekMs());
             else pump.Tick(clock.PeekMs());
         }

@@ -10,7 +10,7 @@ namespace KeyStats.Agent.Capture;
 /// <summary>Compteurs de la capture, lus après <see cref="RawInputCapture.Stop"/>.</summary>
 internal struct CaptureCounters
 {
-    public long KeyboardMessages, MouseMessages, Injected, Ignored, ReadErrors, CallbackErrors, Written, Devices;
+    public long KeyboardMessages, MouseMessages, Injected, Ignored, ReadErrors, CallbackErrors, Written, Lost, Devices;
 }
 
 /// <summary>
@@ -199,11 +199,16 @@ internal sealed unsafe class RawInputCapture : IDisposable
     {
         // Un changement de fenêtre resté sans marqueur passe avant, sinon la frappe serait rangée sous
         // la fenêtre précédente. S'il n'a toujours pas de place, la frappe est perdue avec lui
-        // (l'échec est déjà compté dans ring.Dropped) et l'état des touches sera remis à zéro.
+        // et l'état des touches sera remis à zéro. Toute frappe perdue est comptée dans Lost.
         if (_focus is { HasPending: true } focus && !focus.RepublishPending(_ring))
+        {
             _writer.MarkLost();
+            _counters.Lost++;
+        }
         else if (_writer.Write(e))
             _counters.Written++;
+        else
+            _counters.Lost++;
         _signal.Set();
     }
 

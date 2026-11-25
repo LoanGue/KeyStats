@@ -10,7 +10,7 @@ internal static class Program
         if (args is ["--probe", var s, ..] && int.TryParse(s, out int seconds) && seconds > 0)
         {
             if (args.Length == 2) return Probe.Run(seconds, null);
-            if (args is [_, _, "--db", var db]) return Probe.Run(seconds, db);
+            if (args is [_, _, "--db", var db] && !string.IsNullOrWhiteSpace(db)) return Probe.Run(seconds, db);
         }
         if (args.Length > 0)
         {
