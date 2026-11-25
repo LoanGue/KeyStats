@@ -41,8 +41,10 @@ public sealed class EventClock
     /// </summary>
     public void Resync()
     {
-        long floor = _anchor is { } a ? Math.Max(_lastMs, Project(a)) : _lastMs;
-        Volatile.Write(ref _anchor, new Anchor(_timestamp(), Math.Max(_utcMs(), floor)));
+        // Une seule lecture du compteur : la nouvelle ancre part exactement de la projection courante.
+        long ticks = _timestamp();
+        long floor = _anchor is { } a ? Math.Max(_lastMs, Project(a, ticks)) : _lastMs;
+        Volatile.Write(ref _anchor, new Anchor(ticks, Math.Max(_utcMs(), floor)));
     }
 
     public long NowMs()
@@ -58,7 +60,9 @@ public sealed class EventClock
     /// </summary>
     public long PeekMs() => Project(Volatile.Read(ref _anchor)!);
 
-    private long Project(Anchor a) => a.Ms + (_timestamp() - a.Ticks) * 1000 / _frequency;
+    private long Project(Anchor a) => Project(a, _timestamp());
+
+    private long Project(Anchor a, long ticks) => a.Ms + (ticks - a.Ticks) * 1000 / _frequency;
 
     private sealed record Anchor(long Ticks, long Ms);
 }
