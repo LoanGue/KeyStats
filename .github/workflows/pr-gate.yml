@@ -1,0 +1,40 @@
+# Light PR gate: no install, no build, no tests. Tests run locally and are reported in the
+# PR body; this job only checks the size cap and that the report is there. Runs in seconds.
+name: pr-gate
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  pr-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      # contains() on the label array matches the exact name: "large-pr-wip" does not count.
+      - name: Size cap
+        env:
+          LARGE: ${{ contains(github.event.pull_request.labels.*.name, 'large-pr') }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          n=$(git diff --numstat "origin/$BASE...HEAD" | awk '{s+=$1+$2} END {print s+0}')
+          echo "diff: $n lines, large-pr: $LARGE"
+          if [ "$n" -gt 400 ] && [ "$LARGE" != "true" ]; then
+            echo "::error::PR above 400 lines without the large-pr label"; exit 1
+          fi
+      # The body is read from the API, not from the event payload: a push followed by a body edit
+      # starts two runs, and the push run would otherwise judge the body as it was before the edit.
+      - name: Tests section in the PR body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          body=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq '.body // ""')
+          section=$(printf '%s\n' "$body" | tr -d '\r' | awk '/^## Tests[[:space:]]*$/{f=1; next} /^## /{f=0} f' | grep -v '^[[:space:]]*$' || true)
+          if [ -z "$section" ]; then
+            echo "::error::The PR body needs a '## Tests' section listing the local test categories or commands run"; exit 1
+          fi
+          printf '%s\n' "$section"
