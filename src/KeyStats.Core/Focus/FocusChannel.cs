@@ -12,23 +12,24 @@ namespace KeyStats.Core.Focus;
 /// </summary>
 public sealed class FocusChannel
 {
-    /// <summary>Au-delà, le consommateur est bloqué : on garde le plus ancien, la suite est perdue.</summary>
+    /// <summary>Au-delà, le consommateur est bloqué : le changement attend, sans marqueur, qu'une place se libère.</summary>
     public const int MaxQueued = 4096;
 
     private readonly ConcurrentQueue<FocusChange> _queue = new();
     private long _nextSeq = 1;
     private FocusChange? _pending;
+    private bool _pendingQueued;
 
     /// <summary>Producteur seulement : un changement attend encore son marqueur.</summary>
     public bool HasPending => _pending is not null;
 
-    /// <summary>Producteur seulement. Faux si le marqueur n'a pas trouvé de place, ou si la file est pleine.</summary>
+    /// <summary>Producteur seulement. Faux si le changement n'a pas encore de place : il reste en attente.</summary>
     public bool Publish(FocusChange change, EventRing ring)
     {
-        if (_queue.Count >= MaxQueued) return false;
-        change.Seq = _nextSeq++;
-        _queue.Enqueue(change);
-        _pending = change; // remplace un changement plus ancien resté sans marqueur, écarté au Take
+        // Remplace un changement plus ancien resté sans marqueur : celui-ci est écarté au Take, ou
+        // jamais mis en file.
+        _pending = change;
+        _pendingQueued = false;
         return RepublishPending(ring);
     }
 
@@ -36,6 +37,13 @@ public sealed class FocusChannel
     public bool RepublishPending(EventRing ring)
     {
         if (_pending is not { } p) return true;
+        if (!_pendingQueued)
+        {
+            if (_queue.Count >= MaxQueued) return false;
+            p.Seq = _nextSeq++;
+            _queue.Enqueue(p);
+            _pendingQueued = true;
+        }
         if (!ring.TryWrite(new InputEvent(p.Ms, EventKind.Focus, (ushort)p.Seq))) return false;
         _pending = null;
         return true;
