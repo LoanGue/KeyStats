@@ -86,6 +86,42 @@ public sealed class RecorderTests
         Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)reason} AND start_ms = {Typist.Start} AND end_ms = {end + 100}"));
     }
 
+    [Fact]
+    public void Pause_exterieure_session_conclue_puis_rien_n_est_compte()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long start = Feed(rec, Text, Typist.Start + 10) + 5;
+        rec.BeginPause(PauseReason.Snooze, start);
+        Assert.True(rec.Flush(start));
+        Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM session"));
+        long keys = tmp.Count("SELECT SUM(keys) FROM minute_total");
+        long end = Feed(rec, Text, start + 5);
+        rec.EndPause(end + 1);
+        Assert.True(rec.Close(end + 2));
+
+        Assert.Equal(new Typist().Type(Text).Events.Count, rec.Counters.PausedEvents);
+        Assert.Equal(keys, tmp.Count("SELECT SUM(keys) FROM minute_total"));
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Snooze} AND start_ms = {start} AND end_ms = {end + 1}"));
+    }
+
+    [Fact]
+    public void Remise_a_zero_pendant_la_pause_relache_les_touches()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        var held = new Typist(Typist.Start + 10).Down(KeyCode.LeftCtrl);
+        foreach (var e in held.Events) rec.OnEvent(e);
+        rec.BeginPause(PauseReason.Locked, held.Ms + 10);
+        rec.OnEvent(new Typist(held.Ms + 20).Reset().Events[0]);
+        rec.EndPause(held.Ms + 30);
+        Assert.True(rec.Close(Feed(rec, "abc", held.Ms + 40)));
+
+        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM day_shortcut"));
+    }
+
     private static void Fail(TempDb tmp, string table) =>
         tmp.Db.Exec($"CREATE TEMP TRIGGER fail_{table} BEFORE INSERT ON {table} BEGIN SELECT RAISE(ABORT, 'x'); END");
 
@@ -207,5 +243,57 @@ public sealed class RecorderTests
         Assert.Equal(0, rec.Counters.WriteErrors);
         Assert.True(tmp.Count("SELECT SUM(excluded_keys) FROM minute_total") > 0);
         Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM session") + tmp.Count("SELECT COUNT(*) FROM key_minute"));
+    }
+
+    [Fact]
+    public void Oubli_de_l_epoque_le_brut_suivant_en_change()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        var rec = Recorder(tmp, master);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        rec.DropEpoch(end);
+        Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM raw_block"));
+        Assert.True(rec.Close(Feed(rec, Text, end + 100)));
+
+        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT epoch_id) FROM raw_block"));
+    }
+
+    [Fact]
+    public void Changement_de_fuseau_frappes_suivantes_dans_le_nouveau_jour()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        int hour = DateTimeOffset.FromUnixTimeMilliseconds(Typist.Start).UtcDateTime.Hour;
+        var zone = TimeZoneInfo.CreateCustomTimeZone("test", TimeSpan.FromHours(hour >= 10 ? 14 : -12), "test", "test");
+        long batches = rec.Counters.Batches;
+        rec.SetZone(zone, end);
+        Assert.Equal(batches + 1, rec.Counters.Batches);
+        Assert.True(rec.Close(Feed(rec, Text, end + 100)));
+
+        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM session"));
+        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT day) FROM day_char"));
+    }
+
+    [Fact]
+    public void Horloge_qui_recule_ecriture_60_secondes_apres_le_recul()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        rec.Tick(end + Recording.Recorder.FlushIntervalMs);
+        long batches = rec.Counters.Batches;
+        Feed(rec, Text, end + Recording.Recorder.FlushIntervalMs + 10);
+        long back = Typist.Start - 10_000;
+        rec.Tick(back);
+        rec.Tick(back);
+        rec.Tick(back + Recording.Recorder.FlushIntervalMs - 1);
+        Assert.Equal(batches, rec.Counters.Batches);
+        rec.Tick(back + Recording.Recorder.FlushIntervalMs);
+        Assert.Equal(batches + 1, rec.Counters.Batches);
     }
 }

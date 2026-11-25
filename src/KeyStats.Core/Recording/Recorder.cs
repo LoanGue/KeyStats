@@ -8,7 +8,7 @@ using Microsoft.Data.Sqlite;
 namespace KeyStats.Core.Recording;
 
 /// <summary>Compteurs de diagnostic de l'enregistreur : aucun contenu, seulement des nombres.</summary>
-public readonly record struct RecorderCounters(long Batches, long WriteErrors, long RawDropped);
+public readonly record struct RecorderCounters(long Batches, long WriteErrors, long RawDropped, long PausedEvents);
 
 /// <summary>
 /// Thread d'analyse de l'agent : fait passer les événements et les changements de fenêtre dans
@@ -25,6 +25,7 @@ public sealed class Recorder
 
     private readonly KeyStatsDb _db;
     private RawArchiveWriter? _archive;
+    private readonly LocalDayClock _clock;
     private readonly StatsWriter _writer;
     private readonly InputEvent[] _raw = new InputEvent[RawCapacity];
     private readonly PauseLog _pauses = new();
@@ -35,7 +36,7 @@ public sealed class Recorder
     // Tant qu'aucune fenêtre n'est connue, on ne garde pas de brut : il pourrait venir d'une appli exclue.
     private bool _countersOnly = true;
     private long _lastWriteMs;
-    private long _batches, _writeErrors, _rawDropped;
+    private long _batches, _writeErrors, _rawDropped, _pausedEvents;
 
     /// <param name="archive">Écriture du brut et des titres ; nul tant que le chiffrement n'est pas configuré.</param>
     public Recorder(KeyStatsDb db, RawArchiveWriter? archive, LocalDayClock clock, long nowMs,
@@ -43,6 +44,7 @@ public sealed class Recorder
     {
         _db = db;
         _archive = archive;
+        _clock = clock;
         _writer = new StatsWriter(db);
         _lastWriteMs = nowMs;
         Analyzer = new Analyzer(new StatsAccumulator(clock), settings, live);
@@ -55,10 +57,16 @@ public sealed class Recorder
     /// <summary>Faux sans chiffrement configuré, ou après une clé publique maîtresse illisible.</summary>
     public bool Encrypting => _archive is not null;
 
-    public RecorderCounters Counters => new(_batches, _writeErrors, _rawDropped);
+    public RecorderCounters Counters => new(_batches, _writeErrors, _rawDropped, _pausedEvents);
 
     public void OnEvent(in InputEvent e)
     {
+        // Pendant une pause extérieure, rien n'est compté ; seule une remise à zéro passe.
+        if (_pauses.External && e.Kind != EventKind.Reset)
+        {
+            _pausedEvents++;
+            return;
+        }
         Analyzer.Process(e);
         // Sans ligne focus (écriture ratée), pas de brut : il ne pourrait être rattaché à aucune fenêtre.
         if (_archive is null || _countersOnly || _focusId is not long focusId) return;
@@ -110,11 +118,39 @@ public sealed class Recorder
     public void Tick(long nowMs)
     {
         Analyzer.Tick(nowMs);
+        // Horloge revenue en arrière : sans cela, plus aucune écriture avant que l'heure rattrape l'ancienne.
+        if (nowMs < _lastWriteMs) _lastWriteMs = nowMs;
         if (nowMs - _lastWriteMs >= FlushIntervalMs) Flush(nowMs);
     }
 
     /// <summary>Écrit tout ce qui est en attente. Renvoie faux si la base a refusé (rien n'est perdu).</summary>
     public bool Flush(long nowMs) => Write(nowMs, null);
+
+    /// <summary>Verrouillage, veille, pause par l'icône : la session en cours se termine.</summary>
+    public void BeginPause(PauseReason reason, long nowMs)
+    {
+        _pauses.Begin(nowMs, reason);
+        Analyzer.EndAll();
+    }
+
+    /// <summary>Fin de pause. L'appelant pousse ensuite une remise à zéro de l'état des touches.</summary>
+    public void EndPause(long nowMs) => _pauses.End(nowMs);
+
+    /// <summary>Verrouillage, veille : le lot est écrit, puis la clé d'époque oubliée.</summary>
+    public void DropEpoch(long nowMs)
+    {
+        Flush(nowMs);
+        _archive?.DropEpoch();
+    }
+
+    /// <summary>Changement de fuseau (<c>WM_TIMECHANGE</c>) : les frappes suivantes vont dans le nouveau jour local.</summary>
+    public void SetZone(TimeZoneInfo zone, long nowMs)
+    {
+        // La session en cours est rangée dans le jour de l'ancien fuseau, où elle a été tapée.
+        Analyzer.EndAll();
+        Flush(nowMs);
+        _clock.SetZone(zone);
+    }
 
     /// <summary>Arrêt de l'agent : tout est conclu et écrit, le brut en mémoire est effacé.</summary>
     public bool Close(long nowMs)
