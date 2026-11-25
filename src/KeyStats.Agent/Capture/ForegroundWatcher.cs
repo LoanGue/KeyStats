@@ -35,11 +35,19 @@ internal sealed unsafe class ForegroundWatcher(FocusChannel channel, ExclusionLi
     /// <summary>Sur le thread de capture. Lit tout de suite la fenêtre active.</summary>
     public void Start()
     {
-        s_current = this;
+        if (Interlocked.CompareExchange(ref s_current, this, null) is not null)
+            throw new InvalidOperationException("Un suivi de fenêtre tourne déjà.");
         _foregroundHook = WinEvents.SetWinEventHook(WinEvents.EVENT_SYSTEM_FOREGROUND, WinEvents.EVENT_SYSTEM_FOREGROUND, 0,
             &OnEvent, 0, 0, WinEvents.WINEVENT_OUTOFCONTEXT | WinEvents.WINEVENT_SKIPOWNPROCESS);
         if (_foregroundHook == 0) _counters.HookErrors++;
-        Observe(WinEvents.GetForegroundWindow());
+        try
+        {
+            Observe(WinEvents.GetForegroundWindow());
+        }
+        catch (Exception)
+        {
+            _counters.CallbackErrors++;
+        }
     }
 
     /// <summary>Sur le thread de capture, avant la fin de sa boucle de messages.</summary>
@@ -94,7 +102,7 @@ internal sealed unsafe class ForegroundWatcher(FocusChannel channel, ExclusionLi
     {
         _pid = pid;
         ReadProcess(pid);
-        _excluded = exclusions.Contains(_exe);
+        _excluded = _tracker.IsExcluded(_exe);
         Unhook(ref _nameHook);
         if (_excluded || pid == 0) return;
         _nameHook = WinEvents.SetWinEventHook(WinEvents.EVENT_OBJECT_NAMECHANGE, WinEvents.EVENT_OBJECT_NAMECHANGE, 0,
@@ -102,10 +110,13 @@ internal sealed unsafe class ForegroundWatcher(FocusChannel channel, ExclusionLi
         if (_nameHook == 0) _counters.HookErrors++;
     }
 
-    /// <summary>Nom de l'exécutable et élévation. Accès refusé : fenêtre d'un niveau supérieur, donc administrateur.</summary>
+    /// <summary>
+    /// Nom de l'exécutable et élévation. Accès refusé : fenêtre d'un niveau supérieur, donc
+    /// administrateur. Nom illisible : chaîne vide, que le suivi traite comme une appli exclue.
+    /// </summary>
     private void ReadProcess(uint pid)
     {
-        _exe = "?";
+        _exe = "";
         nint process = Process32.OpenProcess(Process32.PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
         if (process == 0)
         {

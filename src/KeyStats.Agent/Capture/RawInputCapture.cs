@@ -33,6 +33,7 @@ internal sealed unsafe class RawInputCapture : IDisposable
     private readonly ManualResetEventSlim _ready = new();
     private readonly Thread _thread;
     private readonly ForegroundWatcher? _watcher;
+    private readonly FocusChannel? _focus;
     private CaptureCounters _counters;
     private nint _hwnd;
     private int _startError;
@@ -43,6 +44,7 @@ internal sealed unsafe class RawInputCapture : IDisposable
     {
         _ring = ring;
         _signal = signal;
+        _focus = focus;
         if (focus is not null) _watcher = new ForegroundWatcher(focus, exclusions ?? ExclusionList.Default, ring, _clock, signal);
         _thread = new Thread(Run) { Name = "KeyStats capture", IsBackground = true, Priority = ThreadPriority.AboveNormal };
     }
@@ -188,6 +190,14 @@ internal sealed unsafe class RawInputCapture : IDisposable
 
     private void Push(in InputEvent e)
     {
+        // Un changement de fenêtre resté sans marqueur passe avant, sinon la frappe serait rangée sous
+        // la fenêtre précédente. S'il n'a toujours pas de place, la frappe est perdue avec lui
+        // (l'échec est déjà compté dans ring.Dropped).
+        if (_focus is { HasPending: true } focus && !focus.RepublishPending(_ring))
+        {
+            _signal.Set();
+            return;
+        }
         if (_ring.TryWrite(e)) _counters.Written++;
         _signal.Set();
     }
