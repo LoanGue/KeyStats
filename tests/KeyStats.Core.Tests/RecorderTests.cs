@@ -86,22 +86,6 @@ public sealed class RecorderTests
         Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)reason} AND start_ms = {Typist.Start} AND end_ms = {end + 100}"));
     }
 
-    [Fact]
-    public void Pause_exterieure_rien_n_est_compte()
-    {
-        using var tmp = new TempDb();
-        var rec = Recorder(tmp, null);
-        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
-        rec.BeginPause(PauseReason.Snooze, Typist.Start + 5);
-        long end = Feed(rec, Text, Typist.Start + 10);
-        rec.EndPause(end + 1);
-        Assert.True(rec.Close(end + 2));
-
-        Assert.True(rec.Counters.PausedEvents > 0);
-        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM minute_total WHERE keys > 0"));
-        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Snooze} AND start_ms = {Typist.Start + 5} AND end_ms = {end + 1}"));
-    }
-
     private static void Fail(TempDb tmp, string table) =>
         tmp.Db.Exec($"CREATE TEMP TRIGGER fail_{table} BEFORE INSERT ON {table} BEGIN SELECT RAISE(ABORT, 'x'); END");
 
@@ -177,5 +161,47 @@ public sealed class RecorderTests
         Assert.False(rec.Encrypting);
         Assert.True(tmp.Count("SELECT SUM(keys) FROM minute_total") > 0);
         Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM raw_block") + tmp.Count("SELECT COUNT(*) FROM window_title"));
+    }
+
+    [Fact]
+    public void Avant_la_premiere_fenetre_compteurs_seulement()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        Assert.True(rec.Close(Feed(rec, Text + Text, Typist.Start + 10)));
+
+        Assert.True(tmp.Count("SELECT SUM(excluded_keys) FROM minute_total") > 0);
+        Assert.Equal(0, tmp.Count("SELECT COUNT(*) FROM session") + tmp.Count("SELECT COUNT(*) FROM key_minute"));
+    }
+
+    [Fact]
+    public void Horloge_qui_recule_ecriture_60_secondes_apres_le_recul()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        rec.Tick(end + Recording.Recorder.FlushIntervalMs);
+        long batches = rec.Counters.Batches;
+        Feed(rec, Text, end + Recording.Recorder.FlushIntervalMs + 10);
+        long back = Typist.Start - 10_000;
+        rec.Tick(back);
+        rec.Tick(back);
+        rec.Tick(back + Recording.Recorder.FlushIntervalMs - 1);
+        Assert.Equal(batches, rec.Counters.Batches);
+        rec.Tick(back + Recording.Recorder.FlushIntervalMs);
+        Assert.Equal(batches + 1, rec.Counters.Batches);
+    }
+
+    [Fact]
+    public void Erreur_de_programmation_sur_base_saine_remonte()
+    {
+        using var tmp = new TempDb();
+        var rec = Recorder(tmp, null);
+        rec.OnFocus(Focus(Typist.Start, "winword.exe"));
+        long end = Feed(rec, Text, Typist.Start + 10);
+        using (tmp.Db.BeginTransaction())
+            Assert.Throws<InvalidOperationException>(() => rec.Flush(end));
+        Assert.Equal(0, rec.Counters.WriteErrors);
     }
 }

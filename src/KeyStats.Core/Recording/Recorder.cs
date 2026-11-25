@@ -8,7 +8,7 @@ using Microsoft.Data.Sqlite;
 namespace KeyStats.Core.Recording;
 
 /// <summary>Compteurs de diagnostic de l'enregistreur : aucun contenu, seulement des nombres.</summary>
-public readonly record struct RecorderCounters(long Batches, long WriteErrors, long RawDropped, long PausedEvents);
+public readonly record struct RecorderCounters(long Batches, long WriteErrors, long RawDropped);
 
 /// <summary>
 /// Thread d'analyse de l'agent : fait passer les événements et les changements de fenêtre dans
@@ -25,7 +25,6 @@ public sealed class Recorder
 
     private readonly KeyStatsDb _db;
     private RawArchiveWriter? _archive;
-    private readonly LocalDayClock _clock;
     private readonly StatsWriter _writer;
     private readonly InputEvent[] _raw = new InputEvent[RawCapacity];
     private readonly PauseLog _pauses = new();
@@ -36,7 +35,7 @@ public sealed class Recorder
     // Tant qu'aucune fenêtre n'est connue, on ne garde pas de brut : il pourrait venir d'une appli exclue.
     private bool _countersOnly = true;
     private long _lastWriteMs;
-    private long _batches, _writeErrors, _rawDropped, _pausedEvents;
+    private long _batches, _writeErrors, _rawDropped;
 
     /// <param name="archive">Écriture du brut et des titres ; nul tant que le chiffrement n'est pas configuré.</param>
     public Recorder(KeyStatsDb db, RawArchiveWriter? archive, LocalDayClock clock, long nowMs,
@@ -44,10 +43,11 @@ public sealed class Recorder
     {
         _db = db;
         _archive = archive;
-        _clock = clock;
         _writer = new StatsWriter(db);
         _lastWriteMs = nowMs;
         Analyzer = new Analyzer(new StatsAccumulator(clock), settings, live);
+        // Avant la première fenêtre connue, l'appli pourrait être exclue : compteurs seulement.
+        Analyzer.SetFocus(new FocusInfo(nowMs, 0, 0, null, FocusState.Excluded));
     }
 
     public Analyzer Analyzer { get; }
@@ -55,16 +55,10 @@ public sealed class Recorder
     /// <summary>Faux sans chiffrement configuré, ou après une clé publique maîtresse illisible.</summary>
     public bool Encrypting => _archive is not null;
 
-    public RecorderCounters Counters => new(_batches, _writeErrors, _rawDropped, _pausedEvents);
+    public RecorderCounters Counters => new(_batches, _writeErrors, _rawDropped);
 
     public void OnEvent(in InputEvent e)
     {
-        // Pendant une pause extérieure, rien n'est compté ; seule une remise à zéro passe.
-        if (_pauses.External && e.Kind != EventKind.Reset)
-        {
-            _pausedEvents++;
-            return;
-        }
         Analyzer.Process(e);
         // Sans ligne focus (écriture ratée), pas de brut : il ne pourrait être rattaché à aucune fenêtre.
         if (_archive is null || _countersOnly || _focusId is not long focusId) return;
@@ -86,20 +80,28 @@ public sealed class Recorder
         _countersOnly = true;
         _focusId = null;
         _pauses.SetFocusReason(change.Ms, PauseFor(change.Flags));
-        var info = new FocusInfo(change.Ms, 0, 0, null, change.Flags);
-        long? focusId = null;
-        bool ok = Write(change.Ms, () =>
-        {
-            int app = _db.GetOrAddApp(change.Exe);
-            long? title = _archive is not null && change.Title is { Length: > 0 } t
-                ? _archive.GetOrAddTitle(app, change.Exe, t, change.Ms) : null;
-            focusId = _db.AddFocus(change.Ms, app, title, null, change.Flags);
-            info = info with { AppId = app, TitleId = title ?? 0 };
-        });
         // En cas d'échec, la fenêtre reste inconnue (appli 0) : ses frappes sont comptées, le brut n'a pas de focus.
-        if (!ok) info = new FocusInfo(change.Ms, 0, 0, null, change.Flags);
-        Analyzer.SetFocus(info);
-        _focusId = ok ? focusId : null;
+        var unknown = new FocusInfo(change.Ms, 0, 0, null, change.Flags);
+        var info = unknown;
+        long? focusId = null;
+        bool ok = false;
+        try
+        {
+            ok = Write(change.Ms, () =>
+            {
+                int app = _db.GetOrAddApp(change.Exe);
+                long? title = _archive is not null && change.Title is { Length: > 0 } t
+                    ? _archive.GetOrAddTitle(app, change.Exe, t, change.Ms) : null;
+                focusId = _db.AddFocus(change.Ms, app, title, null, change.Flags);
+                info = info with { AppId = app, TitleId = title ?? 0 };
+            });
+        }
+        finally
+        {
+            // Même après une exception imprévue, l'analyse suit les drapeaux de la nouvelle fenêtre.
+            Analyzer.SetFocus(ok ? info : unknown);
+        }
+        _focusId = focusId;
         _countersOnly = change.Flags.CountersOnly();
     }
 
@@ -114,30 +116,6 @@ public sealed class Recorder
 
     /// <summary>Écrit tout ce qui est en attente. Renvoie faux si la base a refusé (rien n'est perdu).</summary>
     public bool Flush(long nowMs) => Write(nowMs, null);
-
-    /// <summary>Verrouillage, veille, pause par l'icône : la session en cours se termine.</summary>
-    public void BeginPause(PauseReason reason, long nowMs)
-    {
-        Analyzer.EndAll();
-        _pauses.Begin(nowMs, reason);
-    }
-
-    /// <summary>Fin de pause. L'appelant pousse ensuite une remise à zéro de l'état des touches.</summary>
-    public void EndPause(long nowMs) => _pauses.End(nowMs);
-
-    /// <summary>Verrouillage, veille : le lot est écrit, puis la clé d'époque oubliée.</summary>
-    public void DropEpoch(long nowMs)
-    {
-        Flush(nowMs);
-        _archive?.DropEpoch();
-    }
-
-    /// <summary>Changement de fuseau (<c>WM_TIMECHANGE</c>) : les frappes suivantes vont dans le nouveau jour local.</summary>
-    public void SetZone(TimeZoneInfo zone, long nowMs)
-    {
-        Flush(nowMs);
-        _clock.SetZone(zone);
-    }
 
     /// <summary>Arrêt de l'agent : tout est conclu et écrit, le brut en mémoire est effacé.</summary>
     public bool Close(long nowMs)
@@ -170,7 +148,9 @@ public sealed class Recorder
             if (e is CryptographicException)
             {
                 // Clé publique maîtresse illisible : plus de brut ni de titre, les statistiques continuent.
+                _archive?.DropEpoch();
                 _archive = null;
+                _rawDropped += _rawCount;
                 ClearRaw();
             }
             // Tout reste en mémoire pour le lot suivant ; le message d'erreur n'est pas gardé.
