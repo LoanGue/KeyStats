@@ -47,7 +47,7 @@ internal sealed unsafe class RawInputCapture : IDisposable
 
     public void Start()
     {
-        if (_thread.ThreadState != System.Threading.ThreadState.Unstarted || Interlocked.CompareExchange(ref s_current, this, null) is not null)
+        if ((_thread.ThreadState & System.Threading.ThreadState.Unstarted) == 0 || Interlocked.CompareExchange(ref s_current, this, null) is not null)
             throw new InvalidOperationException("Une capture tourne déjà, ou cette instance a déjà servi.");
         _thread.Start();
         _ready.Wait();
