@@ -12,6 +12,11 @@ All notable changes to this project are documented here. The format follows
   recorder and writes to `%LOCALAPPDATA%\KeyStats\keystats.db`. The window-title
   key is protected by DPAPI. `--probe N --db <path>` runs the whole pipeline
   against a test database.
+- `KeyStats.Core`: ring pump and writer between the capture and analysis
+  threads. After a lost event, a key-state reset is written at the gap on the
+  producer side. Window markers are resolved on the consumer side, and an
+  exception is counted for the failing event only. `EventClock.PeekMs` gives
+  the event time scale to another thread.
 - `KeyStats.Core`: recorder for the analysis thread. It writes statistics, the
   encrypted raw block, focus rows with encrypted titles and unobserved periods
   in one transaction, every 60 s or on window change. Before encryption is set

@@ -63,19 +63,28 @@ internal static class Probe
     /// <summary>Chaîne complète vers la base donnée : analyse et écriture par lots.</summary>
     private static string Record(int seconds, string dbPath, EventRing ring, AutoResetEvent signal, FocusChannel focus, RawInputCapture capture)
     {
-        using var storage = AgentStorage.Open(dbPath);
-        var recorder = new Recorder(storage.Db, storage.Archive, new LocalDayClock(), DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        var loop = new AnalysisLoop(ring, focus, signal, recorder);
-        loop.Start();
-        capture.Start();
-        Thread.Sleep(TimeSpan.FromSeconds(seconds));
-        capture.Stop();
-        bool stopped = loop.Stop(TimeSpan.FromSeconds(10));
+        var storage = AgentStorage.Open(dbPath);
+        var recorder = new Recorder(storage.Db, storage.Archive, new LocalDayClock(), capture.Clock.PeekMs());
+        var loop = new AnalysisLoop(new RingPump(ring, focus, recorder), capture.Clock, signal);
+        bool stopped = false;
+        try
+        {
+            loop.Start();
+            capture.Start();
+            Thread.Sleep(TimeSpan.FromSeconds(seconds));
+        }
+        finally
+        {
+            capture.Stop();
+            stopped = loop.Stop(TimeSpan.FromSeconds(10));
+            // Sans arrêt confirmé, le thread d'analyse peut encore écrire : la base reste ouverte.
+            if (stopped) storage.Dispose();
+        }
         var l = loop.Counters;
         var r = recorder.Counters;
         return $"""
-            encrypted={storage.Archive is not null} title_key_replaced={storage.TitleKeyReplaced} loop_stopped={stopped}
-            loop_events={l.Events} loop_resets={l.Resets} loop_errors={l.Errors} unknown_markers={l.UnknownMarkers}
+            encrypted={storage.Archive is not null} title_key_replaced={storage.TitleKeyReplaced} loop_stopped={stopped} closed={loop.Closed}
+            loop_events={l.Events} loop_errors={l.Errors} tick_errors={loop.TickErrors} unknown_markers={l.UnknownMarkers}
             batches={r.Batches} write_errors={r.WriteErrors} raw_dropped={r.RawDropped}
             """;
     }
