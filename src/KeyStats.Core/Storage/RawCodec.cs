@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using KeyStats.Core.Input;
 
 namespace KeyStats.Core.Storage;
@@ -26,16 +27,26 @@ public static class RawCodec
     /// <summary>Encode et compresse un bloc.</summary>
     public static byte[] Encode(ReadOnlySpan<InputEvent> events, long startMs)
     {
+        // Les tampons intermédiaires contiennent le brut en clair : effacés avant de rendre la main.
         var plain = new ByteWriter(events.Length * 4 + 16);
-        EncodePlain(events, startMs, plain);
-        ReadOnlySpan<byte> src = plain.WrittenSpan;
+        byte[]? output = null;
+        try
+        {
+            EncodePlain(events, startMs, plain);
+            ReadOnlySpan<byte> src = plain.WrittenSpan;
 
-        var output = new byte[1 + Varint.MaxLength + BrotliEncoder.GetMaxCompressedLength(src.Length)];
-        output[0] = Version;
-        int pos = 1 + Varint.Write(output.AsSpan(1), (ulong)src.Length);
-        if (!BrotliEncoder.TryCompress(src, output.AsSpan(pos), out int written, BrotliQuality, BrotliWindow))
-            throw new InvalidOperationException("Compression Brotli impossible.");
-        return output.AsSpan(0, pos + written).ToArray();
+            output = new byte[1 + Varint.MaxLength + BrotliEncoder.GetMaxCompressedLength(src.Length)];
+            output[0] = Version;
+            int pos = 1 + Varint.Write(output.AsSpan(1), (ulong)src.Length);
+            if (!BrotliEncoder.TryCompress(src, output.AsSpan(pos), out int written, BrotliQuality, BrotliWindow))
+                throw new InvalidOperationException("Compression Brotli impossible.");
+            return output.AsSpan(0, pos + written).ToArray();
+        }
+        finally
+        {
+            plain.ZeroAndClear();
+            if (output is not null) CryptographicOperations.ZeroMemory(output);
+        }
     }
 
     /// <summary>Décompresse et décode un bloc.</summary>
@@ -46,9 +57,16 @@ public static class RawCodec
         int plainLength = Varint.ReadInt(payload, ref pos);
         if (plainLength > MaxPlainBytes) throw new InvalidDataException("Bloc brut trop grand.");
         var plain = new byte[plainLength];
-        if (!BrotliDecoder.TryDecompress(payload[pos..], plain, out int written) || written != plainLength)
-            throw new InvalidDataException("Bloc brut corrompu.");
-        return DecodePlain(plain, startMs);
+        try
+        {
+            if (!BrotliDecoder.TryDecompress(payload[pos..], plain, out int written) || written != plainLength)
+                throw new InvalidDataException("Bloc brut corrompu.");
+            return DecodePlain(plain, startMs);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(plain);
+        }
     }
 
     internal static void EncodePlain(ReadOnlySpan<InputEvent> events, long startMs, ByteWriter w)

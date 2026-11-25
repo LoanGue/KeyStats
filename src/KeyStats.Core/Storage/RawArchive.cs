@@ -120,7 +120,15 @@ public sealed class RawArchiveReader : IDisposable
     {
         ArgumentNullException.ThrowIfNull(block);
         byte[] payload = Epoch(block.EpochId).DecryptBlock(block.Nonce, block.Payload, block.StartMs, block.EndMs, block.EventCount, block.FocusId);
-        var events = RawCodec.Decode(payload, block.StartMs);
+        InputEvent[] events;
+        try
+        {
+            events = RawCodec.Decode(payload, block.StartMs);
+        }
+        finally
+        {
+            System.Security.Cryptography.CryptographicOperations.ZeroMemory(payload);
+        }
         if (events.Length != block.EventCount) throw new InvalidDataException("Bloc brut incohérent.");
         return events;
     }

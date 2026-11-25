@@ -58,6 +58,13 @@ public sealed class ByteWriter
 
     public void Clear() => _len = 0;
 
+    /// <summary>Efface le contenu (données sensibles) puis vide le tampon.</summary>
+    public void ZeroAndClear()
+    {
+        System.Security.Cryptography.CryptographicOperations.ZeroMemory(_buf);
+        _len = 0;
+    }
+
     public void WriteByte(byte b)
     {
         if (_len == _buf.Length) Grow(1);
@@ -78,6 +85,9 @@ public sealed class ByteWriter
     private void Grow(int extra)
     {
         int size = Math.Max(_buf.Length * 2, _len + extra);
-        Array.Resize(ref _buf, size);
+        byte[] old = _buf;
+        _buf = new byte[size];
+        old.AsSpan(0, _len).CopyTo(_buf);
+        System.Security.Cryptography.CryptographicOperations.ZeroMemory(old); // pas de copie du brut laissée derrière
     }
 }
