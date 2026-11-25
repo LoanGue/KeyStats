@@ -8,7 +8,7 @@ namespace KeyStats.Core.Storage;
 /// Accès à <c>keystats.db</c> : ouverture, migrations, référentiels (avec cache) et chronologie.
 /// Une instance par thread. Les écritures groupées passent par <see cref="BeginTransaction"/>.
 /// </summary>
-public sealed class KeyStatsDb : IDisposable
+public sealed partial class KeyStatsDb : IDisposable
 {
     private static readonly Lock s_initLock = new();
     private static bool s_initialized;
@@ -88,79 +88,6 @@ public sealed class KeyStatsDb : IDisposable
             Exec($"PRAGMA user_version = {v + 1}");
             tx.Commit();
         }
-    }
-
-    // ---- Transactions ----
-
-    /// <summary>Transaction en écriture (BEGIN IMMEDIATE). Annulée si elle n'est pas validée.</summary>
-    public DbTransaction BeginTransaction()
-    {
-        if (_inTransaction) throw new InvalidOperationException("Transaction déjà ouverte.");
-        Exec("BEGIN IMMEDIATE");
-        _inTransaction = true;
-        return new DbTransaction(this);
-    }
-
-    public sealed class DbTransaction : IDisposable
-    {
-        private KeyStatsDb? _db;
-
-        internal DbTransaction(KeyStatsDb db) => _db = db;
-
-        public void Commit()
-        {
-            var db = _db ?? throw new InvalidOperationException("Transaction terminée.");
-            _db = null;
-            db._inTransaction = false;
-            try
-            {
-                db.Exec("COMMIT");
-            }
-            catch
-            {
-                db.RollbackQuietly();
-                throw;
-            }
-        }
-
-        public void Dispose()
-        {
-            if (_db is null) return;
-            var db = _db;
-            _db = null;
-            db._inTransaction = false;
-            db.RollbackQuietly();
-        }
-    }
-
-    /// <summary>
-    /// Annule la transaction en cours si SQLite ne l'a pas déjà fait (SQLITE_FULL, IOERR, BUSY l'annulent
-    /// d'office), sans masquer l'erreur d'origine. Les caches sont vidés dans tous les cas.
-    /// </summary>
-    private void RollbackQuietly()
-    {
-        try
-        {
-            if (SQLitePCL.raw.sqlite3_get_autocommit(_conn.Handle) == 0)
-                Exec("ROLLBACK");
-        }
-        catch (SqliteException)
-        {
-            // La connexion reste utilisable ; l'erreur d'origine prime.
-        }
-        finally
-        {
-            OnRollback();
-        }
-    }
-
-    /// <summary>Les ids mis en cache pendant la transaction annulée n'existent plus.</summary>
-    private void OnRollback()
-    {
-        RollbackCount++;
-        _apps.Clear();
-        _layoutIds.Clear();
-        _layouts.Clear();
     }
 
     // ---- Méta ----

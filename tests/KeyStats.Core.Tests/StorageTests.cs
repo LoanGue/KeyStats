@@ -255,13 +255,22 @@ public sealed class StorageTests
         using var tmp = new TempDb();
         long before = tmp.Db.RollbackCount;
 
-        using (tmp.Db.BeginTransaction())
+        void FailAfterSqliteRollback()
         {
-            tmp.Db.GetOrAddApp("notepad.exe");
-            tmp.Db.Exec("ROLLBACK"); // comme SQLite après SQLITE_FULL ou IOERR
+            using (tmp.Db.BeginTransaction())
+            {
+                tmp.Db.GetOrAddApp("notepad.exe");
+                tmp.Db.Exec("ROLLBACK"); // comme SQLite après SQLITE_FULL ou IOERR
+                throw new IOException("erreur d'origine");
+            }
         }
 
+        var original = Assert.Throws<IOException>(FailAfterSqliteRollback);
+
+        Assert.Equal("erreur d'origine", original.Message);
         Assert.Equal(before + 1, tmp.Db.RollbackCount);
+        Assert.False(tmp.Db.IsFaulted);
+        Assert.Equal(0, tmp.Db.LastRollbackErrorCode);
         using (var tx = tmp.Db.BeginTransaction())
         {
             tmp.Db.GetOrAddApp("notepad.exe");
