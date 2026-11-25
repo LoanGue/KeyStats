@@ -37,6 +37,9 @@ public sealed class StatsWriter
     /// entiers, bornes en ms calculées par <paramref name="clock"/> pour que les tables à la minute et
     /// les tables par jour couvrent la même période. Les touches des applis exclues n'ont pas de brut :
     /// leurs compteurs sont gardés. Renvoie la période effacée, à rejouer.
+    /// Les jours déjà écrits l'ont été dans le fuseau de l'époque : après un changement de fuseau, les
+    /// bornes calculées ici peuvent couper un ancien jour. L'appelant élargit alors la plage d'un jour de
+    /// chaque côté, sans quoi les frappes en bordure seraient comptées deux fois au rejeu.
     /// </summary>
     public (long FromMs, long ToMs) DeleteDays(int fromDay, int toDay, LocalDayClock clock)
     {
