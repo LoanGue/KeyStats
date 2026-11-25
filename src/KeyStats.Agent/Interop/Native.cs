@@ -35,6 +35,8 @@ internal static unsafe partial class User32
     [LibraryImport("user32.dll", SetLastError = true)]
     public static partial int RegisterRawInputDevices(RAWINPUTDEVICE* devices, uint count, uint size);
     [LibraryImport("user32.dll")]
+    public static partial short GetKeyState(int vk);
+    [LibraryImport("user32.dll")]
     public static partial uint GetRawInputData(nint rawInput, uint command, void* data, uint* size, uint headerSize);
 }
 

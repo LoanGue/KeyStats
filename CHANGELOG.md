@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: analysis thread that drains the event ring into the
+  recorder and writes to `%LOCALAPPDATA%\KeyStats\keystats.db`. The window-title
+  key is protected by DPAPI. `--probe N --db <path>` runs the whole pipeline
+  against a test database.
 - `KeyStats.Core`: recorder for the analysis thread. It writes statistics, the
   encrypted raw block, focus rows with encrypted titles and unobserved periods
   in one transaction, every 60 s or on window change. Before encryption is set
