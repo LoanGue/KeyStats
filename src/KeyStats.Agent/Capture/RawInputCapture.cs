@@ -60,9 +60,10 @@ internal sealed unsafe class RawInputCapture : IDisposable
     public void Stop()
     {
         if (s_current != this) return;
-        // Si le message ne part pas, le thread (d'arrière-plan) mourra avec le processus.
-        if (User32.PostMessage(_hwnd, User32.WM_CLOSE, 0, 0) != 0) _thread.Join(TimeSpan.FromSeconds(5));
-        s_current = null;
+        // Sans arrêt confirmé, la capture reste déclarée active : un nouveau Start est refusé au lieu
+        // de doubler l'inscription. Le thread, d'arrière-plan, meurt au pire avec le processus.
+        if (User32.PostMessage(_hwnd, User32.WM_CLOSE, 0, 0) != 0 && _thread.Join(TimeSpan.FromSeconds(5)))
+            s_current = null;
     }
 
     public void Dispose()
