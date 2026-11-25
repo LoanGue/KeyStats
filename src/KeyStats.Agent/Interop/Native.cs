@@ -14,35 +14,26 @@ internal static unsafe partial class User32
 
     [LibraryImport("user32.dll", EntryPoint = "RegisterClassExW", SetLastError = true)]
     public static partial ushort RegisterClassEx(WNDCLASSEXW* wc);
-
     [LibraryImport("user32.dll", EntryPoint = "UnregisterClassW")]
     public static partial int UnregisterClass(char* className, nint instance);
-
     [LibraryImport("user32.dll", EntryPoint = "CreateWindowExW", SetLastError = true)]
     public static partial nint CreateWindowEx(uint exStyle, char* className, char* windowName, uint style,
         int x, int y, int width, int height, nint parent, nint menu, nint instance, nint param);
 
     [LibraryImport("user32.dll", SetLastError = true)]
     public static partial int DestroyWindow(nint hwnd);
-
     [LibraryImport("user32.dll", EntryPoint = "DefWindowProcW")]
     public static partial nint DefWindowProc(nint hwnd, uint msg, nint wParam, nint lParam);
-
     [LibraryImport("user32.dll", EntryPoint = "GetMessageW")]
     public static partial int GetMessage(MSG* msg, nint hwnd, uint filterMin, uint filterMax);
-
     [LibraryImport("user32.dll", EntryPoint = "DispatchMessageW")]
     public static partial nint DispatchMessage(MSG* msg);
-
     [LibraryImport("user32.dll", EntryPoint = "PostMessageW", SetLastError = true)]
     public static partial int PostMessage(nint hwnd, uint msg, nint wParam, nint lParam);
-
     [LibraryImport("user32.dll")]
     public static partial void PostQuitMessage(int exitCode);
-
     [LibraryImport("user32.dll", SetLastError = true)]
     public static partial int RegisterRawInputDevices(RAWINPUTDEVICE* devices, uint count, uint size);
-
     [LibraryImport("user32.dll")]
     public static partial uint GetRawInputData(nint rawInput, uint command, void* data, uint* size, uint headerSize);
 }
@@ -54,7 +45,6 @@ internal static unsafe partial class Kernel32
 
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW")]
     public static partial nint GetModuleHandle(char* moduleName);
-
     [LibraryImport("kernel32.dll")]
     private static partial nint GetCurrentThread();
 
@@ -113,19 +103,13 @@ internal struct RAWKEYBOARD
     public uint Message, ExtraInformation;
 }
 
-#pragma warning restore CS0649
-
-[StructLayout(LayoutKind.Explicit)]
+/// <summary>Seuls les boutons servent ; le reste (déplacement, molette) est couvert par la taille.</summary>
+[StructLayout(LayoutKind.Explicit, Size = 24)]
 internal struct RAWMOUSE
 {
-    [FieldOffset(0)] public ushort usFlags;
     [FieldOffset(4)] public ushort usButtonFlags;
-    [FieldOffset(6)] public ushort usButtonData;
-    [FieldOffset(8)] public uint ulRawButtons;
-    [FieldOffset(12)] public int lLastX;
-    [FieldOffset(16)] public int lLastY;
-    [FieldOffset(20)] public uint ulExtraInformation;
 }
+#pragma warning restore CS0649
 
 internal struct THREAD_POWER_THROTTLING_STATE
 {
