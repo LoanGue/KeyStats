@@ -64,7 +64,7 @@ public sealed class Recorder
         if (_archive is null || _countersOnly || _focusId is not long focusId) return;
         if (_rawCount > 0 && (_rawCount == _raw.Length || _rawFocusId != focusId) && !Flush(e.Ms))
         {
-            // La base refuse d'écrire : on perd ce brut plutôt que de grossir sans limite.
+            // La base refuse d'écrire : ce brut est perdu (tampon plein, ou fenêtre précédente sans place à part).
             _rawDropped += _rawCount;
             ClearRaw();
         }
@@ -101,7 +101,8 @@ public sealed class Recorder
             // Même après une exception imprévue, l'analyse suit les drapeaux de la nouvelle fenêtre.
             Analyzer.SetFocus(ok ? info : unknown);
         }
-        _focusId = focusId;
+        // Commit raté : l'id désigne une ligne annulée, le brut ne doit pas s'y rattacher.
+        _focusId = ok ? focusId : null;
         _countersOnly = change.Flags.CountersOnly();
     }
 
@@ -109,8 +110,6 @@ public sealed class Recorder
     public void Tick(long nowMs)
     {
         Analyzer.Tick(nowMs);
-        // Horloge revenue en arrière : on repart d'ici au lieu d'écrire à chaque Tick.
-        if (nowMs < _lastWriteMs) _lastWriteMs = nowMs;
         if (nowMs - _lastWriteMs >= FlushIntervalMs) Flush(nowMs);
     }
 
