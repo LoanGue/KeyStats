@@ -71,6 +71,8 @@ public static class RawCodec
 
     internal static void EncodePlain(ReadOnlySpan<InputEvent> events, long startMs, ByteWriter w)
     {
+        foreach (ref readonly var e in events)
+            if (e.Kind == EventKind.Focus) throw new ArgumentException("Un marqueur de fenêtre n'entre pas dans le brut.", nameof(events));
         w.WriteVarint((ulong)events.Length);
 
         long prev = startMs;

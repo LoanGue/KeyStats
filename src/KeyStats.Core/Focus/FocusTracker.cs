@@ -4,9 +4,13 @@ namespace KeyStats.Core.Focus;
 
 /// <summary>
 /// Fenêtre au premier plan telle que l'agent la lit. Le titre ne vit qu'en mémoire : il n'est écrit
-/// sur disque que chiffré.
+/// sur disque que chiffré. <see cref="Exe"/> vide : exécutable inconnu, traité comme une appli exclue.
 /// </summary>
-public readonly record struct ForegroundWindow(long Ms, long Window, int ProcessId, string Exe, string Title, bool Elevated);
+public readonly record struct ForegroundWindow(long Ms, long Window, int ProcessId, string Exe, string Title, bool Elevated)
+{
+    /// <summary>Sans le titre : une trace ne doit pas révéler ce qui est à l'écran.</summary>
+    public override string ToString() => $"{Ms} {ProcessId} {Exe}";
+}
 
 /// <summary>Changement de fenêtre ou de titre, dans l'ordre des frappes. <see cref="Title"/> est nul pour une appli exclue.</summary>
 public sealed class FocusChange
@@ -26,7 +30,8 @@ public sealed class FocusChange
 /// <summary>
 /// Transforme les lectures successives de la fenêtre au premier plan en changements : nouvelle
 /// fenêtre, nouveau titre, appli exclue, fenêtre administrateur. Une lecture identique à la
-/// précédente ne produit rien. Pour une appli exclue, ni le titre ni ses changements ne sont gardés.
+/// précédente ne produit rien. Pour une appli exclue, ou dont l'exécutable est inconnu, ni le titre
+/// ni ses changements ne sont gardés.
 /// </summary>
 public sealed class FocusTracker(ExclusionList exclusions)
 {
@@ -40,7 +45,7 @@ public sealed class FocusTracker(ExclusionList exclusions)
     {
         bool newWindow = !_has || w.Window != _window || w.ProcessId != _processId;
         var flags = newWindow ? FocusState.NewWindow : FocusState.None;
-        if (exclusions.Contains(w.Exe)) flags |= FocusState.Excluded;
+        if (IsExcluded(w.Exe)) flags |= FocusState.Excluded;
         if (w.Elevated) flags |= FocusState.Elevated;
         string? title = (flags & FocusState.Excluded) != 0 ? null : w.Title;
         var stable = _flags & ~FocusState.NewWindow;
@@ -53,4 +58,7 @@ public sealed class FocusTracker(ExclusionList exclusions)
         _flags = flags;
         return new FocusChange { Ms = w.Ms, Exe = w.Exe, Title = title, Flags = flags };
     }
+
+    /// <summary>Exclue, ou inconnue : dans le doute, on ne garde que les compteurs.</summary>
+    public bool IsExcluded(string exe) => exe.Length == 0 || exclusions.Contains(exe);
 }
