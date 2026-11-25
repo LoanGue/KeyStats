@@ -21,7 +21,7 @@ Analyse continue de la frappe clavier sous Windows (AZERTY), avec un agent perma
 4. **Compatible NativeAOT** : pas de réflexion, JSON par `JsonSerializerContext` généré, pas de `dynamic`. Aucun avertissement de trimming/AOT accepté dans Core et l'agent.
 5. **Chemin chaud sans allocation** : du callback Raw Input jusqu'à l'analyse, on manipule des structs dans des tampons préalloués.
 6. **Aucun port réseau.** Le tableau de bord sert tout via `WebResourceRequested`. Aucune dépendance chargée depuis un CDN.
-7. **Frappes injectées ignorées** (`hDevice == NULL` pour le clavier). Applis exclues (gestionnaires de mots de passe, bureau à distance) : seulement des compteurs, ni brut ni analyse de texte.
+7. **Frappes injectées ignorées** (`hDevice == NULL` pour le clavier). Applis exclues (gestionnaires de mots de passe, bureau à distance) et champs de mot de passe détectés (`FocusState.Secret`) : seulement le nombre de touches, ni brut, ni `key_minute`, ni analyse de texte.
 8. **Horodatages en UTC, en millisecondes.** Les statistiques par jour sont rangées dans le jour local du fuseau en vigueur au moment de la frappe (`LocalDayClock`), changements d'heure compris. L'agent appelle `LocalDayClock.SetZone` sur `WM_TIMECHANGE`, après `TimeZoneInfo.ClearCachedData()`. Après un changement de fuseau, seul le recalcul depuis le brut remet les anciens jours dans le nouveau fuseau. Migrations du schéma par `PRAGMA user_version`.
 
 ## Emplacements à l'exécution

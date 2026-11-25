@@ -273,6 +273,45 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
+    public void Champ_de_mot_de_passe_ne_compte_que_les_touches_puis_reprend_l_analyse()
+    {
+        var t = new Typist().Type(Prose);
+        var stats = new StatsAccumulator(new LocalDayClock(TimeZoneInfo.Utc));
+        var analyzer = new Analyzer(stats);
+        analyzer.SetFocus(new FocusInfo(Typist.Start - 1000, 1, 0, null, FocusState.NewWindow));
+        foreach (var e in t.Events) analyzer.Process(e);
+
+        int from = t.Events.Count;
+        analyzer.SetFocus(new FocusInfo(t.Ms, 1, 0, null, FocusState.Secret)); // clôt la session en cours
+        int chars = stats.Chars.Values.Sum(), keys = stats.KeyMinutes.Count;
+        Assert.True(chars > 0);
+        t.Type("kiwi");
+        for (int i = from; i < t.Events.Count; i++) analyzer.Process(t.Events[i]);
+
+        Assert.False(analyzer.InSession);
+        Assert.Equal(chars, stats.Chars.Values.Sum());
+        Assert.Equal(keys, stats.KeyMinutes.Count);
+        Assert.Equal(4, Metric(stats, DayMetric.ExcludedKeys));
+
+        from = t.Events.Count;
+        analyzer.SetFocus(new FocusInfo(t.Ms, 1, 0, null, FocusState.None));
+        t.Type(" kiwi");
+        for (int i = from; i < t.Events.Count; i++) analyzer.Process(t.Events[i]);
+        analyzer.EndAll();
+
+        Assert.True(stats.KeyMinutes.Count > keys);
+        Assert.Equal(4, Metric(stats, DayMetric.ExcludedKeys));
+    }
+
+    [Theory]
+    [InlineData(FocusState.None, false)]
+    [InlineData(FocusState.NewWindow | FocusState.Elevated, false)]
+    [InlineData(FocusState.Excluded, true)]
+    [InlineData(FocusState.NewWindow | FocusState.Secret, true)]
+    public void Compteurs_seuls_pour_appli_exclue_et_champ_secret(FocusState state, bool countersOnly) =>
+        Assert.Equal(countersOnly, state.CountersOnly());
+
+    [Fact]
     public void Changement_de_fenetre_termine_la_session_et_les_corrections()
     {
         var t = new Typist().Type(Prose);

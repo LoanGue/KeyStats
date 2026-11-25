@@ -214,6 +214,8 @@ public enum PauseReason
     Excluded = 4,
     /// <summary>Agent arrêté (trou entre deux exécutions).</summary>
     Stopped = 5,
+    /// <summary>Champ de mot de passe : seul le nombre de touches est gardé.</summary>
+    Secret = 6,
 }
 
 /// <summary>Façon dont la clé privée est protégée (colonne <c>key_store.kind</c>).</summary>

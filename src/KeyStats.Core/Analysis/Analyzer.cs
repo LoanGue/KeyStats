@@ -63,7 +63,7 @@ public sealed class Analyzer
     {
         CheckGap(f.Ms);
         bool newWindow = (f.Flags & FocusState.NewWindow) != 0 || f.AppId != _appId;
-        bool excluded = (f.Flags & FocusState.Excluded) != 0;
+        bool excluded = f.Flags.CountersOnly();
         if (newWindow)
         {
             EndSession();
