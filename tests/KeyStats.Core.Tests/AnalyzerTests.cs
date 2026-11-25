@@ -1,5 +1,6 @@
 using KeyStats.Core.Analysis;
 using KeyStats.Core.Input;
+using KeyStats.Core.Text;
 
 namespace KeyStats.Core.Tests;
 
@@ -283,14 +284,13 @@ public sealed class AnalyzerTests
 
         int from = t.Events.Count;
         analyzer.SetFocus(new FocusInfo(t.Ms, 1, 0, null, FocusState.Secret)); // clôt la session en cours
-        int chars = stats.Chars.Values.Sum(), keys = stats.KeyMinutes.Count;
-        Assert.True(chars > 0);
+        var before = TextFootprint(stats);
+        Assert.True(before.Chars > 0);
         t.Type("kiwi");
         for (int i = from; i < t.Events.Count; i++) analyzer.Process(t.Events[i]);
 
         Assert.False(analyzer.InSession);
-        Assert.Equal(chars, stats.Chars.Values.Sum());
-        Assert.Equal(keys, stats.KeyMinutes.Count);
+        Assert.Equal(before, TextFootprint(stats));
         Assert.Equal(4, Metric(stats, DayMetric.ExcludedKeys));
 
         from = t.Events.Count;
@@ -299,8 +299,117 @@ public sealed class AnalyzerTests
         for (int i = from; i < t.Events.Count; i++) analyzer.Process(t.Events[i]);
         analyzer.EndAll();
 
-        Assert.True(stats.KeyMinutes.Count > keys);
+        Assert.True(TextFootprint(stats).Keys > before.Keys);
         Assert.Equal(4, Metric(stats, DayMetric.ExcludedKeys));
+    }
+
+    /// <summary>Tout ce qu'une frappe peut laisser hors des compteurs de touches exclues.</summary>
+    private static (int Keys, int Chars, int Bigrams, int Shortcuts, int Sessions) TextFootprint(StatsAccumulator stats) => (
+        stats.KeyMinutes.Values.Sum(kc => kc.Presses + kc.Repeats),
+        stats.Chars.Values.Sum(),
+        stats.Bigrams.Count,
+        stats.Shortcuts.Values.Sum(),
+        stats.PendingSessions.Count);
+
+    private static (Analyzer Analyzer, StatsAccumulator Stats) SecretField()
+    {
+        var stats = new StatsAccumulator(new LocalDayClock(TimeZoneInfo.Utc));
+        var analyzer = new Analyzer(stats);
+        analyzer.SetFocus(new FocusInfo(Typist.Start - 1000, 1, 0, null, FocusState.NewWindow | FocusState.Secret));
+        return (analyzer, stats);
+    }
+
+    private static ushort KeyOf(char c)
+    {
+        Assert.True(LayoutTable.FrenchAzerty.TryFindKey(c, out ushort key, out _));
+        return key;
+    }
+
+    [Fact]
+    public void Touche_tenue_dans_le_champ_secret_ne_fuit_pas_apres_la_sortie()
+    {
+        var (analyzer, stats) = SecretField();
+        long t = Typist.Start;
+        ushort k = KeyOf('k');
+        analyzer.Process(new InputEvent(t, EventKind.KeyDown, k, 1));
+        analyzer.SetFocus(new FocusInfo(t + 100, 1, 0, null, FocusState.None));
+        for (int i = 0; i < 20; i++) analyzer.Process(new InputEvent(t + 500 + i * 33, EventKind.KeyDown, k, 1));
+        analyzer.Process(new InputEvent(t + 1200, EventKind.KeyUp, k, 1));
+        analyzer.EndAll();
+
+        Assert.Equal((0, 0, 0, 0, 0), TextFootprint(stats));
+        Assert.Equal(1, Metric(stats, DayMetric.ExcludedKeys));
+    }
+
+    [Fact]
+    public void Touche_tenue_avant_le_champ_secret_n_y_compte_pas_ses_repetitions()
+    {
+        var stats = new StatsAccumulator(new LocalDayClock(TimeZoneInfo.Utc));
+        var analyzer = new Analyzer(stats);
+        analyzer.SetFocus(new FocusInfo(Typist.Start - 1000, 1, 0, null, FocusState.NewWindow));
+        long t = Typist.Start;
+        ushort k = KeyOf('k');
+        analyzer.Process(new InputEvent(t, EventKind.KeyDown, k, 1));
+        analyzer.SetFocus(new FocusInfo(t + 100, 1, 0, null, FocusState.Secret));
+        for (int i = 0; i < 10; i++) analyzer.Process(new InputEvent(t + 500 + i * 33, EventKind.KeyDown, k, 1));
+        analyzer.Process(new InputEvent(t + 900, EventKind.KeyUp, k, 1));
+
+        Assert.Equal(0, Metric(stats, DayMetric.ExcludedKeys));
+    }
+
+    [Fact]
+    public void Ctrl_en_attente_dans_le_champ_secret_reste_dans_le_champ_secret()
+    {
+        var (analyzer, stats) = SecretField();
+        long t = Typist.Start;
+        analyzer.Process(new InputEvent(t, EventKind.KeyDown, KeyCode.LeftCtrl, 1));
+        analyzer.SetFocus(new FocusInfo(t + 5, 1, 0, null, FocusState.None));
+        analyzer.Process(new InputEvent(t + 50, EventKind.KeyUp, KeyCode.LeftCtrl, 1));
+        ushort c = KeyOf('c');
+        analyzer.Process(new InputEvent(t + 400, EventKind.KeyDown, c, 1));
+        analyzer.Process(new InputEvent(t + 480, EventKind.KeyUp, c, 1));
+        analyzer.EndAll();
+
+        Assert.DoesNotContain(stats.KeyMinutes.Keys, km => km.Key == KeyCode.LeftCtrl);
+        Assert.Empty(stats.Shortcuts);
+        Assert.Equal(1, Metric(stats, DayMetric.ExcludedKeys));
+    }
+
+    [Fact]
+    public void Code_alt_commence_dans_le_champ_secret_ne_produit_rien_apres_la_sortie()
+    {
+        var (analyzer, stats) = SecretField();
+        long t = Typist.Start;
+        analyzer.Process(new InputEvent(t, EventKind.KeyDown, KeyCode.LeftAlt, 1));
+        ushort[] digits = [KeyCode.Num0, KeyCode.Num1, KeyCode.Num5, KeyCode.Num6];
+        for (int i = 0; i < digits.Length; i++)
+        {
+            analyzer.Process(new InputEvent(t + 100 + i * 200, EventKind.KeyDown, digits[i], 1));
+            analyzer.Process(new InputEvent(t + 180 + i * 200, EventKind.KeyUp, digits[i], 1));
+        }
+        analyzer.SetFocus(new FocusInfo(t + 1000, 1, 0, null, FocusState.None));
+        analyzer.Process(new InputEvent(t + 1100, EventKind.KeyUp, KeyCode.LeftAlt, 1));
+        analyzer.EndAll();
+
+        Assert.Equal(0, CharCount(stats, 'œ'));
+        Assert.Equal((0, 0, 0, 0, 0), TextFootprint(stats));
+    }
+
+    [Fact]
+    public void Touche_morte_du_champ_secret_ne_compose_pas_la_lettre_suivante()
+    {
+        var (analyzer, stats) = SecretField();
+        var t = new Typist();
+        t.Key(0x1A); // ^ mort
+        foreach (var e in t.Events) analyzer.Process(e);
+        int from = t.Events.Count;
+        analyzer.SetFocus(new FocusInfo(t.Ms, 1, 0, null, FocusState.None));
+        t.Type("e");
+        for (int i = from; i < t.Events.Count; i++) analyzer.Process(t.Events[i]);
+        analyzer.EndAll();
+
+        Assert.Equal(0, CharCount(stats, 'ê'));
+        Assert.Equal(1, Metric(stats, DayMetric.ExcludedKeys));
     }
 
     [Theory]
