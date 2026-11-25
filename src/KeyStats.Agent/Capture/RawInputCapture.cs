@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using KeyStats.Agent.Interop;
 using KeyStats.Core.Input;
@@ -8,18 +9,20 @@ namespace KeyStats.Agent.Capture;
 /// <summary>Compteurs de la capture, lus après <see cref="RawInputCapture.Stop"/>.</summary>
 internal struct CaptureCounters
 {
-    public long KeyboardMessages, MouseMessages, Injected, Ignored, ReadErrors, Written, Devices;
+    public long KeyboardMessages, MouseMessages, Injected, Ignored, ReadErrors, CallbackErrors, Written, Devices;
 }
 
 /// <summary>
 /// Thread de capture : une fenêtre de messages reçoit le clavier et la souris par Raw Input en mode
 /// écoute (<c>RIDEV_INPUTSINK</c>), hors du trajet des touches. Chaque message devient un ou plusieurs
 /// <see cref="InputEvent"/> poussés dans la file, sans allocation. Une seule capture par processus.
+/// Limite : les frappes destinées à une fenêtre lancée en administrateur ne sont pas reçues.
 /// </summary>
 internal sealed unsafe class RawInputCapture : IDisposable
 {
     private const string ClassName = "KeyStats.RawInput";
     private const int BufferSize = 64; // en-tête 24 o + RAWMOUSE 24 o ou RAWKEYBOARD 16 o
+    private const int ERROR_GEN_FAILURE = 31; // repli si Windows ne donne pas de code
     private static RawInputCapture? s_current;
 
     private readonly EventRing _ring;
@@ -46,7 +49,15 @@ internal sealed unsafe class RawInputCapture : IDisposable
     {
         if (Interlocked.CompareExchange(ref s_current, this, null) is not null)
             throw new InvalidOperationException("Une capture tourne déjà.");
-        _thread.Start();
+        try
+        {
+            _thread.Start();
+        }
+        catch
+        {
+            s_current = null;
+            throw;
+        }
         _ready.Wait();
         if (_startError == 0) return;
         _thread.Join();
@@ -57,8 +68,8 @@ internal sealed unsafe class RawInputCapture : IDisposable
     public void Stop()
     {
         if (s_current != this) return;
-        _ = User32.PostMessage(_hwnd, User32.WM_CLOSE, 0, 0);
-        _thread.Join();
+        // Si le message ne part pas, le thread (d'arrière-plan) mourra avec le processus.
+        if (User32.PostMessage(_hwnd, User32.WM_CLOSE, 0, 0) != 0) _thread.Join(TimeSpan.FromSeconds(5));
         s_current = null;
     }
 
@@ -76,7 +87,7 @@ internal sealed unsafe class RawInputCapture : IDisposable
         {
             if (!Open(cls, instance))
             {
-                _startError = Marshal.GetLastPInvokeError();
+                _startError = Marshal.GetLastPInvokeError() is not 0 and var code ? code : ERROR_GEN_FAILURE;
                 if (_hwnd != 0) _ = User32.DestroyWindow(_hwnd);
                 _ = User32.UnregisterClass(cls, instance);
                 _ready.Set();
@@ -92,6 +103,7 @@ internal sealed unsafe class RawInputCapture : IDisposable
 
     private bool Open(char* cls, nint instance)
     {
+        Debug.Assert(sizeof(RAWINPUTHEADER) == 24 && sizeof(RAWKEYBOARD) == 16 && sizeof(RAWMOUSE) == 24);
         var wc = new WNDCLASSEXW
         {
             cbSize = (uint)sizeof(WNDCLASSEXW),
@@ -117,7 +129,18 @@ internal sealed unsafe class RawInputCapture : IDisposable
     [UnmanagedCallersOnly]
     private static nint WndProc(nint hwnd, uint msg, nint wParam, nint lParam)
     {
-        if (msg == User32.WM_INPUT) s_current?.OnInput(lParam);
+        if (msg == User32.WM_INPUT && s_current is { } capture)
+        {
+            // Une exception qui sortirait d'ici arrêterait le processus.
+            try
+            {
+                capture.OnInput(lParam);
+            }
+            catch (Exception)
+            {
+                capture._counters.CallbackErrors++;
+            }
+        }
         else if (msg == User32.WM_DESTROY)
         {
             User32.PostQuitMessage(0);

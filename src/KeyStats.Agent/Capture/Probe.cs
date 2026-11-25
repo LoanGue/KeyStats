@@ -34,7 +34,7 @@ internal static class Probe
         Console.Out.WriteLine($"""
             seconds={seconds}
             keyboard_messages={c.KeyboardMessages} mouse_messages={c.MouseMessages}
-            injected_dropped={c.Injected} ignored={c.Ignored} read_errors={c.ReadErrors}
+            injected_dropped={c.Injected} ignored={c.Ignored} read_errors={c.ReadErrors} callback_errors={c.CallbackErrors}
             written={c.Written} ring_dropped={ring.Dropped} devices={c.Devices}
             key_down={tally.KeyDown} key_up={tally.KeyUp} mouse_down={tally.MouseDown} mouse_up={tally.MouseUp}
             non_monotonic={tally.NonMonotonic}
