@@ -33,6 +33,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     private readonly PauseSources _pauses;
     private readonly AnalysisLoop _loop;
     private readonly TrayController _tray;
+    private readonly BackupScheduler _backup;
     private readonly string _dbPath;
     private ControlBridge? _control;
     private TimeZoneInfo _zone = TimeZoneInfo.Local;
@@ -49,6 +50,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         _pauses = new PauseSources(_commands);
         _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t));
         _loop = new AnalysisLoop(new RingPump(ring, focus, recorder, _commands), _capture.Clock, _signal);
+        _backup = new BackupScheduler(dbPath, () => Volatile.Read(ref _zone));
     }
 
     /// <summary>Tourne jusqu'à la fin de la session Windows.</summary>
@@ -57,6 +59,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         using var host = new AgentHost(dbPath);
         host._loop.Start();
         host._capture.Start();
+        host._backup.Start();
         new SessionWindow(host).Run();
         return host.Shutdown() ? 0 : 1;
     }
@@ -196,6 +199,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         _shutDown = true;
         // D'abord le tube : plus aucune commande ne doit arriver pendant l'arrêt.
         _control?.Dispose();
+        _backup.Dispose();
         bool captureStopped = _capture.Stop(CaptureStopTimeout);
         bool stopped = _loop.Stop(StopTimeout);
         if (stopped) _storage.Dispose();
