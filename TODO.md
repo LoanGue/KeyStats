@@ -8,7 +8,7 @@ Build plan for KeyStats. One issue and one PR per step.
 - [x] 4. Agent: Raw Input capture, key-state resets, foreground window and title, batched writes (#6)
   - [x] Notification icon with stackable 5-minute snooze (#41)
   - [x] Single instance, named pipe, settings, nightly backup (#54)
-- [ ] 5. Live wpm/cpm counter, bottom right
+- [x] 5. Live wpm/cpm counter, bottom right (#55)
 - [ ] 6. Dashboard: WebView2 host and JSON API, Windows Hello and setup wizard
   - [ ] Pages and charts, AZERTY heatmap
   - [ ] Millisecond view and history recalculation
