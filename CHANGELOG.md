@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: application manifest declaring per-monitor DPI awareness
+  (PerMonitorV2), so the live counter is drawn at each screen's scale, plus the
+  usual `asInvoker` level and Windows 10 compatibility entries.
 - `KeyStats.Agent`: live counter bottom right of the active window's screen,
   above the taskbar. Layered window drawn with per-pixel alpha, click-through,
   never activated, hidden from Alt+Tab and from screen capture. Its timer runs
