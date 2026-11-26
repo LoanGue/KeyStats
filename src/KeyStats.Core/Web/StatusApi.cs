@@ -24,4 +24,6 @@ public static class StatusApi
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(DashboardStatus))]
+[JsonSerializable(typeof(KeyState))]
+[JsonSerializable(typeof(UnlockRequest))]
 public sealed partial class WebJson : JsonSerializerContext;
