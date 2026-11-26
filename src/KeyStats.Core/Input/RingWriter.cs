@@ -13,7 +13,10 @@ public sealed class RingWriter(EventRing ring, Func<LockKeys> readLocks)
 
     public bool ResetOwed => _resetOwed;
 
-    /// <summary>Événement perdu ailleurs (marqueur de fenêtre sans place) : la remise à zéro est due.</summary>
+    /// <summary>
+    /// Événement perdu ailleurs (marqueur de fenêtre sans place), ou relâchement peut-être manqué
+    /// (réveil, déverrouillage) : la remise à zéro est due.
+    /// </summary>
     public void MarkLost() => _resetOwed = true;
 
     public bool Write(in InputEvent e)
