@@ -178,6 +178,37 @@ public sealed class RecorderCommandsTests
             r.Pump.Tick(end + 10 + RingPump.TickLagMs);
         Assert.Equal(1, r.Pump.Counters.Errors);
         Assert.Equal(1, r.Commands.Applied);
+        Assert.Equal(1, r.Commands.Failed);
+    }
+
+    [Fact]
+    public void Flush_sans_ecriture_compte_en_echec()
+    {
+        using var tmp = new TempDb();
+        var r = Setup(tmp);
+        var (end, _) = Write(r.Ring, Text, Typist.Start + 10);
+        r.Pump.Drain();
+        // L'écriture échoue sans lever : le Recorder garde le lot et rend faux.
+        tmp.Db.Exec("CREATE TRIGGER refus BEFORE INSERT ON minute_total BEGIN SELECT RAISE(ABORT, 'refus'); END");
+        r.Commands.Post(new RecorderCommand(end + 10, CommandKind.Flush));
+        r.Pump.Tick(end + 10 + RingPump.TickLagMs);
+        Assert.Equal(0, r.Pump.Counters.Errors);
+        Assert.Equal(1, r.Commands.Applied);
+        Assert.Equal(1, r.Commands.Failed);
+    }
+
+    [Fact]
+    public void Flush_reussi_pas_compte_en_echec()
+    {
+        using var tmp = new TempDb();
+        var r = Setup(tmp);
+        var (end, _) = Write(r.Ring, Text, Typist.Start + 10);
+        r.Pump.Drain();
+        r.Commands.Post(new RecorderCommand(end + 10, CommandKind.Flush));
+        r.Commands.Post(new RecorderCommand(end + 20, CommandKind.Pause, PauseReason.Snooze));
+        r.Pump.Tick(end + 20 + RingPump.TickLagMs);
+        Assert.Equal(2, r.Commands.Applied);
+        Assert.Equal(0, r.Commands.Failed);
     }
 
     [Fact]

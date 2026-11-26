@@ -64,9 +64,10 @@ public sealed class RingPump(EventRing ring, FocusChannel focus, Recorder record
         while (commands.TryTake(untilMs, out var c))
         {
             _lastMs = Math.Max(_lastMs, c.Ms);
+            bool ok = false;
             try
             {
-                Apply(c, _lastMs);
+                ok = Apply(c, _lastMs);
             }
             catch (Exception)
             {
@@ -74,12 +75,13 @@ public sealed class RingPump(EventRing ring, FocusChannel focus, Recorder record
             }
             finally
             {
-                commands.MarkApplied();
+                commands.MarkApplied(ok);
             }
         }
     }
 
-    private void Apply(in RecorderCommand c, long ms)
+    /// <returns>Faux si l'écriture demandée par un <c>Flush</c> n'a pas abouti.</returns>
+    private bool Apply(in RecorderCommand c, long ms)
     {
         switch (c.Kind)
         {
@@ -87,8 +89,9 @@ public sealed class RingPump(EventRing ring, FocusChannel focus, Recorder record
             case CommandKind.Resume: recorder.EndPause(ms); break;
             case CommandKind.DropEpoch: recorder.DropEpoch(ms); break;
             case CommandKind.SetZone: recorder.SetZone(c.Zone!, ms); break;
-            case CommandKind.Flush: recorder.Flush(ms); break;
+            case CommandKind.Flush: return recorder.Flush(ms);
         }
+        return true;
     }
 
     /// <summary>Jamais avant le dernier événement vu, pour que le temps ne recule pas dans le Recorder.</summary>
