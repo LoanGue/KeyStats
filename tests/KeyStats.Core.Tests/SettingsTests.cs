@@ -111,6 +111,52 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal(json, File.ReadAllText(Path_));
     }
 
+    public static TheoryData<string, int, int> Bornes()
+    {
+        var data = new TheoryData<string, int, int>();
+        foreach (var b in SettingsStore.IntBounds) data.Add(b.Key, b.Min, b.Max);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(Bornes))]
+    public void Seuil_entier_accepte_aux_bornes_refuse_au_dela(string key, int min, int max)
+    {
+        // Écarts compatibles avec toutes les valeurs testées ; la clé testée les remplace.
+        string Json(int v)
+        {
+            var fields = new Dictionary<string, int> { ["sessionGapMs"] = 600_000, ["activeGapMs"] = 1, [key] = v };
+            return "{ \"analysis\": { " + string.Join(", ", fields.Select(f => $"\"{f.Key}\": {f.Value}")) + " } }";
+        }
+        Assert.Equal(SettingsStatus.Loaded, LoadText(Json(min)).Status);
+        Assert.Equal(SettingsStatus.Loaded, LoadText(Json(max)).Status);
+        Assert.Equal(SettingsStatus.Invalid, LoadText(Json(min - 1)).Status);
+        Assert.Equal(SettingsStatus.Invalid, LoadText(Json(max + 1)).Status);
+    }
+
+    [Fact]
+    public void Seuils_par_defaut_dans_les_bornes()
+    {
+        // Les 16 seuils entiers de AnalysisSettings, chacun borné.
+        Assert.Equal(16, SettingsStore.IntBounds.Length);
+        var defaults = Analysis.AnalysisSettings.Default;
+        Assert.All(SettingsStore.IntBounds, b => Assert.InRange(b.Get(defaults), b.Min, b.Max));
+    }
+
+    [Fact]
+    public void Chemin_vide_refuse_sans_lever()
+    {
+        Assert.Equal(SettingsStatus.Invalid, SettingsStore.Load("").Status);
+    }
+
+    [Fact]
+    public void Ecriture_echouee_ne_laisse_pas_de_temporaire()
+    {
+        Directory.CreateDirectory(Path_);
+        Assert.ThrowsAny<Exception>(() => SettingsStore.Save(Path_, KeyStatsSettings.Default));
+        Assert.False(File.Exists(Path_ + ".tmp"));
+    }
+
     [Fact]
     public void Fichier_trop_gros_refuse()
     {

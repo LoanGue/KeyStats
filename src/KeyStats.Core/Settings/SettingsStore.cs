@@ -25,7 +25,7 @@ public static class SettingsStore
     /// <summary>À côté de la base.</summary>
     public static string PathFor(string dbPath) => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(dbPath))!, FileName);
 
-    /// <summary>Ne lève jamais : un fichier refusé donne les valeurs par défaut, sans être réécrit.</summary>
+    /// <summary>Ne lève jamais, chemin vide compris : un fichier refusé donne les valeurs par défaut, sans être réécrit.</summary>
     public static SettingsLoad Load(string path)
     {
         try
@@ -36,19 +36,30 @@ public static class SettingsStore
             var settings = JsonSerializer.Deserialize(File.ReadAllBytes(path), SettingsJson.Default.KeyStatsSettings);
             return settings is not null && IsValid(settings) ? new(settings, SettingsStatus.Loaded) : Invalid();
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
         {
             return Invalid();
         }
     }
 
-    /// <summary>Écrit dans un fichier temporaire puis le met à la place : un lecteur voit l'ancien fichier ou le nouveau, jamais un fichier tronqué.</summary>
+    /// <summary>
+    /// Écrit dans un fichier temporaire puis le met à la place : un lecteur voit l'ancien fichier ou le nouveau, jamais un fichier tronqué.
+    /// Un seul écrivain, le tableau de bord. En cas d'échec, le temporaire est supprimé.
+    /// </summary>
     public static void Save(string path, KeyStatsSettings settings)
     {
         if (!IsValid(settings)) throw new ArgumentException("Réglages hors bornes.", nameof(settings));
         string tmp = path + ".tmp";
-        File.WriteAllBytes(tmp, JsonSerializer.SerializeToUtf8Bytes(settings, SettingsJson.Default.KeyStatsSettings));
-        File.Move(tmp, path, overwrite: true);
+        try
+        {
+            File.WriteAllBytes(tmp, JsonSerializer.SerializeToUtf8Bytes(settings, SettingsJson.Default.KeyStatsSettings));
+            File.Move(tmp, path, overwrite: true);
+        }
+        catch
+        {
+            File.Delete(tmp);
+            throw;
+        }
     }
 
     private static SettingsLoad Invalid() => new(KeyStatsSettings.Default, SettingsStatus.Invalid);
@@ -60,19 +71,35 @@ public static class SettingsStore
         && (s.ExcludedApps is null || s.ExcludedApps.All(e => !string.IsNullOrWhiteSpace(e)))
         && (s.BackupFolder is null || Path.IsPathFullyQualified(s.BackupFolder));
 
+    /// <summary>
+    /// Bornes incluses de chaque seuil entier, reprises dans <c>docs/settings.md</c>. Les bornes hautes tiennent
+    /// les tableaux dimensionnés par un seuil (correction) et les conversions en <c>short</c> (latences) dans leurs limites.
+    /// </summary>
+    internal static readonly (string Key, Func<AnalysisSettings, int> Get, int Min, int Max)[] IntBounds =
+    [
+        ("sessionGapMs", a => a.SessionGapMs, 1, 600_000),
+        ("activeGapMs", a => a.ActiveGapMs, 1, 600_000),
+        ("minNetChars", a => a.MinNetChars, 0, 100_000),
+        ("minSpaces", a => a.MinSpaces, 0, 100_000),
+        ("minDurationMs", a => a.MinDurationMs, 1, 3_600_000),
+        ("minDistinctChars", a => a.MinDistinctChars, 0, 1_000),
+        ("peakWindowMs", a => a.PeakWindowMs, 1, 600_000),
+        ("holdCapMs", a => a.HoldCapMs, 1, 10_000),
+        ("bigramMaxLatencyMs", a => a.BigramMaxLatencyMs, 1, 10_000),
+        ("fakeCtrlMs", a => a.FakeCtrlMs, 0, 100),
+        ("maxCorrectionLength", a => a.MaxCorrectionLength, 1, CorrectionAnalyzer.BufferSize / 2),
+        ("maxSessionChars", a => a.MaxSessionChars, 1, 100_000),
+        ("liveShowMinChars", a => a.LiveShowMinChars, 0, 1_000),
+        ("liveShowMinSpaces", a => a.LiveShowMinSpaces, 0, 1_000),
+        ("liveShowWindowMs", a => a.LiveShowWindowMs, 1, 60_000),
+        ("liveSpeedWindowMs", a => a.LiveSpeedWindowMs, 1, 60_000),
+    ];
+
     private static bool IsValid(AnalysisSettings a) =>
-        Positive(a.SessionGapMs, a.ActiveGapMs, a.MinDurationMs, a.PeakWindowMs, a.HoldCapMs, a.BigramMaxLatencyMs,
-            a.MaxCorrectionLength, a.MaxSessionChars, a.LiveShowWindowMs, a.LiveSpeedWindowMs)
+        IntBounds.All(b => b.Get(a) >= b.Min && b.Get(a) <= b.Max)
         && a.ActiveGapMs <= a.SessionGapMs
-        && a is { MinNetChars: >= 0, MinSpaces: >= 0, MinDistinctChars: >= 0, FakeCtrlMs: >= 0, LiveShowMinChars: >= 0, LiveShowMinSpaces: >= 0 }
         && Ratio(a.MinTextRatio) && Ratio(a.MaxRepeatRatio) && Ratio(a.ProseMaxSymbolRatio) && Ratio(a.CodeMinSymbolRatio)
         && a.ProseMaxSymbolRatio <= a.CodeMinSymbolRatio;
-
-    private static bool Positive(params ReadOnlySpan<int> values)
-    {
-        foreach (int v in values) if (v <= 0) return false;
-        return true;
-    }
 
     private static bool Ratio(double r) => r is >= 0 and <= 1;
 }
