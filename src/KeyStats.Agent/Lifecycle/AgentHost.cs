@@ -6,6 +6,7 @@ using KeyStats.Core.Control;
 using KeyStats.Core.Focus;
 using KeyStats.Core.Input;
 using KeyStats.Core.Recording;
+using KeyStats.Core.Settings;
 using KeyStats.Core.Storage;
 
 namespace KeyStats.Agent.Lifecycle;
@@ -42,15 +43,17 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     private AgentHost(string dbPath)
     {
         _dbPath = dbPath;
+        // Un fichier refusé donne les valeurs par défaut : l'agent démarre quand même.
+        var settings = SettingsStore.Load(SettingsStore.PathFor(dbPath)).Settings;
         var ring = new EventRing(4096);
         var focus = new FocusChannel();
-        _capture = new RawInputCapture(ring, _signal, focus);
+        _capture = new RawInputCapture(ring, _signal, focus, settings.Exclusions());
         _storage = AgentStorage.Open(dbPath);
-        var recorder = new Recorder(_storage.Db, _storage.Archive, new LocalDayClock(_zone), _capture.Clock.PeekMs());
+        var recorder = new Recorder(_storage.Db, _storage.Archive, new LocalDayClock(_zone), _capture.Clock.PeekMs(), settings.Analysis);
         _pauses = new PauseSources(_commands);
         _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t));
         _loop = new AnalysisLoop(new RingPump(ring, focus, recorder, _commands), _capture.Clock, _signal);
-        _backup = new BackupScheduler(dbPath, () => Volatile.Read(ref _zone));
+        _backup = new BackupScheduler(dbPath, settings.BackupFolder, () => Volatile.Read(ref _zone));
     }
 
     /// <summary>Tourne jusqu'à la fin de la session Windows.</summary>
@@ -142,6 +145,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
                 Post(new RecorderCommand(Now(), CommandKind.Flush));
                 done = WaitApplied(_commands.Posted, FlushWait) && _commands.Failed == failed;
                 break;
+            case AgentCommand.Reload: done = Reload(); break;
             default: return AgentReply.Unknown;
         }
         return done ? AgentReply.Ok : AgentReply.Failed;
@@ -150,6 +154,19 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     public void Dispose() => Shutdown();
 
     private long Now() => _capture.Clock.PeekMs();
+
+    /// <summary>
+    /// Exclusions et dossier du miroir appliqués tout de suite ; les seuils d'analyse, tenus par les
+    /// analyseurs en cours, au prochain démarrage. Un fichier refusé laisse les réglages en place.
+    /// </summary>
+    private bool Reload()
+    {
+        var load = SettingsStore.Load(SettingsStore.PathFor(_dbPath));
+        if (load.Status == SettingsStatus.Invalid) return false;
+        _capture.SetExclusions(load.Settings.Exclusions());
+        _backup.SetFolder(load.Settings.BackupFolder);
+        return true;
+    }
 
     /// <summary>
     /// Un message arrivé pendant l'arrêt (le thread principal peut en recevoir pendant les attentes)

@@ -1,6 +1,6 @@
 # `settings.json`
 
-Settings of the agent, written by the dashboard and read by the agent at start. The file sits next to the database: `%LOCALAPPDATA%\KeyStats\settings.json` for an installed agent, or the folder of the `--db` database otherwise. It holds executable names and thresholds only, never typed text or window titles.
+Settings of the agent, written by the dashboard and read by the agent at start and on the `reload` pipe command. On `reload`, `excludedApps` and `backupFolder` apply at once (the active window is read again, a new backup folder gets a full mirror at the next check); `analysis` applies at the next start, since running analyzers keep their thresholds. A refused file leaves the current settings in place and `reload` answers `failed`. The file sits next to the database: `%LOCALAPPDATA%\KeyStats\settings.json` for an installed agent, or the folder of the `--db` database otherwise. It holds executable names and thresholds only, never typed text or window titles.
 
 ## Format
 
@@ -55,6 +55,7 @@ UTF-8 JSON, keys in camelCase. Comments (`//`, `/* */`) and trailing commas are 
 
 ## Rules
 
+- A missing file gives the defaults, at start and on `reload`.
 - An absent key keeps its default; an unknown key is ignored, so later additions within version 1 stay readable by an older agent.
 - The whole file is refused, and the defaults apply, when it is not valid JSON, is larger than 1 MiB, has a value of the wrong type (numbers are never read from strings), or a value out of bounds: an `analysis` value outside the table above, a blank or `null` name in `excludedApps`, a relative `backupFolder`, a `null` `analysis` or `liveCounter`. A refused file is never rewritten by the agent.
 - The dashboard writes the file to `settings.json.tmp` first, then moves it over `settings.json`: a reader sees either the old file or the new one.
