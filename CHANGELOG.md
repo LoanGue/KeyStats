@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: nightly backup into `backup\` next to the database. Checked
+  2 minutes after start, then every 10 minutes, on a pool thread with its own
+  connections; capture and analysis go on meanwhile. A failure is retried an
+  hour later, timed on a monotonic clock so that a clock set back does not
+  extend the wait.
 - `KeyStats.Core`: incremental mirror backup of the database. Append-only
   tables (raw blocks, focus, titles, epochs) are copied from the last id, the
   others replaced whole, in one transaction over a consistent snapshot read
