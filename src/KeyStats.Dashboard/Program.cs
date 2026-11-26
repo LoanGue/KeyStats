@@ -1,4 +1,5 @@
 using KeyStats.Core.Control;
+using KeyStats.Core.Crypto;
 using KeyStats.Core.Storage;
 using KeyStats.Core.Web;
 
@@ -21,7 +22,11 @@ internal static class Program
         }
         var router = new WebRouter(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
         router.Get(StatusApi.Path, () => StatusApi.Respond(db, AgentRunning(dbPath)));
+        using var session = new KeySession();
+        KeyApi.Register(router, db, session, new HelloSigner());
         using var form = new DashboardForm(router, Path.Combine(dataDir, "webview"));
+        // La clé privée ne survit pas à la fenêtre.
+        form.FormClosed += (_, _) => session.Lock();
         Application.Run(form);
         return form.Started ? 0 : 1;
     }
