@@ -152,7 +152,7 @@ public sealed class RecorderCommandsTests
 
         // Une autre connexion tient le verrou d'écriture : l'écriture du lot attend (busy_timeout).
         using var other = KeyStatsDb.Open(tmp.DbPath);
-        var hold = other.BeginTransaction();
+        using var hold = other.BeginTransaction();
         var pump = Task.Run(() => r.Pump.Tick(end + 10 + RingPump.TickLagMs), TestContext.Current.CancellationToken);
         SpinWait.SpinUntil(() => r.Commands.IsEmpty, TimeSpan.FromSeconds(5));
         Thread.Sleep(200);
