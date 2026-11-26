@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: live counter bottom right of the active window's screen,
+  above the taskbar. Layered window drawn with per-pixel alpha, click-through,
+  never activated, hidden from Alt+Tab and from screen capture. Its timer runs
+  only while it is shown; a pause hides it, and `liveCounter.enabled` applies
+  at start and on `reload`.
 - `KeyStats.Core`: what the live counter shows and where. `LiveMeter.Shown`
   signals the start of real typing, so the display polls only while visible;
   `LiveDisplay` gives the text (wpm and cpm while typing, wpm and accuracy in

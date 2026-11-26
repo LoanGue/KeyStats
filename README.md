@@ -13,6 +13,10 @@ publish\agent\KeyStats.Agent.exe --db $env:TEMP\keystats-test.db
 
 Sans `--db`, l'agent écrit dans `%LOCALAPPDATA%\KeyStats\keystats.db`. Il tourne jusqu'à la fin de la session Windows : verrouillage et veille suspendent l'enregistrement, qui reprend au déverrouillage. `--probe <secondes> [--db <chemin>]` capture pendant la durée donnée puis affiche des compteurs, sans aucun contenu.
 
+## Compteur en direct
+
+Quand une vraie frappe commence (au moins 12 caractères et 2 espaces en 6 secondes), un petit compteur apparaît en bas à droite de l'écran où se trouve la fenêtre active, au-dessus de la barre des tâches : vitesse en mots par minute, et en caractères par minute en dessous. Après 4 secondes sans frappe, il affiche le bilan de la rafale (vitesse et précision) pendant 3 secondes, puis disparaît. Il laisse passer les clics, ne prend jamais le focus et n'apparaît ni dans Alt+Tab ni sur les captures et partages d'écran. Une pause le cache aussitôt. `liveCounter.enabled` à `false` dans `settings.json` le désactive.
+
 ## Icône de notification
 
 - Clic gauche : pause de 5 minutes, et 5 minutes de plus à chaque clic. L'icône passe en gris avec un badge pause ; l'infobulle donne l'heure de reprise.
