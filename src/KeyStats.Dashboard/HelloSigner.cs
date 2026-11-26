@@ -12,7 +12,9 @@ namespace KeyStats.Dashboard;
 internal sealed partial class HelloSigner : IHelloSigner
 {
     // Fenêtre de l'invite Windows Hello. Ouverte pour une application de bureau, elle reste souvent
-    // derrière la fenêtre active : on la ramène devant pendant quelques secondes.
+    // derrière la fenêtre active : on la ramène devant pendant quelques secondes. Elle appartient à
+    // CredentialUIBroker.exe, pas à ce processus : la recherche porte sur la classe seule, et une invite
+    // ouverte au même moment par une autre application pourrait passer devant à sa place (limite acceptée).
     private const string PromptClass = "Credential Dialog Xaml Host";
 
     public async Task<byte[]?> SignAsync(string credentialId, byte[] challenge)
@@ -27,8 +29,9 @@ internal sealed partial class HelloSigner : IHelloSigner
             CryptographicBuffer.CopyToByteArray(signed.Result, out byte[] signature);
             return signature;
         }
-        catch (Exception e) when (e is COMException or InvalidOperationException or UnauthorizedAccessException)
+        catch (Exception)
         {
+            // CsWinRT traduit les HRESULT en exceptions variées (COM, argument, annulation…) : toutes valent un refus.
             return null;
         }
     }
