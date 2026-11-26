@@ -24,9 +24,12 @@ async function loadStatus() {
 
 function showKey(state) {
   $("key").hidden = !state.setup;
+  const noWay = !state.unlocked && !state.hello && !state.passphrase;
   $("key-state").textContent = state.unlocked
     ? "Déverrouillées pour cette fenêtre : la clé est effacée à sa fermeture."
-    : "Verrouillées : la vue à la milliseconde, les titres de fenêtre et le recalcul demandent la clé.";
+    : noWay
+      ? "Verrouillées, et aucun moyen de déverrouillage n'est enregistré dans cette base."
+      : "Verrouillées : la vue à la milliseconde, les titres de fenêtre et le recalcul demandent la clé.";
   $("unlock").hidden = state.unlocked;
   $("hello").hidden = !state.hello;
   $("phrase-form").hidden = !state.passphrase;
