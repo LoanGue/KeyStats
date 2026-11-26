@@ -21,6 +21,9 @@ internal sealed class DashboardForm : Form
     private readonly WebRouter _router;
     private readonly string _profile;
 
+    /// <summary>Vrai une fois la WebView2 prête ; faux si le démarrage a échoué.</summary>
+    public bool Started { get; private set; }
+
     public DashboardForm(WebRouter router, string profileFolder)
     {
         _router = router;
@@ -68,6 +71,7 @@ internal sealed class DashboardForm : Form
         core.NavigationStarting += (_, e) => e.Cancel = !WebRouter.IsOwn(e.Uri);
         core.NewWindowRequested += (_, e) => e.Handled = true;
         core.Navigate(WebRouter.Origin + "/");
+        Started = true;
     }
 
     /// <summary>Toujours une réponse : sans elle, WebView2 enverrait la requête sur le réseau.</summary>
@@ -81,6 +85,7 @@ internal sealed class DashboardForm : Form
         }
         catch (Exception)
         {
+            // Si l'environnement lui-même est cassé, cet appel peut échouer aussi : limite acceptée.
             return env.CreateWebResourceResponse(null, 500, "Error", Headers);
         }
     }
