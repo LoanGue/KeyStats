@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: `KeySetup` creates the master key on first run, writes its
+  public part and its passphrase envelope (plus a Windows Hello one, through
+  `IHelloEnroller`) in one transaction, and never replaces an existing key.
+  POST `/api/setup` runs it, keeps the new key unlocked in the session and
+  restarts the agent so it encrypts with the new public key.
 - `KeyStats.Dashboard`: unlock the encrypted data with Windows Hello or the
   passphrase, and lock it again, from the page. The key is wiped when the
   window closes.
