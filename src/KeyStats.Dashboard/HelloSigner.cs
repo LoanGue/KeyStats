@@ -36,6 +36,8 @@ internal sealed partial class HelloSigner : IHelloSigner
         }
     }
 
+    // Minuterie WinForms : il faut être sur le thread de l'interface, ce que garantissent KeySession et
+    // KeyApi en reprenant avec ConfigureAwait(true). Un ConfigureAwait(false) en amont la rendrait muette.
     private static System.Windows.Forms.Timer BringPromptForward()
     {
         var timer = new System.Windows.Forms.Timer { Interval = 100 };
@@ -43,7 +45,7 @@ internal sealed partial class HelloSigner : IHelloSigner
         timer.Tick += (_, _) =>
         {
             nint prompt = FindWindowW(PromptClass, null);
-            if (prompt != 0 && SetForegroundWindow(prompt) || ++ticks >= 50) timer.Stop();
+            if ((prompt != 0 && SetForegroundWindow(prompt)) || ++ticks >= 50) timer.Stop();
         };
         timer.Start();
         return timer;
