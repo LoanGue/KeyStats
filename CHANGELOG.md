@@ -10,12 +10,14 @@ All notable changes to this project are documented here. The format follows
 
 - `KeyStats.Core`: `PauseSources` combines lock, sleep and the tray snooze
   (+5 minutes per click, or until resumed) into one external pause, posted as
-  recorder commands. An expired snooze ends at its planned time; the epoch key
-  is dropped on lock and sleep only.
+  recorder commands. A snooze that expired unnoticed resumes at its planned end
+  (never before the last posted change), and is settled before any later change.
+  The epoch key is dropped on lock and sleep only.
 - `KeyStats.Core`: lifecycle commands (pause, resume, epoch drop, time zone,
   flush) posted from any thread and applied by the ring pump in time order
   between keystrokes; a failing command is counted and skipped. `Posted` and
-  `Applied` let a caller wait until its commands are applied, not just dequeued.
+  `Applied` let a caller wait until its commands are applied (or failed), not
+  just dequeued.
 - `KeyStats.Agent`: analysis thread that drains the event ring into the
   recorder and writes to `%LOCALAPPDATA%\KeyStats\keystats.db`. The window-title
   key is protected by DPAPI. `--probe N --db <path>` runs the whole pipeline
