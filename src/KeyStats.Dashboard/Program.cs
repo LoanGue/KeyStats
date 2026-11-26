@@ -9,7 +9,7 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        if (args is not ([] or ["--db", _])) return 2;
+        if (args is not ([] or ["--db", _]) || args is [_, var blank] && string.IsNullOrWhiteSpace(blank)) return 2;
         string dbPath = args is ["--db", var given] ? Path.GetFullPath(given) : DefaultDbPath;
         string dataDir = Path.GetDirectoryName(dbPath)!;
         Directory.CreateDirectory(dataDir);
