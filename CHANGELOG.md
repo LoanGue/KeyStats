@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: `PauseSources` combines lock, sleep and the tray snooze
+  (+5 minutes per click, or until resumed) into one external pause, posted as
+  recorder commands. An expired snooze ends at its planned time; the epoch key
+  is dropped on lock and sleep only.
 - `KeyStats.Core`: lifecycle commands (pause, resume, epoch drop, time zone,
   flush) posted from any thread and applied by the ring pump in time order
   between keystrokes; a failing command is counted and skipped.
