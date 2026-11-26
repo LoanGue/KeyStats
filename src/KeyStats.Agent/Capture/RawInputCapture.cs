@@ -27,6 +27,11 @@ internal sealed unsafe class RawInputCapture : IDisposable
     private static RawInputCapture? s_current;
 
     private const int VK_CAPITAL = 0x14, VK_NUMLOCK = 0x90;
+    // Recalage demandé par un autre thread (réveil, déverrouillage, changement d'heure).
+    private const uint WM_APP_RESYNC = 0x8000 + 1;
+    private const nuint ResyncTimer = 1;
+    // L'horloge système dérive par rapport au compteur, ou est corrigée par la synchronisation réseau.
+    private const uint ResyncPeriodMs = 10 * 60 * 1000;
 
     private readonly EventRing _ring;
     private readonly RingWriter _writer;
@@ -71,6 +76,15 @@ internal sealed unsafe class RawInputCapture : IDisposable
         throw new Win32Exception(_startError);
     }
 
+    /// <summary>
+    /// Depuis n'importe quel thread : l'horloge est recalée et l'état des touches remis à zéro avant
+    /// la frappe suivante. Un relâchement a pu être perdu pendant le verrouillage ou la veille.
+    /// </summary>
+    public void RequestResync()
+    {
+        if (s_current == this) _ = User32.PostMessage(_hwnd, WM_APP_RESYNC, 0, 0);
+    }
+
     public void Stop()
     {
         if (s_current != this) return;
@@ -101,6 +115,8 @@ internal sealed unsafe class RawInputCapture : IDisposable
                 return;
             }
             _ready.Set();
+            // Sans minuterie, l'heure reste juste jusqu'au prochain recalage demandé : l'échec est ignoré.
+            _ = Timers.SetTimer(_hwnd, ResyncTimer, ResyncPeriodMs, 0);
             _watcher?.Start();
             MSG msg;
             while (User32.GetMessage(&msg, 0, 0, 0) > 0) User32.DispatchMessage(&msg);
@@ -150,8 +166,15 @@ internal sealed unsafe class RawInputCapture : IDisposable
                 capture._counters.CallbackErrors++;
             }
         }
+        else if ((msg == WM_APP_RESYNC || (msg == Timers.WM_TIMER && wParam == (nint)ResyncTimer)) && s_current is { } c)
+        {
+            c._clock.Resync();
+            if (msg == WM_APP_RESYNC) c._writer.MarkLost();
+            return 0;
+        }
         else if (msg == User32.WM_DESTROY)
         {
+            _ = Timers.KillTimer(hwnd, ResyncTimer);
             User32.PostQuitMessage(0);
             return 0;
         }
