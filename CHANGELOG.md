@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: the real agent. `KeyStats.Agent.exe [--db <path>]` runs
+  capture, analysis and writing until the Windows session ends. A hidden window
+  pauses on lock and sleep (epoch key dropped), resumes with a key-state reset
+  and a clock resync, follows time zone changes and writes everything on
+  `WM_ENDSESSION`. The capture clock is also resynced every 10 minutes.
 - `KeyStats.Core`: `PauseSources` combines lock, sleep and the tray snooze
   (+5 minutes per click, or until resumed) into one external pause, posted as
   recorder commands. A snooze that expired unnoticed resumes at its planned end

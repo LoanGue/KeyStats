@@ -4,6 +4,15 @@ Mesure ta frappe réelle sous Windows : vitesse pendant les vraies sessions d'é
 
 > Projet en cours de construction. L'installation et le mode d'emploi seront décrits ici à la fin du développement.
 
+## Lancer l'agent (développement)
+
+```powershell
+dotnet publish src/KeyStats.Agent -c Release -o publish\agent
+publish\agent\KeyStats.Agent.exe --db $env:TEMP\keystats-test.db
+```
+
+Sans `--db`, l'agent écrit dans `%LOCALAPPDATA%\KeyStats\keystats.db`. Il tourne jusqu'à la fin de la session Windows : verrouillage et veille suspendent l'enregistrement, qui reprend au déverrouillage. `--probe <secondes> [--db <chemin>]` capture pendant la durée donnée puis affiche des compteurs, sans aucun contenu.
+
 ## Vie privée
 
 - Tout reste sur ton PC. Aucun envoi réseau, aucun port ouvert.

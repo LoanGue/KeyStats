@@ -1,4 +1,6 @@
 ﻿using KeyStats.Agent.Capture;
+using KeyStats.Agent.Lifecycle;
+using KeyStats.Agent.Recording;
 
 namespace KeyStats.Agent;
 
@@ -12,12 +14,26 @@ internal static class Program
             if (args.Length == 2) return Probe.Run(seconds, null);
             if (args is [_, _, "--db", var db] && !string.IsNullOrWhiteSpace(db)) return Probe.Run(seconds, db);
         }
-        if (args.Length > 0)
+        string? path = args switch
         {
-            Console.Error.WriteLine("Usage : KeyStats.Agent.exe [--probe <secondes> [--db <chemin>]]");
+            [] => AgentStorage.DefaultPath,
+            ["--db", var p] when !string.IsNullOrWhiteSpace(p) => p,
+            _ => null,
+        };
+        if (path is null)
+        {
+            Console.Error.WriteLine("Usage : KeyStats.Agent.exe [--db <chemin>] | --probe <secondes> [--db <chemin>]");
             return 2;
         }
-        // L'agent complet (analyse, écriture, icône) arrive dans les PR suivantes de l'étape 4.
-        return 0;
+        try
+        {
+            return AgentHost.Run(path);
+        }
+        catch (Exception e)
+        {
+            // Pas de message : il pourrait citer une valeur. Le type suffit au diagnostic.
+            Console.Error.WriteLine($"KeyStats.Agent : arrêt sur {e.GetType().Name}");
+            return 1;
+        }
     }
 }
