@@ -19,6 +19,8 @@ public enum PauseTransition : byte
 /// ou jusqu'à reprise manuelle). Le verrouillage et la veille l'emportent sur la pause par l'icône.
 /// Chaque changement devient une <see cref="RecorderCommand"/> ; la clé d'époque est oubliée en entrant
 /// en verrouillage ou en veille seulement. Un seul thread appelant, heures prises sur l'échelle des événements.
+/// Une reprise datée de la fin prévue peut être antérieure à une commande déjà envoyée par ailleurs :
+/// la pompe la ramène au dernier événement vu, et les frappes reçues entre-temps restent comptées en pause.
 /// </summary>
 public sealed class PauseSources(RecorderCommands commands)
 {
@@ -37,41 +39,53 @@ public sealed class PauseSources(RecorderCommands commands)
 
     public PauseTransition SetLocked(bool on, long nowMs)
     {
+        var settled = Update(nowMs);
         _locked = on;
-        return Update(nowMs);
+        return Then(settled, nowMs);
     }
 
     public PauseTransition SetSuspended(bool on, long nowMs)
     {
+        var settled = Update(nowMs);
         _suspended = on;
-        return Update(nowMs);
+        return Then(settled, nowMs);
     }
 
     /// <summary>Clic sur l'icône : 5 min de plus à partir de la fin prévue, ou de maintenant.</summary>
     public PauseTransition Snooze(long nowMs)
     {
-        // Une pause échue se termine d'abord à son heure : le clic en ouvre une nouvelle.
-        var expired = Update(nowMs);
+        var settled = Update(nowMs);
         if (_snoozeUntil != UntilResumed) _snoozeUntil = Math.Max(_snoozeUntil, nowMs) + SnoozeStepMs;
-        var t = Update(nowMs);
-        return t != PauseTransition.None ? t : expired;
+        return Then(settled, nowMs);
     }
 
     public PauseTransition SnoozeUntilResumedManually(long nowMs)
     {
+        var settled = Update(nowMs);
         _snoozeUntil = UntilResumed;
-        return Update(nowMs);
+        return Then(settled, nowMs);
     }
 
     /// <summary>Fin de la pause par l'icône ; sans effet sur le verrouillage ou la veille.</summary>
     public PauseTransition ResumeNow(long nowMs)
     {
+        var settled = Update(nowMs);
         _snoozeUntil = 0;
-        return Update(nowMs);
+        return Then(settled, nowMs);
     }
 
     /// <summary>Appelé par une minuterie : la pause par l'icône se termine à l'heure prévue.</summary>
     public PauseTransition Tick(long nowMs) => Update(nowMs);
+
+    /// <summary>
+    /// Chaque changement règle d'abord une pause par l'icône échue mais pas encore vue (reprise à sa
+    /// fin prévue), puis applique la demande. L'effet rendu est le dernier des deux.
+    /// </summary>
+    private PauseTransition Then(PauseTransition settled, long nowMs)
+    {
+        var t = Update(nowMs);
+        return t != PauseTransition.None ? t : settled;
+    }
 
     private PauseTransition Update(long nowMs)
     {
