@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: what the live counter shows and where. `LiveMeter.Shown`
+  signals the start of real typing, so the display polls only while visible;
+  `LiveDisplay` gives the text (wpm and cpm while typing, wpm and accuracy in
+  the summary) and the bottom-right position above the taskbar, scaled to the
+  screen DPI; `LiveSmoother` smooths the speed shown.
 - `KeyStats.Core`: `settings.json` model (excluded apps, analysis thresholds,
   live counter, backup folder), read and written by source-generated JSON. A
   missing key keeps its default, an unknown key is ignored; a malformed, too

@@ -72,6 +72,67 @@ public sealed class LiveMeterTests
         meter.Reset();
         Assert.Equal(LiveMode.Hidden, meter.Read(last + 100).Mode);
     }
+
+    [Fact]
+    public void Apparition_signalee_une_fois_par_rafale()
+    {
+        var meter = new LiveMeter();
+        int shown = 0;
+        meter.Shown = () => shown++;
+        long last = Type(meter, "bonjour tout le monde ici", T0, 200);
+        Assert.Equal(1, shown);
+
+        Assert.Equal(LiveMode.Hidden, meter.Read(last + LiveMeter.IdleMs + LiveMeter.SummaryMs + 1).Mode);
+        Type(meter, "et encore une phrase ici", last + 20_000, 200);
+        Assert.Equal(2, shown);
+    }
+
+    [Fact]
+    public void Frappes_isolees_ne_signalent_rien()
+    {
+        var meter = new LiveMeter();
+        int shown = 0;
+        meter.Shown = () => shown++;
+        Type(meter, "zqsdz", T0, 1500);
+        Assert.Equal(0, shown);
+    }
+}
+
+public sealed class LiveDisplayTests
+{
+    [Fact]
+    public void Texte_pendant_la_frappe_et_au_bilan()
+    {
+        Assert.Equal(new LiveText("63 wpm", "315 cpm"), LiveDisplay.Text(LiveMode.Typing, 62.6, 314.8, 0.9));
+        Assert.Equal(new LiveText("63 wpm · 96\u00A0%", "bilan"), LiveDisplay.Text(LiveMode.Summary, 63.4, 317, 0.958));
+        Assert.Equal(new LiveText("", ""), LiveDisplay.Text(LiveMode.Hidden, 60, 300, 1));
+    }
+
+    [Fact]
+    public void Coin_bas_droit_de_la_zone_de_travail()
+    {
+        // Barre des tâches de 48 px en bas d'un écran 1920 × 1080.
+        var work = new ScreenRect(0, 0, 1920, 1032);
+        Assert.Equal((1920 - 150 - 12, 1032 - 52 - 12), LiveDisplay.BottomRight(work, 150, 52, 12));
+    }
+
+    [Theory]
+    [InlineData(150, 96, 150)]
+    [InlineData(150, 144, 225)]
+    [InlineData(52, 120, 65)]
+    public void Mise_a_l_echelle_selon_les_ppp(int value, int dpi, int expected) =>
+        Assert.Equal(expected, LiveDisplay.Scale(value, dpi));
+
+    [Fact]
+    public void Lissage_part_de_la_premiere_valeur_et_rattrape_la_cible()
+    {
+        var smoother = new LiveSmoother();
+        Assert.Equal(60, smoother.Next(60, 0));
+        // Après une constante de temps, 63 % de l'écart est rattrapé.
+        Assert.Equal(60 + 20 * (1 - Math.Exp(-1)), smoother.Next(80, 1000), 9);
+        smoother.Reset();
+        Assert.Equal(40, smoother.Next(40, 5000));
+    }
 }
 
 public sealed class KeyboardGeometryTests
