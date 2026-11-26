@@ -56,9 +56,11 @@ internal sealed class DashboardForm : Form
 
     private async Task StartAsync()
     {
-        var env = await CoreWebView2Environment.CreateAsync(null, _profile);
+        var env = await CoreWebView2Environment.CreateAsync(null, _profile, CrashReports.Options());
         await _view.EnsureCoreWebView2Async(env);
         var core = _view.CoreWebView2;
+        CrashReports.Watch(env, core);
+        FormClosed += (_, _) => CrashReports.Purge(env.FailureReportFolderPath);
         core.Settings.AreDevToolsEnabled = Debugger.IsAttached;
         core.Settings.IsStatusBarEnabled = false;
         core.Settings.IsPasswordAutosaveEnabled = false;
