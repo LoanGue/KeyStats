@@ -10,6 +10,20 @@
   <main>
     <h1>KeyStats</h1>
     <p id="status">Lecture de l'état…</p>
+    <section id="key" hidden>
+      <h2>Données chiffrées</h2>
+      <p id="key-state"></p>
+      <div id="unlock" hidden>
+        <button id="hello" type="button" hidden>Déverrouiller avec Windows Hello</button>
+        <form id="phrase-form" hidden>
+          <label for="phrase">Phrase de secours</label>
+          <input id="phrase" type="password" autocomplete="off" spellcheck="false" required>
+          <button type="submit">Déverrouiller</button>
+        </form>
+      </div>
+      <button id="lock" type="button" hidden>Verrouiller</button>
+      <p id="key-message" role="status"></p>
+    </section>
   </main>
 </body>
 </html>
