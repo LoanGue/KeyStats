@@ -28,7 +28,11 @@ public sealed class RecorderCommands
 {
     private readonly ConcurrentQueue<RecorderCommand> _queue = new();
 
-    /// <summary>Depuis n'importe quel thread. L'heure vient de <see cref="Input.EventClock.PeekMs"/>.</summary>
+    /// <summary>
+    /// Depuis n'importe quel thread. L'heure vient de <see cref="Input.EventClock.PeekMs"/>, et ne
+    /// décroît pas d'une commande à la suivante : la file est lue dans l'ordre d'arrivée, et une
+    /// commande datée trop loin retient celles qui la suivent. L'appelant réveille ensuite le consommateur.
+    /// </summary>
     public void Post(in RecorderCommand command)
     {
         if (!Enum.IsDefined(command.Kind)) throw new ArgumentOutOfRangeException(nameof(command));
