@@ -11,12 +11,6 @@ namespace KeyStats.Dashboard;
 /// </summary>
 internal sealed class DashboardForm : Form
 {
-    // Rien de la page ne reste dans le cache disque de WebView2 ; seuls ces fichiers et l'API sont permis.
-    private const string Headers =
-        "Cache-Control: no-store\r\n"
-        + "Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'\r\n"
-        + "X-Content-Type-Options: nosniff";
-
     private readonly WebView2 _view = new() { Dock = DockStyle.Fill };
     private readonly WebRouter _router;
     private readonly string _profile;
@@ -71,26 +65,10 @@ internal sealed class DashboardForm : Form
         core.Settings.IsGeneralAutofillEnabled = false;
         core.Settings.IsReputationCheckingRequired = false;
         core.AddWebResourceRequestedFilter(WebRouter.Origin + "/*", CoreWebView2WebResourceContext.All);
-        core.WebResourceRequested += (_, e) => e.Response = Respond(env, e.Request);
+        core.WebResourceRequested += new WebBridge(_router, env).OnRequest;
         core.NavigationStarting += (_, e) => e.Cancel = !WebRouter.IsOwn(e.Uri);
         core.NewWindowRequested += (_, e) => e.Handled = true;
         core.Navigate(WebRouter.Origin + "/");
         Started = true;
-    }
-
-    /// <summary>Toujours une réponse : sans elle, WebView2 enverrait la requête sur le réseau.</summary>
-    private CoreWebView2WebResourceResponse Respond(CoreWebView2Environment env, CoreWebView2WebResourceRequest request)
-    {
-        try
-        {
-            var response = _router.Handle(request.Method, request.Uri);
-            return env.CreateWebResourceResponse(new MemoryStream(response.Body), response.Status,
-                response.Status == 200 ? "OK" : "Error", $"Content-Type: {response.ContentType}\r\n{Headers}");
-        }
-        catch (Exception)
-        {
-            // Si l'environnement lui-même est cassé, cet appel peut échouer aussi : limite acceptée.
-            return env.CreateWebResourceResponse(null, 500, "Error", Headers);
-        }
     }
 }
