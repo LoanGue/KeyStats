@@ -1,15 +1,15 @@
 namespace KeyStats.Core.Analysis;
 
 /// <summary>
-/// Image du compteur : texte blanc sur noir (sa luminosité donne la couverture) posé sur un fond sombre
-/// aux coins arrondis, en ARGB à alpha prémultiplié comme l'attend une fenêtre calque.
+/// Image du compteur : texte blanc sur noir (sa luminositÃ© donne la couverture) posÃ© sur un fond sombre
+/// aux coins arrondis, en ARGB Ã  alpha prÃ©multipliÃ© comme l'attend une fenÃªtre calque.
 /// </summary>
 public static class LiveImage
 {
     public const uint Background = 0x1C1F24;
     public const float BackgroundAlpha = 0.86f, Radius = 0.22f;
 
-    /// <summary>Remplace sur place chaque pixel de texte (canal alpha ignoré) par le pixel final.</summary>
+    /// <summary>Remplace sur place chaque pixel de texte (canal alpha ignorÃ©) par le pixel final.</summary>
     public static void Compose(Span<uint> pixels, int width, int height)
     {
         float r = height * Radius;
@@ -25,7 +25,7 @@ public static class LiveImage
             }
     }
 
-    /// <summary>Part du pixel de centre (x, y) dans le rectangle arrondi, lissée sur un pixel.</summary>
+    /// <summary>Part du pixel de centre (x, y) dans le rectangle arrondi, lissÃ©e sur un pixel.</summary>
     public static float RoundRectCoverage(float x, float y, int width, int height, float r)
     {
         float dx = Math.Max(Math.Max(r - x, x - (width - r)), 0), dy = Math.Max(Math.Max(r - y, y - (height - r)), 0);
