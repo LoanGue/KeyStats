@@ -15,7 +15,10 @@ namespace KeyStats.Agent.Lifecycle;
 /// </summary>
 internal sealed class AgentHost : ISessionEvents, IDisposable
 {
-    private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(4);
+    // Windows laisse environ 5 s après WM_ENDSESSION : la capture n'a qu'à quitter sa boucle,
+    // l'analyse garde le plus long pour écrire le dernier lot.
+    private static readonly TimeSpan CaptureStopTimeout = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(3.5);
     // Windows laisse environ 2 s avant la veille : l'écriture du lot doit tenir dedans.
     private static readonly TimeSpan SuspendWait = TimeSpan.FromSeconds(1.5);
 
@@ -136,7 +139,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     {
         if (_shutDown) return _loop.Closed;
         _shutDown = true;
-        bool captureStopped = _capture.Stop();
+        bool captureStopped = _capture.Stop(CaptureStopTimeout);
         bool stopped = _loop.Stop(StopTimeout);
         if (stopped) _storage.Dispose();
         if (captureStopped)
