@@ -1,4 +1,5 @@
 using KeyStats.Core.Analysis;
+using KeyStats.Core.Crypto;
 using KeyStats.Core.Focus;
 using KeyStats.Core.Input;
 using KeyStats.Core.Recording;
@@ -12,12 +13,13 @@ public sealed class RecorderCommandsTests
 
     private sealed record Rig(EventRing Ring, RecorderCommands Commands, Recorder Recorder, RingPump Pump, LocalDayClock Clock);
 
-    private static Rig Setup(TempDb tmp)
+    private static Rig Setup(TempDb tmp, MasterKey? master = null)
     {
         var ring = new EventRing(1024);
         var channel = new FocusChannel();
         var clock = new LocalDayClock(TimeZoneInfo.Utc);
-        var rec = new Recorder(tmp.Db, null, clock, Typist.Start);
+        var archive = master is null ? null : new RawArchiveWriter(tmp.Db, master.PublicKey, new TitleHasher(TitleHasher.NewKey()));
+        var rec = new Recorder(tmp.Db, archive, clock, Typist.Start);
         var commands = new RecorderCommands();
         channel.Publish(new FocusChange { Ms = Typist.Start, Exe = "winword.exe", Title = null, Flags = FocusState.NewWindow }, ring);
         return new Rig(ring, commands, rec, new RingPump(ring, channel, rec, commands), clock);
@@ -48,6 +50,39 @@ public sealed class RecorderCommandsTests
         Assert.Equal(paused, r.Recorder.Counters.PausedEvents);
         Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Locked} AND start_ms = {pause} AND end_ms = {resume}"));
         Assert.Equal(2, tmp.Count("SELECT COUNT(*) FROM session"));
+    }
+
+    [Fact]
+    public void Oubli_de_l_epoque_entre_deux_salves()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        var r = Setup(tmp, master);
+        var (end, _) = Write(r.Ring, Text, Typist.Start + 10);
+        r.Commands.Post(new RecorderCommand(end + 100, CommandKind.DropEpoch));
+        var (end2, _) = Write(r.Ring, Text, end + 200);
+        r.Pump.Drain();
+        Assert.True(r.Pump.Close(end2 + 1000));
+
+        Assert.Equal(2, tmp.Count("SELECT COUNT(DISTINCT epoch_id) FROM raw_block"));
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM raw_block WHERE end_ms <= {end + 100}"));
+    }
+
+    [Fact]
+    public void Commande_en_retard_appliquee_au_dernier_evenement_vu()
+    {
+        using var tmp = new TempDb();
+        var r = Setup(tmp);
+        var typist = new Typist(Typist.Start + 10).Type(Text);
+        foreach (var e in typist.Events) Assert.True(r.Ring.TryWrite(e));
+        long last = typist.Events[^1].Ms;
+        r.Pump.Drain();
+        // Datée avant la dernière frappe traitée : le temps ne recule pas dans le Recorder.
+        r.Commands.Post(new RecorderCommand(last - 100, CommandKind.Pause, PauseReason.Locked));
+        r.Commands.Post(new RecorderCommand(last + 500, CommandKind.Resume));
+        Assert.True(r.Pump.Close(last + 1000));
+
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM pause WHERE reason = {(int)PauseReason.Locked} AND start_ms = {last} AND end_ms = {last + 500}"));
     }
 
     [Fact]
