@@ -27,6 +27,8 @@ public readonly record struct RecorderCommand(long Ms, CommandKind Kind, PauseRe
 public sealed class RecorderCommands
 {
     private readonly ConcurrentQueue<RecorderCommand> _queue = new();
+    private readonly Lock _postLock = new();
+    private long _posted, _applied;
 
     /// <summary>
     /// Depuis n'importe quel thread. L'heure vient de <see cref="Input.EventClock.PeekMs"/>, et ne
@@ -39,10 +41,27 @@ public sealed class RecorderCommands
         if (command.Kind == CommandKind.Pause && (command.Reason == 0 || !Enum.IsDefined(command.Reason)))
             throw new ArgumentOutOfRangeException(nameof(command));
         if (command.Kind == CommandKind.SetZone) ArgumentNullException.ThrowIfNull(command.Zone);
-        _queue.Enqueue(command);
+        // Compte et file dans le même ordre, pour qu'« appliquées ≥ envoyées » vise bien ces commandes-là.
+        lock (_postLock)
+        {
+            _queue.Enqueue(command);
+            Volatile.Write(ref _posted, _posted + 1);
+        }
     }
 
     public bool IsEmpty => _queue.IsEmpty;
+
+    /// <summary>Commandes envoyées depuis la création.</summary>
+    public long Posted => Volatile.Read(ref _posted);
+
+    /// <summary>
+    /// Commandes appliquées (ou comptées en erreur) par la pompe. Retirée de la file ne suffit pas :
+    /// avant la veille, l'appelant attend que <c>Applied</c> rattrape le <see cref="Posted"/> relevé.
+    /// </summary>
+    public long Applied => Volatile.Read(ref _applied);
+
+    /// <summary>Consommateur seulement, après l'application de la commande prise.</summary>
+    internal void MarkApplied() => Volatile.Write(ref _applied, _applied + 1);
 
     /// <summary>Consommateur seulement : la commande suivante si elle ne date pas d'après <paramref name="beforeMs"/>.</summary>
     internal bool TryTake(long beforeMs, out RecorderCommand command)
