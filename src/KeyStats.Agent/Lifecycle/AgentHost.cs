@@ -157,14 +157,16 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
 
     /// <summary>
     /// Exclusions et dossier du miroir appliqués tout de suite ; les seuils d'analyse, tenus par les
-    /// analyseurs en cours, au prochain démarrage. Un fichier refusé laisse les réglages en place.
+    /// analyseurs en cours, au prochain démarrage. Un fichier refusé, ou des exclusions que le thread
+    /// de capture ne peut pas recevoir, laissent les réglages en place.
     /// </summary>
     private bool Reload()
     {
         var load = SettingsStore.Load(SettingsStore.PathFor(_dbPath));
         if (load.Status == SettingsStatus.Invalid) return false;
+        if (!_capture.SetExclusions(load.Settings.Exclusions())) return false;
         _backup.SetFolder(load.Settings.BackupFolder);
-        return _capture.SetExclusions(load.Settings.Exclusions());
+        return true;
     }
 
     /// <summary>

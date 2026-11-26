@@ -31,7 +31,7 @@ Un seul agent tourne par base et par session Windows : un second lancement s'arr
 | `pause` | pause jusqu'à reprise manuelle |
 | `resume` | fin de la pause par l'icône |
 | `flush` | écrit tout ce qui est en attente avant de répondre ; `failed` si l'écriture échoue |
-| `reload` | relit `settings.json` : applis exclues et dossier de sauvegarde appliqués tout de suite, seuils d'analyse au prochain démarrage ; `failed` si le fichier est refusé, les réglages en place sont alors gardés |
+| `reload` | relit `settings.json` : applis exclues et dossier de sauvegarde appliqués tout de suite, seuils d'analyse au prochain démarrage ; `failed` si le fichier est refusé ou si l'agent ne peut pas les transmettre à la capture, les réglages en place sont alors gardés |
 | `quit` | arrête l'agent, comme « Quitter KeyStats » |
 
 Aucun texte ni titre de fenêtre ne passe par ce tube.
