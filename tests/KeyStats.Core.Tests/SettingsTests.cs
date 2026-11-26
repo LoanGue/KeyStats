@@ -1,0 +1,138 @@
+using KeyStats.Core.Settings;
+
+namespace KeyStats.Core.Tests;
+
+public sealed class SettingsTests : IDisposable
+{
+    private readonly string _dir = Directory.CreateTempSubdirectory("keystats-settings-").FullName;
+
+    private string Path_ => Path.Combine(_dir, SettingsStore.FileName);
+
+    public void Dispose() => Directory.Delete(_dir, recursive: true);
+
+    private SettingsLoad LoadText(string json)
+    {
+        File.WriteAllText(Path_, json);
+        return SettingsStore.Load(Path_);
+    }
+
+    [Fact]
+    public void Fichier_absent_valeurs_par_defaut()
+    {
+        var load = SettingsStore.Load(Path_);
+        Assert.Equal(SettingsStatus.Missing, load.Status);
+        Assert.Null(load.Settings.ExcludedApps);
+        Assert.Same(Focus.ExclusionList.Default, load.Settings.Exclusions());
+        Assert.Equal(Path_, SettingsStore.PathFor(Path.Combine(_dir, "keystats.db")));
+    }
+
+    [Fact]
+    public void Aller_retour_sans_perte_ni_fichier_temporaire()
+    {
+        var settings = new KeyStatsSettings
+        {
+            ExcludedApps = ["Signal.exe"],
+            Analysis = new() { SessionGapMs = 4000, MinTextRatio = 0.6 },
+            LiveCounter = new() { Enabled = false },
+            BackupFolder = Path.Combine(_dir, "miroir"),
+        };
+        SettingsStore.Save(Path_, settings);
+        Assert.Equal([SettingsStore.FileName], Directory.GetFiles(_dir).Select(Path.GetFileName));
+
+        var load = SettingsStore.Load(Path_);
+        Assert.Equal(SettingsStatus.Loaded, load.Status);
+        Assert.Equal(["Signal.exe"], load.Settings.ExcludedApps!);
+        Assert.Equal(4000, load.Settings.Analysis.SessionGapMs);
+        Assert.Equal(0.6, load.Settings.Analysis.MinTextRatio);
+        Assert.Equal(2000, load.Settings.Analysis.ActiveGapMs);
+        Assert.False(load.Settings.LiveCounter.Enabled);
+        Assert.Equal(settings.BackupFolder, load.Settings.BackupFolder);
+        Assert.True(load.Settings.Exclusions().Contains(@"C:\Apps\signal.EXE"));
+        Assert.False(load.Settings.Exclusions().Contains("KeePass.exe"));
+    }
+
+    [Fact]
+    public void Noms_des_cles_du_format()
+    {
+        // Contrat lu par le tableau de bord : noms en camelCase.
+        SettingsStore.Save(Path_, new KeyStatsSettings { ExcludedApps = [] });
+        string json = File.ReadAllText(Path_);
+        foreach (string key in new[] { "\"version\": 1", "\"excludedApps\": []", "\"analysis\"", "\"sessionGapMs\": 5000", "\"liveCounter\"", "\"enabled\": true", "\"backupFolder\": null" })
+            Assert.Contains(key, json);
+    }
+
+    [Fact]
+    public void Cles_absentes_par_defaut_cles_inconnues_ignorees_commentaires_admis()
+    {
+        var load = LoadText("""
+            {
+              // Commentaire écrit à la main.
+              "analysis": { "minSpaces": 5, "seuilFutur": 1 },
+              "optionFuture": true,
+            }
+            """);
+        Assert.Equal(SettingsStatus.Loaded, load.Status);
+        Assert.Equal(5, load.Settings.Analysis.MinSpaces);
+        Assert.Equal(30, load.Settings.Analysis.MinNetChars);
+        Assert.Null(load.Settings.ExcludedApps);
+        Assert.True(load.Settings.LiveCounter.Enabled);
+    }
+
+    [Fact]
+    public void Liste_vide_aucune_appli_exclue()
+    {
+        var load = LoadText("""{ "excludedApps": [] }""");
+        Assert.Equal(0, load.Settings.Exclusions().Count);
+    }
+
+    [Theory]
+    [InlineData("{ pas du json")]
+    [InlineData("")]
+    [InlineData("null")]
+    [InlineData("""{ "version": 2 }""")]
+    [InlineData("""{ "version": 0 }""")]
+    [InlineData("""{ "analysis": null }""")]
+    [InlineData("""{ "liveCounter": null }""")]
+    [InlineData("""{ "analysis": { "sessionGapMs": 0 } }""")]
+    [InlineData("""{ "analysis": { "activeGapMs": 6000 } }""")]
+    [InlineData("""{ "analysis": { "minNetChars": -1 } }""")]
+    [InlineData("""{ "analysis": { "minTextRatio": 1.5 } }""")]
+    [InlineData("""{ "analysis": { "proseMaxSymbolRatio": 0.2 } }""")]
+    [InlineData("""{ "analysis": { "sessionGapMs": "5000" } }""")]
+    [InlineData("""{ "excludedApps": ["KeePass.exe", " "] }""")]
+    [InlineData("""{ "excludedApps": [null] }""")]
+    [InlineData("""{ "backupFolder": "backup" }""")]
+    public void Fichier_refuse_valeurs_par_defaut_et_fichier_intact(string json)
+    {
+        var load = LoadText(json);
+        Assert.Equal(SettingsStatus.Invalid, load.Status);
+        Assert.Equal(5000, load.Settings.Analysis.SessionGapMs);
+        Assert.Null(load.Settings.ExcludedApps);
+        Assert.Equal(json, File.ReadAllText(Path_));
+    }
+
+    [Fact]
+    public void Fichier_trop_gros_refuse()
+    {
+        File.WriteAllText(Path_, "{" + new string(' ', SettingsStore.MaxBytes) + "}");
+        Assert.Equal(SettingsStatus.Invalid, SettingsStore.Load(Path_).Status);
+    }
+
+    [Fact]
+    public void Fichier_verrouille_refuse_sans_lever()
+    {
+        File.WriteAllText(Path_, "{}");
+        using var hold = new FileStream(Path_, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        Assert.Equal(SettingsStatus.Invalid, SettingsStore.Load(Path_).Status);
+    }
+
+    [Fact]
+    public void Reglages_hors_bornes_jamais_ecrits()
+    {
+        File.WriteAllText(Path_, "{}");
+        var bad = new KeyStatsSettings { Analysis = new() { HoldCapMs = -1 } };
+        Assert.Throws<ArgumentException>(() => SettingsStore.Save(Path_, bad));
+        Assert.Equal("{}", File.ReadAllText(Path_));
+        Assert.Single(Directory.GetFiles(_dir));
+    }
+}
