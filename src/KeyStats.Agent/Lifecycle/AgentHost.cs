@@ -74,9 +74,8 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     public void OnResume()
     {
         if (_shutDown) return;
-        Apply(_pauses.SetSuspended(false, Now()));
-        // Même encore verrouillé : l'horloge système a pu bouger pendant la veille.
-        _capture.RequestResync();
+        // Même encore verrouillé, l'horloge système a pu bouger pendant la veille : recalage dans tous les cas.
+        if (!Apply(_pauses.SetSuspended(false, Now()))) _capture.RequestResync();
     }
 
     public void OnTimeChange()
@@ -103,12 +102,15 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     /// Un message arrivé pendant l'arrêt (le thread principal peut en recevoir pendant les attentes)
     /// est ignoré : la boucle d'analyse ne le lirait plus.
     /// </summary>
-    private void Apply(PauseTransition transition)
+    /// <returns>Vrai si un recalage a été demandé.</returns>
+    private bool Apply(PauseTransition transition)
     {
-        if (transition == PauseTransition.None) return;
+        if (transition == PauseTransition.None) return false;
         _signal.Set();
+        if (transition != PauseTransition.Resumed) return false;
         // Un relâchement a pu se perdre pendant la pause : l'état des touches repart de zéro.
-        if (transition == PauseTransition.Resumed) _capture.RequestResync();
+        _capture.RequestResync();
+        return true;
     }
 
     private void Post(in RecorderCommand command)
