@@ -11,6 +11,7 @@ public sealed class ControlProtocolTests
     [InlineData(AgentCommand.Resume, "resume")]
     [InlineData(AgentCommand.Flush, "flush")]
     [InlineData(AgentCommand.Quit, "quit")]
+    [InlineData(AgentCommand.Reload, "reload")]
     public void Commande_encodee_sur_une_ligne(AgentCommand command, string word)
     {
         Assert.Equal(word + "\n", Encoding.ASCII.GetString(ControlProtocol.Encode(command)));

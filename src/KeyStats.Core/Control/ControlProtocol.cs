@@ -14,6 +14,8 @@ public enum AgentCommand : byte
     /// <summary>Tout ce qui est en attente est écrit avant la réponse.</summary>
     Flush = 4,
     Quit = 5,
+    /// <summary>Relit <c>settings.json</c> : exclusions et dossier du miroir tout de suite, seuils de l'analyse au prochain démarrage.</summary>
+    Reload = 6,
 }
 
 public enum AgentReply : byte
@@ -34,7 +36,7 @@ public static class ControlProtocol
     /// <summary>Longueur maximale d'une ligne, saut de ligne compris.</summary>
     public const int MaxLine = 32;
 
-    private static readonly string[] Commands = ["", "snooze", "pause", "resume", "flush", "quit"];
+    private static readonly string[] Commands = ["", "snooze", "pause", "resume", "flush", "quit", "reload"];
     private static readonly string[] Replies = ["", "ok", "unknown", "failed"];
 
     /// <summary>

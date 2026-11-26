@@ -25,6 +25,16 @@ public static class BackupMirror
         "day_char", "day_bigram", "day_wordlen", "day_shortcut", "day_error_pair", "day_metric", "day_hist",
     ];
 
+    /// <summary>
+    /// Miroir de <paramref name="dbPath"/> : dans <paramref name="folder"/>, ou à défaut dans <c>backup\</c>
+    /// à côté de la base, sous le même nom.
+    /// </summary>
+    public static string PathFor(string dbPath, string? folder)
+    {
+        string full = Path.GetFullPath(dbPath);
+        return Path.Combine(folder ?? Path.Combine(Path.GetDirectoryName(full)!, "backup"), Path.GetFileName(full));
+    }
+
     /// <summary>Crée ou met à jour le miroir <paramref name="backupPath"/> de <paramref name="sourcePath"/>.</summary>
     public static BackupResult Run(string sourcePath, string backupPath, long nowMs)
     {

@@ -98,6 +98,22 @@ public sealed class FocusTrackerTests
         Assert.Equal(FocusState.NewWindow | FocusState.Excluded, c.Flags);
         Assert.Null(c.Title);
     }
+
+    [Fact]
+    public void Exclusions_remplacees_la_fenetre_active_relue_change_d_etat()
+    {
+        Assert.Equal(FocusState.NewWindow, See(1, 100, "Signal.exe", "Conversation")!.Flags);
+        _tracker.Exclusions = new ExclusionList(["Signal.exe"]);
+        var c = See(2, 100, "Signal.exe", "Conversation")!;
+        Assert.Equal(FocusState.Excluded, c.Flags);
+        Assert.Null(c.Title);
+
+        // Retirée de la liste : le titre revient à la relecture suivante.
+        _tracker.Exclusions = new ExclusionList([]);
+        var back = See(3, 100, "Signal.exe", "Conversation")!;
+        Assert.Equal(FocusState.None, back.Flags);
+        Assert.Equal("Conversation", back.Title);
+    }
 }
 
 public sealed class FocusChannelTests
