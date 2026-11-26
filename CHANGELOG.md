@@ -8,6 +8,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: the live counter stays hidden in full screen, presentation
+  mode and do-not-disturb (`SHQueryUserNotificationState`), confirms each snooze
+  click with the remaining time for 1.5 s, and is drawn at each screen's scale
+  (per-monitor DPI awareness declared in the manifest).
+- `KeyStats.Core`: `LiveDisplay.Snooze` (snooze confirmation, rounded up to the
+  minute) and `LiveDisplay.Quiet` (notification states that hide the counter).
 - `KeyStats.Agent`: live counter bottom right of the active window's screen,
   above the taskbar. Layered window drawn with per-pixel alpha, click-through,
   never activated, hidden from Alt+Tab and from screen capture. Its timer runs
