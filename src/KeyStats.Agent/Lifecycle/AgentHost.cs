@@ -57,7 +57,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         _overlay = new LiveOverlay(_live, Now, settings.LiveCounter.Enabled);
         _live.Shown = _overlay.PostShown;
         _pauses = new PauseSources(_commands);
-        _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t));
+        _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t), ms => _overlay.ShowNote(LiveDisplay.Snooze(ms)));
         _loop = new AnalysisLoop(new RingPump(ring, focus, recorder, _commands), _capture.Clock, _signal);
         _backup = new BackupScheduler(dbPath, settings.BackupFolder, () => Volatile.Read(ref _zone));
     }
