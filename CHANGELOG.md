@@ -8,6 +8,15 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: WebView2 window that serves `https://keystats.app/`
+  from memory through `WebResourceRequested`, with no server and no open port.
+  Navigation to any other address and new windows are refused; responses carry
+  a strict Content-Security-Policy and `Cache-Control: no-store`. `--db` picks
+  the database.
+- `KeyStats.Core`: `WebRouter` (API routes, then files of `wwwroot` under a
+  closed list of types, path traversal refused, fixed message on a handler
+  error) and `/api/status` (encryption set up, agent running, read through the
+  agent mutex name now shared in `ControlProtocol.MutexName`).
 - `KeyStats.Agent`: the live counter stays hidden while an application runs full
   screen (game, video) or in presentation mode (`SHQueryUserNotificationState`),
   and confirms each snooze click on the icon with the remaining time for 1.5 s.
