@@ -87,7 +87,7 @@ public static class ControlProtocol
 
     private static byte[] Line(string[] words, int i)
     {
-        if (i <= 0 || i >= words.Length) throw new ArgumentOutOfRangeException(nameof(i));
+        if (i <= 0 || i >= words.Length) throw new ArgumentOutOfRangeException(nameof(i), i, "Valeur hors du protocole.");
         return Encoding.ASCII.GetBytes(words[i] + "\n");
     }
 
