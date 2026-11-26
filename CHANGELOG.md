@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: named-pipe server and client for the agent control channel.
+  One client at a time and one command per connection; only the current user
+  is admitted on either side, and the server refuses to start when the name is
+  already taken. A client gone before the connection completes, a silent client
+  or a slow handler leaves the server serving the next one.
 - `KeyStats.Core`: line format of the agent control pipe, one ASCII command
   (`snooze`, `pause`, `resume`, `flush`, `quit`) and a one-line reply (`ok`,
   `unknown`, `failed`). The pipe is named per Windows session and per database.
