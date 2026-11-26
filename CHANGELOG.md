@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: unlock the encrypted data with Windows Hello or the
+  passphrase, and lock it again, from the page. The key is wiped when the
+  window closes. POST requests go through a bridge that reads at most 16 KiB
+  of body.
 - `KeyStats.Core`: `KeySession` keeps the master key in memory once unlocked by
   Windows Hello (through `IHelloSigner`) or the passphrase, and accepts only the
   key matching the stored public key. `/api/key` gives the state, POST
