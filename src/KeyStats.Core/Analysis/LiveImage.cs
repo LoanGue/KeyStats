@@ -12,6 +12,7 @@ public static class LiveImage
     /// <summary>Remplace sur place chaque pixel de texte (canal alpha ignoré) par le pixel final.</summary>
     public static void Compose(Span<uint> pixels, int width, int height)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(pixels.Length, width * height);
         float r = height * Radius;
         for (int py = 0; py < height; py++)
             for (int px = 0; px < width; px++)
