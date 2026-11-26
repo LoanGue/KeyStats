@@ -64,6 +64,17 @@ public sealed class KeySession : IDisposable
         }
     }
 
+    /// <summary>Prend la clé que l'assistant vient de créer (<see cref="KeySetup"/>) : pas de déverrouillage à refaire.</summary>
+    internal void Adopt(MasterKey key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        lock (_gate)
+        {
+            _key?.Dispose();
+            _key = key;
+        }
+    }
+
     /// <summary>Efface la clé de la mémoire.</summary>
     public void Lock()
     {
