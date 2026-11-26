@@ -139,7 +139,7 @@ public sealed class RecorderCommandsTests
     }
 
     [Fact]
-    public void Appliquee_comptee_apres_l_application_pas_au_retrait()
+    public async Task Appliquee_comptee_apres_l_application_pas_au_retrait()
     {
         using var tmp = new TempDb();
         using var master = MasterKey.Generate();
@@ -149,11 +149,19 @@ public sealed class RecorderCommandsTests
         r.Commands.Post(new RecorderCommand(end + 10, CommandKind.Pause, PauseReason.Locked));
         r.Commands.Post(new RecorderCommand(end + 10, CommandKind.DropEpoch));
         long target = r.Commands.Posted;
-        Assert.Equal(2, target);
 
-        r.Pump.Tick(end + 10 + RingPump.TickLagMs);
-        Assert.True(r.Commands.Applied >= target);
-        // L'accusé n'arrive qu'une fois le lot écrit : le brut est déjà en base.
+        // Une autre connexion tient le verrou d'écriture : l'écriture du lot attend (busy_timeout).
+        using var other = KeyStatsDb.Open(tmp.DbPath);
+        var hold = other.BeginTransaction();
+        var pump = Task.Run(() => r.Pump.Tick(end + 10 + RingPump.TickLagMs), TestContext.Current.CancellationToken);
+        SpinWait.SpinUntil(() => r.Commands.IsEmpty, TimeSpan.FromSeconds(5));
+        Thread.Sleep(200);
+        Assert.True(r.Commands.IsEmpty);
+        Assert.True(r.Commands.Applied < target);
+
+        hold.Dispose();
+        await pump.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        Assert.Equal(target, r.Commands.Applied);
         Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM raw_block"));
     }
 
