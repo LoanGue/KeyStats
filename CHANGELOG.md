@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: incremental mirror backup of the database. Append-only
+  tables (raw blocks, focus, titles, epochs) are copied from the last id, the
+  others replaced whole, in one transaction over a consistent snapshot read
+  without locking the source; the mirror is a single file. The nightly run is
+  due once a night from 3:00 local time, or at the first chance after.
 - `KeyStats.Agent`: single instance per database and Windows session (a
   second launch exits at once), and the control pipe: `snooze`, `pause`,
   `resume` and `quit` act like the tray menu, `flush` replies once the pending

@@ -29,8 +29,11 @@ public sealed partial class KeyStatsDb : IDisposable
 
     public SqliteConnection Connection => _conn;
 
-    /// <summary>Ouvre (et crée ou met à jour) la base.</summary>
-    public static KeyStatsDb Open(string path, bool readOnly = false)
+    /// <summary>
+    /// Ouvre (et crée ou met à jour) la base. Sans <paramref name="wal"/>, le journal est en mode DELETE :
+    /// la base tient en un seul fichier (miroir de sauvegarde).
+    /// </summary>
+    public static KeyStatsDb Open(string path, bool readOnly = false, bool wal = true)
     {
         EnsureSqlite();
         var csb = new SqliteConnectionStringBuilder
@@ -48,8 +51,9 @@ public sealed partial class KeyStatsDb : IDisposable
             db.Exec("PRAGMA foreign_keys = ON");
             if (!readOnly)
             {
-                db.Exec("PRAGMA journal_mode = WAL");
-                db.Exec("PRAGMA synchronous = NORMAL");
+                db.Exec(wal ? "PRAGMA journal_mode = WAL" : "PRAGMA journal_mode = DELETE");
+                // En journal DELETE, NORMAL peut corrompre la base si le courant est coupé pendant le COMMIT.
+                db.Exec(wal ? "PRAGMA synchronous = NORMAL" : "PRAGMA synchronous = FULL");
                 db.Migrate();
             }
             else if (db.UserVersion > Schema.CurrentVersion)

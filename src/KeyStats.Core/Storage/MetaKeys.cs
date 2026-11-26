@@ -8,4 +8,7 @@ public static class MetaKeys
 
     /// <summary>Clé HMAC des empreintes de titres, protégée par DPAPI du compte courant.</summary>
     public const string TitleKey = "title_key_dpapi";
+
+    /// <summary>Dans un miroir de sauvegarde seulement : heure de la dernière mise à jour réussie (ms UTC, int64).</summary>
+    public const string BackupMs = "backup_ms";
 }

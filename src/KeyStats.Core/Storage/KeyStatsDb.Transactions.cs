@@ -7,12 +7,16 @@ public sealed partial class KeyStatsDb
 {
     // ---- Transactions ----
 
-    /// <summary>Transaction en écriture (BEGIN IMMEDIATE). Annulée si elle n'est pas validée.</summary>
-    public DbTransaction BeginTransaction()
+    /// <summary>
+    /// Transaction en écriture (BEGIN IMMEDIATE), annulée si elle n'est pas validée. Différée, elle ne prend
+    /// le verrou d'écriture qu'à la première écriture, et seulement sur la base écrite : une base attachée
+    /// qui n'est que lue n'est pas verrouillée.
+    /// </summary>
+    public DbTransaction BeginTransaction(bool deferred = false)
     {
         if (_inTransaction) throw new InvalidOperationException("Transaction déjà ouverte.");
         if (IsFaulted) throw new InvalidOperationException("Annulation impossible lors de la dernière transaction : base à rouvrir.");
-        Exec("BEGIN IMMEDIATE");
+        Exec(deferred ? "BEGIN DEFERRED" : "BEGIN IMMEDIATE");
         _inTransaction = true;
         return new DbTransaction(this);
     }
