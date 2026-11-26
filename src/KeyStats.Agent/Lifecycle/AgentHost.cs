@@ -98,7 +98,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         // Une simple correction d'heure (synchronisation réseau) ne coupe pas la session en cours.
         if (zone.Id != _zone.Id || !zone.HasSameRules(_zone))
         {
-            _zone = zone;
+            Volatile.Write(ref _zone, zone);
             Post(new RecorderCommand(Now(), CommandKind.SetZone, Zone: zone));
         }
         _capture.RequestResync();
