@@ -95,7 +95,9 @@ public sealed class PauseSourcesTests
         Assert.Equal(PauseTransition.None, p.Tick(T + 1000 * Min));
         Assert.Equal(PauseSources.UntilResumed, p.SnoozeUntil);
         Assert.Equal(PauseTransition.Resumed, p.ResumeNow(T + 1001 * Min));
-        Assert.Equal(2, Take(commands).Count);
+        Assert.Equal(
+            [new RecorderCommand(T, CommandKind.Pause, PauseReason.Snooze), new RecorderCommand(T + 1001 * Min, CommandKind.Resume)],
+            Take(commands));
     }
 
     [Fact]
@@ -117,6 +119,79 @@ public sealed class PauseSourcesTests
         // Aucune minuterie n'est passée entre la fin prévue et le clic.
         Assert.Equal(PauseTransition.Paused, p.Snooze(T + 7 * Min));
         Assert.Equal(T + 12 * Min, p.SnoozeUntil);
+        Assert.Equal(
+            [
+                new RecorderCommand(T, CommandKind.Pause, PauseReason.Snooze),
+                new RecorderCommand(T + 5 * Min, CommandKind.Resume),
+                new RecorderCommand(T + 7 * Min, CommandKind.Pause, PauseReason.Snooze),
+            ],
+            Take(commands));
+    }
+
+    [Fact]
+    public void Veille_seule_oublie_l_epoque_et_reprend_au_reveil()
+    {
+        var commands = new RecorderCommands();
+        var p = new PauseSources(commands);
+        Assert.Equal(PauseTransition.Paused, p.SetSuspended(true, T));
+        Assert.Equal(PauseTransition.Resumed, p.SetSuspended(false, T + 60 * Min));
+        Assert.Equal(
+            [
+                new RecorderCommand(T, CommandKind.Pause, PauseReason.Locked),
+                new RecorderCommand(T, CommandKind.DropEpoch),
+                new RecorderCommand(T + 60 * Min, CommandKind.Resume),
+            ],
+            Take(commands));
+    }
+
+    [Fact]
+    public void Pause_echue_pendant_la_veille_reprise_au_reveil()
+    {
+        var commands = new RecorderCommands();
+        var p = new PauseSources(commands);
+        p.Snooze(T);
+        p.SetSuspended(true, T + Min);
+        Take(commands);
+        Assert.Equal(PauseTransition.Resumed, p.SetSuspended(false, T + 60 * Min));
+        Assert.Equal([new RecorderCommand(T + 60 * Min, CommandKind.Resume)], Take(commands));
+    }
+
+    [Fact]
+    public void Pause_echue_non_vue_puis_verrouillage()
+    {
+        var commands = new RecorderCommands();
+        var p = new PauseSources(commands);
+        p.Snooze(T);
+        Assert.Equal(PauseTransition.Paused, p.SetLocked(true, T + 7 * Min));
+        Assert.Equal(
+            [
+                new RecorderCommand(T, CommandKind.Pause, PauseReason.Snooze),
+                new RecorderCommand(T + 5 * Min, CommandKind.Resume),
+                new RecorderCommand(T + 7 * Min, CommandKind.Pause, PauseReason.Locked),
+                new RecorderCommand(T + 7 * Min, CommandKind.DropEpoch),
+            ],
+            Take(commands));
+    }
+
+    [Fact]
+    public void Pause_echue_non_vue_puis_reprendre_maintenant()
+    {
+        var commands = new RecorderCommands();
+        var p = new PauseSources(commands);
+        p.Snooze(T);
+        Assert.Equal(PauseTransition.Resumed, p.ResumeNow(T + 7 * Min));
+        Assert.Equal(
+            [new RecorderCommand(T, CommandKind.Pause, PauseReason.Snooze), new RecorderCommand(T + 5 * Min, CommandKind.Resume)],
+            Take(commands));
+    }
+
+    [Fact]
+    public void Pause_echue_non_vue_puis_pause_sans_fin()
+    {
+        var commands = new RecorderCommands();
+        var p = new PauseSources(commands);
+        p.Snooze(T);
+        Assert.Equal(PauseTransition.Paused, p.SnoozeUntilResumedManually(T + 7 * Min));
         Assert.Equal(
             [
                 new RecorderCommand(T, CommandKind.Pause, PauseReason.Snooze),
