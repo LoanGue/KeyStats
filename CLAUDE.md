@@ -41,7 +41,7 @@ dotnet publish src/KeyStats.Agent -c Release   # NativeAOT
 
 ## Méthode de travail
 
-- `main` est en lecture seule. Une issue, une branche et une PR par étape du plan (`TODO.md`), fusionnée par squash après revue. Format, compilation sans avertissement et tests se vérifient en local (voir `CONTRIBUTING.md`) ; la CI (`.github/workflows/pr-gate.yml`, exigée par la règle de `main`) ne contrôle que la taille et la section `## Tests` du corps de la PR. Au-delà de 400 lignes, la PR porte le label `large-pr` et une justification.
+- `main` est en lecture seule. Une issue, une branche et une PR par étape du plan (`TODO.md`), fusionnée par rebase après revue : chaque commit arrive sur `main`, il doit donc tenir seul (message conventionnel, une seule préoccupation) et les commits de retouche sont repliés avant le premier push. Format, compilation sans avertissement et tests se vérifient en local (voir `CONTRIBUTING.md`) ; la CI (`.github/workflows/pr-gate.yml`, exigée par la règle de `main`) ne contrôle que la taille et la section `## Tests` du corps de la PR. Au-delà de 400 lignes, la PR porte le label `large-pr` et une justification.
 - Les tests passent avant chaque commit.
 - Interface du tableau de bord : skill `frontend-design:frontend-design`. Tester les pages dans le navigateur intégré avec des données d'exemple (`wwwroot` fonctionne aussi hors WebView2).
 - Textes de l'interface en français, sans formules creuses ni chiffres inventés.
