@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: POST requests from the page reach the router through
+  a bridge; `RequestBody` in Core reads at most 16 KiB of body and clears its
+  buffers.
 - `KeyStats.Core`: `KeySession` keeps the master key in memory once unlocked by
   Windows Hello (through `IHelloSigner`) or the passphrase, and accepts only the
   key matching the stored public key. `/api/key` gives the state, POST
