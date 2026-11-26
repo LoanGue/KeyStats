@@ -45,9 +45,10 @@ public static class SetupApi
             {
                 key = KeySetup.TryWrite(db, phrase, hello, nowMs(), iterations);
             }
-            catch (ArgumentException)
+            catch (ArgumentException) when (hello is not null)
             {
-                // Signature Hello inutilisable (trop courte) : rien n'a été écrit.
+                // Signature Hello inutilisable (trop courte) : rien n'a été écrit. La clé Hello créée
+                // reste dans le magasin de Windows, rattachée à rien (comme après un « already »).
                 return Result("hello");
             }
             finally

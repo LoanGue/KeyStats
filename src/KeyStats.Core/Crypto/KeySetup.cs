@@ -6,7 +6,7 @@ namespace KeyStats.Core.Crypto;
 /// <summary>Création de la clé Windows Hello de KeyStats, fournie par le tableau de bord (WinRT).</summary>
 public interface IHelloEnroller
 {
-    /// <summary>Crée (ou remplace) la clé <paramref name="credentialId"/>, puis lui fait signer le défi.</summary>
+    /// <summary>Crée la clé <paramref name="credentialId"/>, puis lui fait signer le défi.</summary>
     /// <returns>La signature, ou null si l'utilisateur annule ou si Hello n'est pas disponible.</returns>
     Task<byte[]?> CreateAndSignAsync(string credentialId, byte[] challenge);
 }
