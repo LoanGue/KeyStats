@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: WebView2 crash reports are no longer sent to Microsoft,
+  and the profile's Crashpad reports are deleted at start, after a process
+  failure and on close: a renderer dump may hold the passphrase.
 - `KeyStats.Dashboard`: POST requests from the page reach the router through
   a bridge; `RequestBody` in Core reads at most 16 KiB of body and clears its
   buffers.
