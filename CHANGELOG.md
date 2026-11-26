@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: live counter bottom right of the active window's screen,
+  above the taskbar. Layered window drawn with per-pixel alpha, click-through,
+  never activated, hidden from Alt+Tab and from screen capture. Its timer runs
+  only while it is shown; a pause hides it, and `liveCounter.enabled` applies
+  at start and on `reload`.
 - `KeyStats.Core`: `LiveDisplay.Frame` gives the text of one counter frame (speed
   smoothed while typing, cpm on the same smoothing), and `LiveImage` composes
   the counter image (text on a dark rounded background, premultiplied alpha).

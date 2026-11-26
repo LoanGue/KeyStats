@@ -1,4 +1,5 @@
 using KeyStats.Agent.Capture;
+using KeyStats.Agent.Overlay;
 using KeyStats.Agent.Recording;
 using KeyStats.Agent.Tray;
 using KeyStats.Core.Analysis;
@@ -35,6 +36,8 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     private readonly AnalysisLoop _loop;
     private readonly TrayController _tray;
     private readonly BackupScheduler _backup;
+    private readonly LiveMeter _live;
+    private readonly LiveOverlay _overlay;
     private readonly string _dbPath;
     private ControlBridge? _control;
     private TimeZoneInfo _zone = TimeZoneInfo.Local;
@@ -49,7 +52,10 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         var focus = new FocusChannel();
         _capture = new RawInputCapture(ring, _signal, focus, settings.Exclusions());
         _storage = AgentStorage.Open(dbPath);
-        var recorder = new Recorder(_storage.Db, _storage.Archive, new LocalDayClock(_zone), _capture.Clock.PeekMs(), settings.Analysis);
+        _live = new LiveMeter(settings.Analysis);
+        var recorder = new Recorder(_storage.Db, _storage.Archive, new LocalDayClock(_zone), _capture.Clock.PeekMs(), settings.Analysis, _live);
+        _overlay = new LiveOverlay(_live, Now, settings.LiveCounter.Enabled);
+        _live.Shown = _overlay.PostShown;
         _pauses = new PauseSources(_commands);
         _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t));
         _loop = new AnalysisLoop(new RingPump(ring, focus, recorder, _commands), _capture.Clock, _signal);
@@ -113,9 +119,15 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     {
         _tray.Attach(hwnd);
         _control = ControlBridge.Start(hwnd, _dbPath);
+        // En dernier : un compteur impossible à créer ne prive l'agent ni de l'icône ni du tube.
+        _overlay.Create();
     }
 
-    public void OnDestroyed() => _tray.Dispose();
+    public void OnDestroyed()
+    {
+        _overlay.Dispose();
+        _tray.Dispose();
+    }
 
     public void OnIconMessage(nint wParam, nint lParam)
     {
@@ -156,7 +168,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     private long Now() => _capture.Clock.PeekMs();
 
     /// <summary>
-    /// Exclusions et dossier du miroir appliqués tout de suite ; les seuils d'analyse, tenus par les
+    /// Exclusions, dossier du miroir et compteur en direct appliqués tout de suite ; les seuils d'analyse, tenus par les
     /// analyseurs en cours, au prochain démarrage. Un fichier refusé, ou des exclusions que le thread
     /// de capture ne peut pas recevoir, laissent les réglages en place.
     /// </summary>
@@ -166,6 +178,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         if (load.Status == SettingsStatus.Invalid) return false;
         if (!_capture.SetExclusions(load.Settings.Exclusions())) return false;
         _backup.SetFolder(load.Settings.BackupFolder);
+        _overlay.Enabled = load.Settings.LiveCounter.Enabled;
         return true;
     }
 
@@ -179,6 +192,12 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         if (_shutDown || transition == PauseTransition.None) return false;
         _signal.Set();
         _tray.Refresh();
+        // Plus rien n'est compté pendant la pause : le compteur disparaît tout de suite.
+        if (transition == PauseTransition.Paused)
+        {
+            _live.Reset();
+            _overlay.Hide();
+        }
         if (transition != PauseTransition.Resumed) return false;
         // Un relâchement a pu se perdre pendant la pause : l'état des touches repart de zéro.
         _capture.RequestResync();
