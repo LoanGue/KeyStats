@@ -1,0 +1,27 @@
+using System.Text.Json.Serialization;
+using KeyStats.Core.Storage;
+
+namespace KeyStats.Core.Web;
+
+/// <param name="Setup">Clé publique maîtresse en place : l'agent chiffre le brut et les titres.</param>
+/// <param name="AgentRunning">Un agent tourne sur cette base.</param>
+public sealed record DashboardStatus(bool Setup, bool AgentRunning);
+
+/// <summary>Route <c>/api/status</c> : ce que la page doit savoir avant d'afficher quoi que ce soit.</summary>
+public static class StatusApi
+{
+    public const string Path = "/api/status";
+
+    public static DashboardStatus Read(KeyStatsDb db, bool agentRunning)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        return new DashboardStatus(db.GetMeta(MetaKeys.MasterPublicKey) is { Length: > 0 }, agentRunning);
+    }
+
+    public static WebResponse Respond(KeyStatsDb db, bool agentRunning) =>
+        WebResponse.Json(Read(db, agentRunning), WebJson.Default.DashboardStatus);
+}
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(DashboardStatus))]
+public sealed partial class WebJson : JsonSerializerContext;
