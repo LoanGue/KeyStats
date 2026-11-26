@@ -57,7 +57,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         _overlay = new LiveOverlay(_live, Now, settings.LiveCounter.Enabled);
         _live.Shown = _overlay.PostShown;
         _pauses = new PauseSources(_commands);
-        _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t));
+        _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t), ms => _overlay.ShowNote(LiveDisplay.Snooze(ms)));
         _loop = new AnalysisLoop(new RingPump(ring, focus, recorder, _commands), _capture.Clock, _signal);
         _backup = new BackupScheduler(dbPath, settings.BackupFolder, () => Volatile.Read(ref _zone));
     }
@@ -198,6 +198,8 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
             _live.Reset();
             _overlay.Hide();
         }
+        // La confirmation d'une pause qui vient de finir disparaît avec elle.
+        else if (transition == PauseTransition.Resumed) _overlay.Hide();
         if (transition != PauseTransition.Resumed) return false;
         // Un relâchement a pu se perdre pendant la pause : l'état des touches repart de zéro.
         _capture.RequestResync();
