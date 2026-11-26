@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: `PauseLabel` gives the tray tooltip text: recording, snoozed
+  until a local `HH:mm` with the minutes left, snoozed until resumed, or locked.
 - `KeyStats.Agent`: the real agent. `KeyStats.Agent.exe [--db <path>]` runs
   capture, analysis and writing until the Windows session ends. A hidden window
   pauses on lock and sleep (epoch key dropped), resumes with a key-state reset
