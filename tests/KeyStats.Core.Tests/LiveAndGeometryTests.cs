@@ -121,6 +121,25 @@ public sealed class LiveDisplayTests
         Assert.Equal(new LiveText("", ""), LiveDisplay.Text(LiveMode.Hidden, 60, 300, 1));
     }
 
+    [Theory]
+    [InlineData(15 * 60_000, "\u23F8 15\u00A0min")]
+    [InlineData(14 * 60_000 + 1, "\u23F8 15\u00A0min")]
+    [InlineData(1_000, "\u23F8 1\u00A0min")]
+    [InlineData(0, "\u23F8 1\u00A0min")]
+    public void Confirmation_de_pause_a_la_minute_superieure(long remainingMs, string expected) =>
+        Assert.Equal(new LiveText(expected, "en pause"), LiveDisplay.Snooze(remainingMs));
+
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
+    [InlineData(4, true)]
+    [InlineData(5, false)]
+    [InlineData(6, false)]
+    [InlineData(7, false)]
+    public void Silencieux_si_occupe_en_plein_ecran_ou_en_presentation(int state, bool quiet) =>
+        Assert.Equal(quiet, LiveDisplay.Quiet(state));
+
     [Fact]
     public void Image_lissee_pendant_la_frappe_bilan_tel_quel()
     {
