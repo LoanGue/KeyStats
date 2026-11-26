@@ -49,9 +49,14 @@ internal sealed unsafe class TrayIcon : IDisposable
         _added = true;
     }
 
-    /// <summary>L'Explorateur a oublié l'icône : on la repose telle quelle.</summary>
+    /// <summary>
+    /// L'Explorateur a oublié l'icône : on la repose telle quelle. Le message peut aussi arriver alors
+    /// qu'elle existe encore ; sans retrait préalable, l'ajout échouerait et l'icône ne serait plus mise à jour.
+    /// </summary>
     public void Recreate()
     {
+        var data = Data(0);
+        _ = TrayApi.Shell_NotifyIcon(TrayApi.NIM_DELETE, &data);
         _added = false;
         Show(_paused, _tip);
     }
