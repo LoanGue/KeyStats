@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: unlock the encrypted data with Windows Hello or the
+  passphrase, and lock it again, from the page. The key is wiped when the
+  window closes.
 - `KeyStats.Dashboard`: WebView2 crash reports are no longer sent to Microsoft,
   and the profile's Crashpad reports are deleted at start, after a process
   failure and on close: a renderer dump may hold the passphrase.
