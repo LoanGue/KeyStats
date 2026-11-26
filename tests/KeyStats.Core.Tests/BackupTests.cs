@@ -168,6 +168,15 @@ public sealed class BackupTests
         Assert.Null(BackupMirror.LastRunMs(mirror));
     }
 
+    [Fact]
+    public void Chemin_du_miroir_dans_le_dossier_choisi_ou_a_cote_de_la_base()
+    {
+        string db = Path.Combine(Path.GetTempPath(), "ks", "keystats.db");
+        Assert.Equal(Path.Combine(Path.GetTempPath(), "ks", "backup", "keystats.db"), BackupMirror.PathFor(db, null));
+        string folder = Path.Combine(Path.GetTempPath(), "ailleurs");
+        Assert.Equal(Path.Combine(folder, "keystats.db"), BackupMirror.PathFor(db, folder));
+    }
+
     private static readonly TimeZoneInfo Plus1 = TimeZoneInfo.CreateCustomTimeZone("UTC+1", TimeSpan.FromHours(1), "UTC+1", "UTC+1");
 
     private static long Utc(int d, int h, int mi = 0) => new DateTimeOffset(2026, 11, d, h, mi, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
