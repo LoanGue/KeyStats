@@ -32,6 +32,9 @@ internal static unsafe partial class OverlayApi
     public static partial int GetMonitorInfo(nint monitor, MONITORINFO* info);
     [LibraryImport("shcore.dll")]
     public static partial int GetDpiForMonitor(nint monitor, int type, uint* dpiX, uint* dpiY);
+    /// <summary>État de l'utilisateur vu par le shell (occupé, plein écran, présentation…).</summary>
+    [LibraryImport("shell32.dll")]
+    public static partial int SHQueryUserNotificationState(int* state);
     [LibraryImport("user32.dll", EntryPoint = "DrawTextW")]
     public static partial int DrawText(nint dc, char* text, int length, RECT* rect, uint format);
 

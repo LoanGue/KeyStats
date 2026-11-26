@@ -7,10 +7,11 @@ namespace KeyStats.Agent.Tray;
 /// <summary>
 /// Relie l'icône à <see cref="PauseSources"/> : sélection (clic gauche, Entrée) +5 min, menu du clic droit, infobulle
 /// tenue à jour par une minuterie d'une seconde, active seulement pendant une pause à durée fixée.
+/// Chaque clic qui prolonge la pause est confirmé par <paramref name="snoozed"/> (pause restante, en ms).
 /// Thread de la fenêtre de session uniquement.
 /// </summary>
 internal sealed class TrayController(PauseSources pauses, Func<long> now, Func<TimeZoneInfo> zone,
-    Action<PauseTransition> apply) : IDisposable
+    Action<PauseTransition> apply, Action<long> snoozed) : IDisposable
 {
     private const nuint TickTimer = 1;
 
@@ -32,7 +33,9 @@ internal sealed class TrayController(PauseSources pauses, Func<long> now, Func<T
         {
             case TrayApi.NIN_SELECT:
             case TrayApi.NIN_KEYSELECT:
-                _ = Execute(TrayCommand.Snooze);
+                if (!Execute(TrayCommand.Snooze)) break;
+                long until = pauses.SnoozeUntil;
+                if (pauses.Reason == PauseReason.Snooze && until != PauseSources.UntilResumed) snoozed(until - now());
                 break;
             case TrayApi.WM_CONTEXTMENU:
                 long snoozeUntil = pauses.SnoozeUntil;

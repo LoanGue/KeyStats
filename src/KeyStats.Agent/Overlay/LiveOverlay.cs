@@ -15,15 +15,15 @@ internal sealed unsafe class LiveOverlay : IDisposable
     private const string ClassName = "KeyStats.Live";
     // Messages propres à cette fenêtre : pas de conflit avec ceux de la fenêtre de session.
     private const uint WM_APP_SHOWN = 0x8000 + 1;
-    private const nuint TickId = 1;
-    private const uint TickMs = 250;
+    private const nuint TickId = 1, NoteId = 2;
+    private const uint TickMs = 250, NoteMs = 1500;
     private static LiveOverlay? s_current;
 
     private readonly LiveMeter _meter;
     private readonly Func<long> _now;
     private readonly LiveSmoother _smoother = new();
     private nint _hwnd, _instance;
-    private bool _visible, _ticking;
+    private bool _visible, _ticking, _noting;
     private int _x, _y, _width, _height, _dpi;
 
     public LiveOverlay(LiveMeter meter, Func<long> now, bool enabled)
@@ -83,6 +83,18 @@ internal sealed unsafe class LiveOverlay : IDisposable
         if (hwnd != 0) _ = User32.PostMessage(hwnd, WM_APP_SHOWN, 0, 0);
     }
 
+    /// <summary>Message bref (confirmation de pause) pendant 1,5 s, à la place du compteur.</summary>
+    public void ShowNote(LiveText text)
+    {
+        if (_hwnd == 0 || !Enabled) return;
+        Hide();
+        if (!Place() || !OverlayPainter.Paint(_hwnd, _x, _y, _width, _height, _dpi, text)) return;
+        _ = OverlayApi.ShowWindow(_hwnd, OverlayApi.SW_SHOWNOACTIVATE);
+        _visible = true;
+        _noting = Timers.SetTimer(_hwnd, NoteId, NoteMs, 0) != 0;
+        if (!_noting) Hide();
+    }
+
     public void Dispose()
     {
         if (_hwnd == 0) return;
@@ -107,6 +119,9 @@ internal sealed unsafe class LiveOverlay : IDisposable
                 case Timers.WM_TIMER when (nuint)wParam == TickId:
                     o.Tick();
                     return 0;
+                case Timers.WM_TIMER when (nuint)wParam == NoteId:
+                    o.Hide();
+                    return 0;
             }
         }
         catch (Exception)
@@ -120,7 +135,7 @@ internal sealed unsafe class LiveOverlay : IDisposable
 
     private void Start()
     {
-        if (!Enabled || _ticking || !Place()) return;
+        if (!Enabled || _ticking || _noting || Quiet() || !Place()) return;
         _smoother.Reset();
         // Sans minuterie, rien ne cacherait le compteur : il ne s'affiche pas.
         _ticking = Timers.SetTimer(_hwnd, TickId, TickMs, 0) != 0;
@@ -158,9 +173,18 @@ internal sealed unsafe class LiveOverlay : IDisposable
         return true;
     }
 
-    /// <summary>Cache le compteur et arrête sa minuterie, jusqu'au prochain signal de frappe.</summary>
+    /// <summary>Application en plein écran (jeu, vidéo) ou mode présentation : le compteur ne s'affiche pas de la rafale.</summary>
+    private static bool Quiet()
+    {
+        int state;
+        return OverlayApi.SHQueryUserNotificationState(&state) == 0 && LiveDisplay.Quiet(state);
+    }
+
+    /// <summary>Cache le compteur et arrête ses minuteries, jusqu'au prochain signal de frappe.</summary>
     public void Hide()
     {
+        if (_noting) _ = Timers.KillTimer(_hwnd, NoteId);
+        _noting = false;
         if (_ticking) _ = Timers.KillTimer(_hwnd, TickId);
         _ticking = false;
         if (_visible) _ = OverlayApi.ShowWindow(_hwnd, OverlayApi.SW_HIDE);
