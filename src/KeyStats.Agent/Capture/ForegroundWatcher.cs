@@ -50,6 +50,19 @@ internal sealed unsafe class ForegroundWatcher(FocusChannel channel, ExclusionLi
         }
     }
 
+    /// <summary>
+    /// Sur le thread de capture. La fenêtre active est relue comme si elle venait d'un autre processus :
+    /// une appli nouvellement exclue l'est dès maintenant, sans attendre un changement de fenêtre.
+    /// </summary>
+    public void SetExclusions(ExclusionList exclusions)
+    {
+        _tracker.Exclusions = exclusions;
+        _pid = uint.MaxValue;
+        // La fenêtre active d'abord : la dernière vue a pu être détruite depuis.
+        nint hwnd = WinEvents.GetForegroundWindow();
+        Observe(hwnd != 0 ? hwnd : _window);
+    }
+
     /// <summary>Sur le thread de capture, avant la fin de sa boucle de messages.</summary>
     public void Dispose()
     {

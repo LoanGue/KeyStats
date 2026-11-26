@@ -27,8 +27,12 @@ internal sealed unsafe class RawInputCapture : IDisposable
     private static RawInputCapture? s_current;
 
     private const int VK_CAPITAL = 0x14, VK_NUMLOCK = 0x90;
+    // Messages privés de la fenêtre de capture seule : la fenêtre de session a les siens (TrayIcon,
+    // ControlBridge), les mêmes valeurs n'y entrent pas en conflit.
     // Recalage demandé par un autre thread (réveil, déverrouillage, changement d'heure).
     private const uint WM_APP_RESYNC = 0x8000 + 1;
+    // Nouvelle liste d'exclusions, déposée dans _pendingExclusions.
+    private const uint WM_APP_EXCLUSIONS = 0x8000 + 2;
     private const nuint ResyncTimer = 1;
     // L'horloge système dérive par rapport au compteur, ou est corrigée par la synchronisation réseau.
     private const uint ResyncPeriodMs = 10 * 60 * 1000;
@@ -44,6 +48,7 @@ internal sealed unsafe class RawInputCapture : IDisposable
     private readonly FocusChannel? _focus;
     private CaptureCounters _counters;
     private nint _hwnd;
+    private ExclusionList? _pendingExclusions;
     private int _startError;
 
     /// <param name="signal">Levé après chaque écriture, pour réveiller le consommateur.</param>
@@ -83,6 +88,17 @@ internal sealed unsafe class RawInputCapture : IDisposable
     public void RequestResync()
     {
         if (s_current == this) _ = User32.PostMessage(_hwnd, WM_APP_RESYNC, 0, 0);
+    }
+
+    /// <summary>
+    /// Nouvelle liste d'exclusions, appliquée ensuite par le thread de capture : les frappes déjà en file
+    /// gardent l'état précédent.
+    /// </summary>
+    /// <returns>Faux si la capture ne tourne pas ou si le message n'a pas pu être déposé.</returns>
+    public bool SetExclusions(ExclusionList exclusions)
+    {
+        Volatile.Write(ref _pendingExclusions, exclusions);
+        return s_current == this && User32.PostMessage(_hwnd, WM_APP_EXCLUSIONS, 0, 0) != 0;
     }
 
     /// <summary>Vrai si le thread de capture est arrêté (ou n'a jamais tourné).</summary>
@@ -171,6 +187,18 @@ internal sealed unsafe class RawInputCapture : IDisposable
         {
             c._clock.Resync();
             if (msg == WM_APP_RESYNC) c._writer.MarkLost();
+            return 0;
+        }
+        else if (msg == WM_APP_EXCLUSIONS && s_current is { } x)
+        {
+            try
+            {
+                if (Interlocked.Exchange(ref x._pendingExclusions, null) is { } list) x._watcher?.SetExclusions(list);
+            }
+            catch (Exception)
+            {
+                x._counters.CallbackErrors++;
+            }
             return 0;
         }
         else if (msg == User32.WM_DESTROY)
