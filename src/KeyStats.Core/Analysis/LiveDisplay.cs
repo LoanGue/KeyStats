@@ -22,6 +22,16 @@ public static class LiveDisplay
         _ => new("", ""),
     };
 
+    /// <summary>Confirmation d'un clic sur l'icône : pause restante, arrondie à la minute supérieure.</summary>
+    public static LiveText Snooze(long remainingMs) =>
+        new($"\u23F8 {Math.Max(1, (remainingMs + 59_999) / 60_000).ToString(CultureInfo.InvariantCulture)}\u00A0min", "en pause");
+
+    /// <summary>
+    /// États de <c>SHQueryUserNotificationState</c> où le compteur se tait : application en plein écran ou réglages de présentation (2),
+    /// jeu ou vidéo Direct3D en plein écran (3), mode présentation (4).
+    /// </summary>
+    public static bool Quiet(int notificationState) => notificationState is 2 or 3 or 4;
+
     /// <summary>
     /// Texte d'une image du compteur : pendant la frappe, vitesse lissée, le cpm suivant le même lissage ;
     /// le bilan tel quel.
