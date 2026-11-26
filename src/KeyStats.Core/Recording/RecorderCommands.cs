@@ -28,7 +28,7 @@ public sealed class RecorderCommands
 {
     private readonly ConcurrentQueue<RecorderCommand> _queue = new();
     private readonly Lock _postLock = new();
-    private long _posted, _applied;
+    private long _posted, _applied, _failed;
 
     /// <summary>
     /// Depuis n'importe quel thread. L'heure vient de <see cref="Input.EventClock.PeekMs"/>, et ne
@@ -60,8 +60,18 @@ public sealed class RecorderCommands
     /// </summary>
     public long Applied => Volatile.Read(ref _applied);
 
+    /// <summary>
+    /// Commandes qui ont levé, ou dont l'écriture n'a pas abouti (base verrouillée, disque plein).
+    /// Relevé avant l'envoi, il dit si une commande attendue a échoué.
+    /// </summary>
+    public long Failed => Volatile.Read(ref _failed);
+
     /// <summary>Consommateur seulement, après l'application de la commande prise.</summary>
-    internal void MarkApplied() => Volatile.Write(ref _applied, _applied + 1);
+    internal void MarkApplied(bool ok)
+    {
+        if (!ok) Volatile.Write(ref _failed, _failed + 1);
+        Volatile.Write(ref _applied, _applied + 1);
+    }
 
     /// <summary>Consommateur seulement : la commande suivante si elle ne date pas d'après <paramref name="beforeMs"/>.</summary>
     internal bool TryTake(long beforeMs, out RecorderCommand command)
