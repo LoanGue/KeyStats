@@ -41,8 +41,16 @@ async function loadKey() {
   }
 }
 
+// Une seule demande à la fois : un double clic lancerait deux invites Windows Hello.
+function setBusy(busy) {
+  for (const control of $("key").querySelectorAll("button, input")) {
+    control.disabled = busy;
+  }
+}
+
 async function post(path, body, failure) {
   $("key-message").textContent = "";
+  setBusy(true);
   try {
     const state = await getJson(path, {
       method: "POST",
@@ -53,6 +61,8 @@ async function post(path, body, failure) {
     if (!state.unlocked && failure) $("key-message").textContent = failure;
   } catch {
     $("key-message").textContent = "La demande a échoué.";
+  } finally {
+    setBusy(false);
   }
 }
 
