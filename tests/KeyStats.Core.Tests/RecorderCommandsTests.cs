@@ -139,6 +139,40 @@ public sealed class RecorderCommandsTests
     }
 
     [Fact]
+    public void Appliquee_comptee_apres_l_application_pas_au_retrait()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        var r = Setup(tmp, master);
+        var (end, _) = Write(r.Ring, Text, Typist.Start + 10);
+        r.Pump.Drain();
+        r.Commands.Post(new RecorderCommand(end + 10, CommandKind.Pause, PauseReason.Locked));
+        r.Commands.Post(new RecorderCommand(end + 10, CommandKind.DropEpoch));
+        long target = r.Commands.Posted;
+        Assert.Equal(2, target);
+
+        r.Pump.Tick(end + 10 + RingPump.TickLagMs);
+        Assert.True(r.Commands.Applied >= target);
+        // L'accusé n'arrive qu'une fois le lot écrit : le brut est déjà en base.
+        Assert.Equal(1, tmp.Count("SELECT COUNT(*) FROM raw_block"));
+    }
+
+    [Fact]
+    public void Commande_en_erreur_comptee_comme_appliquee()
+    {
+        using var tmp = new TempDb();
+        var r = Setup(tmp);
+        var (end, _) = Write(r.Ring, Text, Typist.Start + 10);
+        r.Pump.Drain();
+        r.Commands.Post(new RecorderCommand(end + 10, CommandKind.Flush));
+        // Transaction ouverte : l'écriture du Flush lève.
+        using (tmp.Db.BeginTransaction())
+            r.Pump.Tick(end + 10 + RingPump.TickLagMs);
+        Assert.Equal(1, r.Pump.Counters.Errors);
+        Assert.Equal(1, r.Commands.Applied);
+    }
+
+    [Fact]
     public void Commande_incomplete_refusee_a_l_envoi()
     {
         var commands = new RecorderCommands();

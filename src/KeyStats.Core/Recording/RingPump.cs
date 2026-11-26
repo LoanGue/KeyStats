@@ -72,6 +72,10 @@ public sealed class RingPump(EventRing ring, FocusChannel focus, Recorder record
             {
                 Volatile.Write(ref _errors, _errors + 1);
             }
+            finally
+            {
+                commands.MarkApplied();
+            }
         }
     }
 
