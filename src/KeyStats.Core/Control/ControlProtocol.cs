@@ -49,6 +49,9 @@ public static class ControlProtocol
         return Convert.ToHexStringLower(hash.AsSpan(0, 8));
     }
 
+    /// <summary>Mutex de l'instance unique de l'agent sur cette base, dans la session courante.</summary>
+    public static string MutexName(string dbPath) => $@"Local\KeyStats.Agent.{InstanceKey(dbPath)}";
+
     public static string PipeName(int sessionId, string dbPath) => $"KeyStats.Agent.{sessionId}.{InstanceKey(dbPath)}";
 
     public static byte[] Encode(AgentCommand command) => Line(Commands, (int)command);
