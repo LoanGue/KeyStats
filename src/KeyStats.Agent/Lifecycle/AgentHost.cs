@@ -2,6 +2,7 @@ using KeyStats.Agent.Capture;
 using KeyStats.Agent.Recording;
 using KeyStats.Agent.Tray;
 using KeyStats.Core.Analysis;
+using KeyStats.Core.Control;
 using KeyStats.Core.Focus;
 using KeyStats.Core.Input;
 using KeyStats.Core.Recording;
@@ -22,6 +23,8 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     private static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(3.5);
     // Windows laisse environ 2 s avant la veille : l'écriture du lot doit tenir dedans.
     private static readonly TimeSpan SuspendWait = TimeSpan.FromSeconds(1.5);
+    // Une commande du tube doit répondre en moins de 1,5 s (ControlBridge).
+    private static readonly TimeSpan FlushWait = TimeSpan.FromSeconds(1);
 
     private readonly AutoResetEvent _signal = new(false);
     private readonly RawInputCapture _capture;
@@ -30,11 +33,14 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     private readonly PauseSources _pauses;
     private readonly AnalysisLoop _loop;
     private readonly TrayController _tray;
+    private readonly string _dbPath;
+    private ControlBridge? _control;
     private TimeZoneInfo _zone = TimeZoneInfo.Local;
     private bool _shutDown;
 
     private AgentHost(string dbPath)
     {
+        _dbPath = dbPath;
         var ring = new EventRing(4096);
         var focus = new FocusChannel();
         _capture = new RawInputCapture(ring, _signal, focus);
@@ -71,7 +77,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     {
         if (_shutDown) return;
         Apply(_pauses.SetSuspended(true, Now()));
-        WaitApplied(_commands.Posted, SuspendWait);
+        _ = WaitApplied(_commands.Posted, SuspendWait);
     }
 
     public void OnResume()
@@ -97,7 +103,11 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
 
     public void OnEndSession() => Shutdown();
 
-    public void OnCreated(nint hwnd) => _tray.Attach(hwnd);
+    public void OnCreated(nint hwnd)
+    {
+        _tray.Attach(hwnd);
+        _control = ControlBridge.Start(hwnd, _dbPath);
+    }
 
     public void OnDestroyed() => _tray.Dispose();
 
@@ -112,6 +122,27 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     }
 
     public void OnTaskbarCreated() => _tray.OnTaskbarCreated();
+
+    public AgentReply OnControl(AgentCommand command)
+    {
+        if (_shutDown) return AgentReply.Failed;
+        bool done;
+        switch (command)
+        {
+            case AgentCommand.Snooze: done = _tray.Execute(TrayCommand.Snooze); break;
+            case AgentCommand.PauseUntilResumed: done = _tray.Execute(TrayCommand.SnoozeUntilResumed); break;
+            case AgentCommand.Resume: done = _tray.Execute(TrayCommand.ResumeNow); break;
+            case AgentCommand.Quit: done = _tray.Execute(TrayCommand.Quit); break;
+            case AgentCommand.Flush:
+                // Un autre échec pendant l'attente compte aussi : la réponse reste prudente.
+                long failed = _commands.Failed;
+                Post(new RecorderCommand(Now(), CommandKind.Flush));
+                done = WaitApplied(_commands.Posted, FlushWait) && _commands.Failed == failed;
+                break;
+            default: return AgentReply.Unknown;
+        }
+        return done ? AgentReply.Ok : AgentReply.Failed;
+    }
 
     public void Dispose() => Shutdown();
 
@@ -143,7 +174,8 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     /// Jusqu'à ce que la pompe ait appliqué la commande <paramref name="posted"/> (lot écrit, clé oubliée),
     /// après son léger retard, en réveillant le thread d'analyse.
     /// </summary>
-    private void WaitApplied(long posted, TimeSpan timeout)
+    /// <returns>Vrai si la commande a été appliquée dans le délai.</returns>
+    private bool WaitApplied(long posted, TimeSpan timeout)
     {
         long deadline = Environment.TickCount64 + (long)timeout.TotalMilliseconds;
         while (_commands.Applied < posted && Environment.TickCount64 < deadline)
@@ -151,6 +183,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
             _signal.Set();
             Thread.Sleep(20);
         }
+        return _commands.Applied >= posted;
     }
 
     /// <summary>
@@ -161,6 +194,8 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     {
         if (_shutDown) return _loop.Closed;
         _shutDown = true;
+        // D'abord le tube : plus aucune commande ne doit arriver pendant l'arrêt.
+        _control?.Dispose();
         bool captureStopped = _capture.Stop(CaptureStopTimeout);
         bool stopped = _loop.Stop(StopTimeout);
         if (stopped) _storage.Dispose();

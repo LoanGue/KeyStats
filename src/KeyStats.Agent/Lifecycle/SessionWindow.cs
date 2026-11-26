@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using KeyStats.Agent.Interop;
 using KeyStats.Agent.Tray;
+using KeyStats.Core.Control;
 
 namespace KeyStats.Agent.Lifecycle;
 
@@ -22,6 +23,8 @@ internal interface ISessionEvents
     void OnIconMessage(nint wParam, nint lParam);
     void OnTimer(nuint id);
     void OnTaskbarCreated();
+    /// <summary>Commande reçue par le tube, passée ici par <see cref="ControlBridge"/>.</summary>
+    AgentReply OnControl(AgentCommand command);
 }
 
 /// <summary>
@@ -100,6 +103,8 @@ internal sealed unsafe class SessionWindow
             case TrayIcon.CallbackMessage:
                 w.Handle((wParam, lParam), static (e, m) => e.OnIconMessage(m.wParam, m.lParam));
                 return 0;
+            case ControlBridge.ControlMessage:
+                return (nint)w.Control((AgentCommand)(byte)wParam);
             case Timers.WM_TIMER:
                 w.Handle((nuint)wParam, static (e, id) => e.OnTimer(id));
                 return 0;
@@ -120,6 +125,18 @@ internal sealed unsafe class SessionWindow
                 return 0;
         }
         return User32.DefWindowProc(hwnd, msg, wParam, lParam);
+    }
+
+    private AgentReply Control(AgentCommand command)
+    {
+        try
+        {
+            return _events.OnControl(command);
+        }
+        catch (Exception)
+        {
+            return AgentReply.Failed;
+        }
     }
 
     // Variante avec état : pas de fermeture allouée pour les messages fréquents (minuterie, icône).

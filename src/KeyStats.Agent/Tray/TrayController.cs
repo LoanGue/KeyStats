@@ -32,11 +32,11 @@ internal sealed class TrayController(PauseSources pauses, Func<long> now, Func<T
         {
             case TrayApi.NIN_SELECT:
             case TrayApi.NIN_KEYSELECT:
-                Run(TrayCommand.Snooze);
+                _ = Execute(TrayCommand.Snooze);
                 break;
             case TrayApi.WM_CONTEXTMENU:
                 long snoozeUntil = pauses.SnoozeUntil;
-                Run(TrayMenu.Show(_hwnd, (short)(wParam & 0xFFFF), (short)((wParam >> 16) & 0xFFFF), snoozeUntil != 0));
+                _ = Execute(TrayMenu.Show(_hwnd, (short)(wParam & 0xFFFF), (short)((wParam >> 16) & 0xFFFF), snoozeUntil != 0));
                 break;
         }
     }
@@ -48,11 +48,20 @@ internal sealed class TrayController(PauseSources pauses, Func<long> now, Func<T
     /// <summary>Après tout changement de pause, d'où qu'il vienne (verrouillage compris).</summary>
     public void Refresh()
     {
-        if (_icon is null) return;
-        var reason = pauses.Reason;
-        _icon.Show(reason != 0, PauseLabel.Format(reason, pauses.SnoozeUntil, now(), zone()));
+        PauseReason reason;
+        long until;
+        // Show attend l'Explorateur, et le thread traite pendant ce temps les messages envoyés : une commande
+        // du tube peut changer la pause au milieu. On recommence tant que l'état lu n'est plus le bon.
+        do
+        {
+            if (_icon is null) return;
+            reason = pauses.Reason;
+            until = pauses.SnoozeUntil;
+            _icon.Show(reason != 0, PauseLabel.Format(reason, until, now(), zone()));
+        }
+        while (reason != pauses.Reason || until != pauses.SnoozeUntil);
         // Pas de minuterie pendant un verrouillage : l'infobulle ne montre alors pas de compte à rebours.
-        bool tick = reason == PauseReason.Snooze && pauses.SnoozeUntil != PauseSources.UntilResumed;
+        bool tick = reason == PauseReason.Snooze && until != PauseSources.UntilResumed;
         if (tick == _ticking) return;
         _ticking = tick;
         if (tick) _ = Timers.SetTimer(_hwnd, TickTimer, 1000, 0);
@@ -68,10 +77,12 @@ internal sealed class TrayController(PauseSources pauses, Func<long> now, Func<T
         _icon = null;
     }
 
-    private void Run(TrayCommand command)
+    /// <summary>Commande du menu, ou du tube de commande.</summary>
+    /// <returns>Faux si l'agent s'arrête déjà : la commande n'a rien fait.</returns>
+    public bool Execute(TrayCommand command)
     {
         // Le menu tourne une boucle modale : une fin de session a pu arrêter l'agent entre-temps.
-        if (_icon is null) return;
+        if (_icon is null) return false;
         long t = now();
         switch (command)
         {
@@ -80,6 +91,7 @@ internal sealed class TrayController(PauseSources pauses, Func<long> now, Func<T
             case TrayCommand.ResumeNow: Changed(pauses.ResumeNow(t)); break;
             case TrayCommand.Quit: _ = User32.PostMessage(_hwnd, User32.WM_CLOSE, 0, 0); break;
         }
+        return true;
     }
 
     private void Changed(PauseTransition transition)

@@ -21,6 +21,20 @@ Sans `--db`, l'agent écrit dans `%LOCALAPPDATA%\KeyStats\keystats.db`. Il tourn
 
 Windows 11 range les nouvelles icônes dans le menu déroulant de la zone de notification. Pour garder KeyStats visible : Paramètres › Personnalisation › Barre des tâches › Autres icônes de la barre d'état système, puis activer KeyStats.
 
+## Commandes de l'agent
+
+Un seul agent tourne par base et par session Windows : un second lancement s'arrête aussitôt. L'agent écoute un tube nommé `\\.\pipe\KeyStats.Agent.<session>.<clé>`, réservé à l'utilisateur courant, où la clé dérive du chemin de la base. Chaque connexion porte une commande en ASCII suivie d'un saut de ligne, et reçoit une ligne en réponse (`ok`, `unknown` ou `failed`) :
+
+| Commande | Effet |
+| --- | --- |
+| `snooze` | 5 minutes de pause de plus, comme un clic sur l'icône |
+| `pause` | pause jusqu'à reprise manuelle |
+| `resume` | fin de la pause par l'icône |
+| `flush` | écrit tout ce qui est en attente avant de répondre ; `failed` si l'écriture échoue |
+| `quit` | arrête l'agent, comme « Quitter KeyStats » |
+
+Aucun texte ni titre de fenêtre ne passe par ce tube.
+
 ## Vie privée
 
 - Tout reste sur ton PC. Aucun envoi réseau, aucun port ouvert.

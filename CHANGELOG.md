@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: single instance per database and Windows session (a
+  second launch exits at once), and the control pipe: `snooze`, `pause`,
+  `resume` and `quit` act like the tray menu, `flush` replies once the pending
+  batch is written.
 - `KeyStats.Core`: named-pipe server and client for the agent control channel.
   One client at a time and one command per connection; only the current user
   is admitted on either side, and the server refuses to start when the name is
