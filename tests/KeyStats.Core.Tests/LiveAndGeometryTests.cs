@@ -122,6 +122,32 @@ public sealed class LiveDisplayTests
     }
 
     [Fact]
+    public void Image_lissee_pendant_la_frappe_bilan_tel_quel()
+    {
+        var smoother = new LiveSmoother();
+        Assert.Equal(new LiveText("60 wpm", "300 cpm"), LiveDisplay.Frame(new(LiveMode.Typing, 60, 300, 1), smoother, 0));
+        // Une constante de temps plus tard, 63 % du chemin vers 80 : wpm et cpm suivent ensemble.
+        Assert.Equal(new LiveText("73 wpm", "363 cpm"), LiveDisplay.Frame(new(LiveMode.Typing, 80, 400, 1), smoother, 1000));
+        Assert.Equal(LiveDisplay.Text(LiveMode.Summary, 80, 400, 0.95), LiveDisplay.Frame(new(LiveMode.Summary, 80, 400, 0.95), smoother, 1250));
+    }
+
+    [Fact]
+    public void Image_fond_arrondi_et_texte_opaque_en_alpha_premultiplie()
+    {
+        const int w = 40, h = 20;
+        var pixels = new uint[w * h];
+        pixels[10 * w + 20] = 0xFFFFFF;
+        LiveImage.Compose(pixels, w, h);
+
+        Assert.Equal(0u, pixels[0]);
+        Assert.Equal(0u, pixels[w * h - 1]);
+        Assert.Equal(0xFFFFFFFFu, pixels[10 * w + 20]);
+        uint bg = pixels[10 * w + 5];
+        Assert.Equal((uint)(0.86f * 255 + 0.5f), bg >> 24);
+        Assert.Equal((uint)(0x1C * 0.86f + 0.5f), (bg >> 16) & 0xFF);
+    }
+
+    [Fact]
     public void Coin_bas_droit_de_la_zone_de_travail()
     {
         // Barre des tâches de 48 px en bas d'un écran 1920 × 1080.

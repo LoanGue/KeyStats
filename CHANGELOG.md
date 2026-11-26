@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: `LiveDisplay.Frame` gives the text of one counter frame (speed
+  smoothed while typing, cpm on the same smoothing), and `LiveImage` composes
+  the counter image (text on a dark rounded background, premultiplied alpha).
 - `KeyStats.Core`: what the live counter shows and where. `LiveMeter.Shown`
   signals the start of real typing, so the display polls only while visible;
   `LiveDisplay` gives the text (wpm and cpm while typing, wpm and accuracy in

@@ -22,6 +22,18 @@ public static class LiveDisplay
         _ => new("", ""),
     };
 
+    /// <summary>
+    /// Texte d'une image du compteur : pendant la frappe, vitesse lissée, le cpm suivant le même lissage ;
+    /// le bilan tel quel.
+    /// </summary>
+    public static LiveText Frame(LiveReading reading, LiveSmoother smoother, long now)
+    {
+        if (reading.Mode != LiveMode.Typing) return Text(reading.Mode, reading.Wpm, reading.Cpm, reading.Accuracy);
+        double wpm = smoother.Next(reading.Wpm, now);
+        double cpm = reading.Wpm > 0 ? reading.Cpm * wpm / reading.Wpm : reading.Cpm;
+        return Text(reading.Mode, wpm, cpm, reading.Accuracy);
+    }
+
     /// <summary>Coin bas droit de la zone de travail, donc au-dessus de la barre des tâches.</summary>
     public static (int X, int Y) BottomRight(ScreenRect work, int width, int height, int margin) =>
         (work.Right - width - margin, work.Bottom - height - margin);
