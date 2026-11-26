@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: `WebRouter` for the dashboard (API routes, then files of
+  `wwwroot` under a closed list of types, path traversal refused, a fixed 500
+  for any exception so no request is left to the network) and `/api/status`
+  (encryption set up, agent running through `ControlProtocol.MutexName`).
 - `KeyStats.Agent`: the live counter stays hidden while an application runs full
   screen (game, video) or in presentation mode (`SHQueryUserNotificationState`),
   and confirms each snooze click on the icon with the remaining time for 1.5 s.
