@@ -29,7 +29,7 @@ internal static class Program
         try
         {
             // Un agent par base et par session : un second lancement s'arrête sans rien faire.
-            using var instance = new Mutex(true, $@"Local\KeyStats.Agent.{ControlProtocol.InstanceKey(path)}", out bool first);
+            using var instance = new Mutex(true, ControlProtocol.MutexName(path), out bool first);
             return first ? AgentHost.Run(path) : 0;
         }
         catch (Exception e)

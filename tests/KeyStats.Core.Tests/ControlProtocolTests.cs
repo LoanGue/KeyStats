@@ -93,4 +93,13 @@ public sealed class ControlProtocolTests
         Assert.NotEqual(ControlProtocol.PipeName(1, db), ControlProtocol.PipeName(1, db + "2"));
         Assert.Matches("^KeyStats\\.Agent\\.1\\.[0-9a-f]{16}$", ControlProtocol.PipeName(1, db));
     }
+
+    [Fact]
+    public void Nom_du_mutex_par_base_dans_la_session()
+    {
+        string db = Path.Combine(Path.GetTempPath(), "KeyStats", "keystats.db");
+        Assert.Equal(ControlProtocol.MutexName(db), ControlProtocol.MutexName(db.ToUpperInvariant()));
+        Assert.NotEqual(ControlProtocol.MutexName(db), ControlProtocol.MutexName(db + "2"));
+        Assert.Matches("^Local\\\\KeyStats\\.Agent\\.[0-9a-f]{16}$", ControlProtocol.MutexName(db));
+    }
 }
