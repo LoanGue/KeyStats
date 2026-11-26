@@ -44,6 +44,13 @@ internal sealed class DashboardForm : Form
                 "KeyStats", MessageBoxButtons.OK, MessageBoxIcon.Error);
             Close();
         }
+        catch (Exception)
+        {
+            // Aucun texte d'exception affiché : il pourrait venir de la page ou de la base.
+            MessageBox.Show(this, "Le tableau de bord n'a pas pu démarrer. Rouvrez KeyStats.",
+                "KeyStats", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            Close();
+        }
     }
 
     private async Task StartAsync()
@@ -63,10 +70,18 @@ internal sealed class DashboardForm : Form
         core.Navigate(WebRouter.Origin + "/");
     }
 
+    /// <summary>Toujours une réponse : sans elle, WebView2 enverrait la requête sur le réseau.</summary>
     private CoreWebView2WebResourceResponse Respond(CoreWebView2Environment env, CoreWebView2WebResourceRequest request)
     {
-        var response = _router.Handle(request.Method, request.Uri);
-        return env.CreateWebResourceResponse(new MemoryStream(response.Body), response.Status,
-            response.Status == 200 ? "OK" : "Error", $"Content-Type: {response.ContentType}\r\n{Headers}");
+        try
+        {
+            var response = _router.Handle(request.Method, request.Uri);
+            return env.CreateWebResourceResponse(new MemoryStream(response.Body), response.Status,
+                response.Status == 200 ? "OK" : "Error", $"Content-Type: {response.ContentType}\r\n{Headers}");
+        }
+        catch (Exception)
+        {
+            return env.CreateWebResourceResponse(null, 500, "Error", Headers);
+        }
     }
 }
