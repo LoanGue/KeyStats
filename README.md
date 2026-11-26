@@ -13,6 +13,14 @@ publish\agent\KeyStats.Agent.exe --db $env:TEMP\keystats-test.db
 
 Sans `--db`, l'agent écrit dans `%LOCALAPPDATA%\KeyStats\keystats.db`. Il tourne jusqu'à la fin de la session Windows : verrouillage et veille suspendent l'enregistrement, qui reprend au déverrouillage. `--probe <secondes> [--db <chemin>]` capture pendant la durée donnée puis affiche des compteurs, sans aucun contenu.
 
+## Icône de notification
+
+- Clic gauche : pause de 5 minutes, et 5 minutes de plus à chaque clic. L'icône passe en gris avec un badge pause ; l'infobulle donne l'heure de reprise.
+- Clic droit : pause jusqu'à reprise manuelle, reprise immédiate, quitter.
+- Pendant une pause, rien n'est enregistré, ni compteurs ni brut.
+
+Windows 11 range les nouvelles icônes dans le menu déroulant de la zone de notification. Pour garder KeyStats visible : Paramètres › Personnalisation › Barre des tâches › Autres icônes de la barre d'état système, puis activer KeyStats.
+
 ## Vie privée
 
 - Tout reste sur ton PC. Aucun envoi réseau, aucun port ouvert.

@@ -8,7 +8,9 @@ internal static unsafe partial class TrayApi
     public const uint NIM_ADD = 0, NIM_MODIFY = 1, NIM_DELETE = 2, NIM_SETVERSION = 4;
     public const uint NIF_MESSAGE = 0x1, NIF_ICON = 0x2, NIF_TIP = 0x4, NIF_SHOWTIP = 0x80;
     public const uint NOTIFYICON_VERSION_4 = 4;
-    public const uint WM_NULL = 0, WM_CONTEXTMENU = 0x007B, WM_LBUTTONUP = 0x0202;
+    public const uint WM_NULL = 0, WM_CONTEXTMENU = 0x007B;
+    /// <summary>Icône choisie à la souris ou au clavier (Entrée, Espace), version 4.</summary>
+    public const uint NIN_SELECT = 0x0400, NIN_KEYSELECT = 0x0401;
     public const uint MF_STRING = 0, MF_GRAYED = 0x1, MF_SEPARATOR = 0x800;
     public const uint TPM_RIGHTBUTTON = 0x2, TPM_NONOTIFY = 0x80, TPM_RETURNCMD = 0x100;
     public const int SM_CXSMICON = 49;

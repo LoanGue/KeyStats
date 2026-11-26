@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using KeyStats.Agent.Interop;
+using KeyStats.Agent.Tray;
 
 namespace KeyStats.Agent.Lifecycle;
 
@@ -14,6 +15,13 @@ internal interface ISessionEvents
     void OnTimeChange();
     /// <summary>Fin de session Windows : tout doit être écrit avant le retour.</summary>
     void OnEndSession();
+    /// <summary>Fenêtre créée : l'icône de notification peut s'y poser.</summary>
+    void OnCreated(nint hwnd);
+    /// <summary>Fenêtre détruite : dernière occasion de retirer l'icône.</summary>
+    void OnDestroyed();
+    void OnIconMessage(nint wParam, nint lParam);
+    void OnTimer(nuint id);
+    void OnTaskbarCreated();
 }
 
 /// <summary>
@@ -48,6 +56,8 @@ internal sealed unsafe class SessionWindow
                 if (_hwnd == 0) throw new Win32Exception(Marshal.GetLastPInvokeError());
                 // Sans notification, le verrouillage passe inaperçu ; la veille et l'heure restent suivies.
                 _registered = Session.Register(_hwnd);
+                nint hwnd = _hwnd;
+                Handle(e => e.OnCreated(hwnd));
                 MSG msg;
                 while (User32.GetMessage(&msg, 0, 0, 0) > 0) User32.DispatchMessage(&msg);
             }
@@ -63,6 +73,12 @@ internal sealed unsafe class SessionWindow
     private static nint WndProc(nint hwnd, uint msg, nint wParam, nint lParam)
     {
         if (s_current is not { } w) return User32.DefWindowProc(hwnd, msg, wParam, lParam);
+        // Identifiant attribué à l'exécution : hors du switch.
+        if (msg == TrayIcon.TaskbarCreated && msg != 0)
+        {
+            w.Handle(static e => e.OnTaskbarCreated());
+            return 0;
+        }
         switch (msg)
         {
             case Session.WM_WTSSESSION_CHANGE when wParam == Session.WTS_SESSION_LOCK:
@@ -81,6 +97,12 @@ internal sealed unsafe class SessionWindow
             case Session.WM_TIMECHANGE:
                 w.Handle(static e => e.OnTimeChange());
                 return 0;
+            case TrayIcon.CallbackMessage:
+                w.Handle((wParam, lParam), static (e, m) => e.OnIconMessage(m.wParam, m.lParam));
+                return 0;
+            case Timers.WM_TIMER:
+                w.Handle((nuint)wParam, static (e, id) => e.OnTimer(id));
+                return 0;
             case Session.WM_QUERYENDSESSION:
                 return 1;
             case Session.WM_ENDSESSION when wParam != 0:
@@ -92,11 +114,25 @@ internal sealed unsafe class SessionWindow
                 _ = User32.DestroyWindow(hwnd);
                 return 0;
             case User32.WM_DESTROY:
+                w.Handle(static e => e.OnDestroyed());
                 if (w._registered) Session.Unregister(hwnd);
                 User32.PostQuitMessage(0);
                 return 0;
         }
         return User32.DefWindowProc(hwnd, msg, wParam, lParam);
+    }
+
+    // Variante avec état : pas de fermeture allouée pour les messages fréquents (minuterie, icône).
+    private void Handle<T>(T state, Action<ISessionEvents, T> action)
+    {
+        try
+        {
+            action(_events, state);
+        }
+        catch (Exception)
+        {
+            // Ignorée, comme ci-dessous.
+        }
     }
 
     private void Handle(Action<ISessionEvents> action)

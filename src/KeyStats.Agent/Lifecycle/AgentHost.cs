@@ -1,5 +1,6 @@
 using KeyStats.Agent.Capture;
 using KeyStats.Agent.Recording;
+using KeyStats.Agent.Tray;
 using KeyStats.Core.Analysis;
 using KeyStats.Core.Focus;
 using KeyStats.Core.Input;
@@ -28,6 +29,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     private readonly RecorderCommands _commands = new();
     private readonly PauseSources _pauses;
     private readonly AnalysisLoop _loop;
+    private readonly TrayController _tray;
     private TimeZoneInfo _zone = TimeZoneInfo.Local;
     private bool _shutDown;
 
@@ -39,6 +41,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         _storage = AgentStorage.Open(dbPath);
         var recorder = new Recorder(_storage.Db, _storage.Archive, new LocalDayClock(_zone), _capture.Clock.PeekMs());
         _pauses = new PauseSources(_commands);
+        _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t));
         _loop = new AnalysisLoop(new RingPump(ring, focus, recorder, _commands), _capture.Clock, _signal);
     }
 
@@ -94,6 +97,22 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
 
     public void OnEndSession() => Shutdown();
 
+    public void OnCreated(nint hwnd) => _tray.Attach(hwnd);
+
+    public void OnDestroyed() => _tray.Dispose();
+
+    public void OnIconMessage(nint wParam, nint lParam)
+    {
+        if (!_shutDown) _tray.OnIconMessage(wParam, lParam);
+    }
+
+    public void OnTimer(nuint id)
+    {
+        if (!_shutDown && TrayController.IsTick(id)) _tray.OnTick();
+    }
+
+    public void OnTaskbarCreated() => _tray.OnTaskbarCreated();
+
     public void Dispose() => Shutdown();
 
     private long Now() => _capture.Clock.PeekMs();
@@ -105,8 +124,9 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
     /// <returns>Vrai si un recalage a été demandé.</returns>
     private bool Apply(PauseTransition transition)
     {
-        if (transition == PauseTransition.None) return false;
+        if (_shutDown || transition == PauseTransition.None) return false;
         _signal.Set();
+        _tray.Refresh();
         if (transition != PauseTransition.Resumed) return false;
         // Un relâchement a pu se perdre pendant la pause : l'état des touches repart de zéro.
         _capture.RequestResync();
