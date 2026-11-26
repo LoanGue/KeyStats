@@ -132,6 +132,27 @@ public sealed class LiveDisplayTests
     }
 
     [Fact]
+    public void Image_sans_vitesse_garde_le_cpm_lu()
+    {
+        var smoother = new LiveSmoother();
+        Assert.Equal(new LiveText("0 wpm", "12 cpm"), LiveDisplay.Frame(new(LiveMode.Typing, 0, 12, 1), smoother, 0));
+    }
+
+    [Fact]
+    public void Coins_arrondis_lisses_sur_un_pixel()
+    {
+        // Rayon 10 dans 40 × 20 : centre de l'arrondi en (10, 10), pixel à cheval sur le bord.
+        float edge = LiveImage.RoundRectCoverage(10 - 7.07f, 10 - 7.07f, 40, 20, 10);
+        Assert.InRange(edge, 0.3f, 0.7f);
+        Assert.Equal(0f, LiveImage.RoundRectCoverage(0.5f, 0.5f, 40, 20, 10));
+        Assert.Equal(1f, LiveImage.RoundRectCoverage(20, 10, 40, 20, 10));
+    }
+
+    [Fact]
+    public void Image_trop_petite_refusee() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => LiveImage.Compose(new uint[10], 4, 4));
+
+    [Fact]
     public void Image_fond_arrondi_et_texte_opaque_en_alpha_premultiplie()
     {
         const int w = 40, h = 20;
