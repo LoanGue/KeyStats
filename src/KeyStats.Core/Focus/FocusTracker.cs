@@ -35,11 +35,22 @@ public sealed class FocusChange
 /// </summary>
 public sealed class FocusTracker(ExclusionList exclusions)
 {
+    private ExclusionList _exclusions = exclusions;
     private bool _has;
     private long _window;
     private int _processId;
     private string? _title;
     private FocusState _flags;
+
+    /// <summary>
+    /// Remplaçable depuis un autre thread (relecture des réglages). La fenêtre active change d'état
+    /// à sa prochaine lecture, qui compte alors comme un changement.
+    /// </summary>
+    public ExclusionList Exclusions
+    {
+        get => Volatile.Read(ref _exclusions);
+        set => Volatile.Write(ref _exclusions, value);
+    }
 
     public FocusChange? Observe(in ForegroundWindow w)
     {
@@ -60,5 +71,5 @@ public sealed class FocusTracker(ExclusionList exclusions)
     }
 
     /// <summary>Exclue, ou inconnue : dans le doute, on ne garde que les compteurs.</summary>
-    public bool IsExcluded(string exe) => exe.Length == 0 || exclusions.Contains(exe);
+    public bool IsExcluded(string exe) => exe.Length == 0 || Exclusions.Contains(exe);
 }
