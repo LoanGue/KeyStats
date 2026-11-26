@@ -40,6 +40,14 @@ Un seul agent tourne par base et par session Windows : un second lancement s'arr
 
 Aucun texte ni titre de fenêtre ne passe par ce tube.
 
+## Tableau de bord (développement)
+
+```powershell
+dotnet run --project src/KeyStats.Dashboard -- --db $env:TEMP\keystats-test.db
+```
+
+Sans `--db`, il ouvre `%LOCALAPPDATA%\KeyStats\keystats.db`. La fenêtre affiche une page WebView2 servie en mémoire sous `https://keystats.app/` : les fichiers de `wwwroot` et les routes `/api/…` passent par l'interception des requêtes, sans serveur ni port ouvert. Toute autre adresse est refusée. `/api/status` indique si le chiffrement est configuré et si un agent tourne sur la même base. Le profil WebView2 est rangé dans `webview\`, à côté de la base.
+
 ## Vie privée
 
 - Tout reste sur ton PC. Aucun envoi réseau, aucun port ouvert.
