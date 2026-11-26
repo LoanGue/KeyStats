@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: line format of the agent control pipe, one ASCII command
+  (`snooze`, `pause`, `resume`, `flush`, `quit`) and a one-line reply (`ok`,
+  `unknown`, `failed`). The pipe is named per Windows session and per database.
 - `KeyStats.Agent`: tray icon. A left click snoozes for 5 more minutes; the
   right-click menu snoozes until resumed, resumes now or quits. The icon turns
   grey with a pause badge, the tooltip shows the resume time and is refreshed
