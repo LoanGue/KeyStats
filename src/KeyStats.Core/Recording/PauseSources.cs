@@ -79,7 +79,8 @@ public sealed class PauseSources(RecorderCommands commands)
 
     /// <summary>
     /// Chaque changement règle d'abord une pause par l'icône échue mais pas encore vue (reprise à sa
-    /// fin prévue), puis applique la demande. L'effet rendu est le dernier des deux.
+    /// fin prévue), puis applique la demande. L'effet rendu est le dernier des deux : une reprise suivie
+    /// d'une nouvelle pause rend <see cref="PauseTransition.Paused"/>, l'appelant n'a rien à remettre à zéro.
     /// </summary>
     private PauseTransition Then(PauseTransition settled, long nowMs)
     {
