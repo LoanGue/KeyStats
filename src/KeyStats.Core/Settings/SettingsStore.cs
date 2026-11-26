@@ -43,7 +43,7 @@ public static class SettingsStore
     }
 
     /// <summary>
-    /// Écrit dans un fichier temporaire puis le met à la place : un lecteur voit l'ancien fichier ou le nouveau, jamais un fichier tronqué.
+    /// Écrit dans un fichier temporaire puis le met à la place : un lecteur, ou le disque après une coupure, voit l'ancien fichier ou le nouveau, jamais un fichier tronqué.
     /// Un seul écrivain, le tableau de bord. En cas d'échec, le temporaire est supprimé.
     /// </summary>
     public static void Save(string path, KeyStatsSettings settings)
@@ -52,7 +52,12 @@ public static class SettingsStore
         string tmp = path + ".tmp";
         try
         {
-            File.WriteAllBytes(tmp, JsonSerializer.SerializeToUtf8Bytes(settings, SettingsJson.Default.KeyStatsSettings));
+            using (var file = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                file.Write(JsonSerializer.SerializeToUtf8Bytes(settings, SettingsJson.Default.KeyStatsSettings));
+                // Données sur le disque avant le renommage : après une coupure, l'ancien fichier ou le nouveau complet.
+                file.Flush(flushToDisk: true);
+            }
             File.Move(tmp, path, overwrite: true);
         }
         catch
