@@ -88,6 +88,19 @@ public sealed class LiveMeterTests
     }
 
     [Fact]
+    public void Reprise_pendant_le_bilan_ne_signale_pas_de_nouveau()
+    {
+        var meter = new LiveMeter();
+        int shown = 0;
+        meter.Shown = () => shown++;
+        long last = Type(meter, "bonjour tout le monde ici", T0, 200);
+        long resume = last + LiveMeter.IdleMs + 1000;
+        Assert.Equal(LiveMode.Summary, meter.Read(resume).Mode);
+        Type(meter, "et encore une phrase ici", resume, 200);
+        Assert.Equal(1, shown);
+    }
+
+    [Fact]
     public void Frappes_isolees_ne_signalent_rien()
     {
         var meter = new LiveMeter();

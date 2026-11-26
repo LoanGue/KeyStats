@@ -37,7 +37,8 @@ public sealed class LiveMeter
 
     /// <summary>
     /// Appelé, hors du verrou et sur le thread d'analyse, quand une vraie frappe commence : l'interface
-    /// n'interroge le compteur que pendant qu'il est affiché.
+    /// n'interroge le compteur que pendant qu'il est affiché. Le gestionnaire revient tout de suite et ne
+    /// lève jamais d'exception (poster un message de fenêtre, par exemple) : il retarderait ou arrêterait l'analyse.
     /// </summary>
     public Action? Shown { get; set; }
 
