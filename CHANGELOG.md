@@ -13,6 +13,10 @@ All notable changes to this project are documented here. The format follows
   missing key keeps its default, an unknown key is ignored; a malformed, too
   large or out-of-bounds file gives the defaults and is left untouched. Saving
   goes through a temporary file. Format in `docs/settings.md`.
+- `KeyStats.Agent`: loads `settings.json` at start, and rereads it on the new
+  `reload` pipe command. Excluded apps and the backup folder apply at once,
+  analysis thresholds at the next start; a refused file keeps the current
+  settings and the command answers `failed`.
 - `KeyStats.Agent`: nightly backup into `backup\` next to the database. Checked
   2 minutes after start, then every 10 minutes, on a pool thread with its own
   connections; capture and analysis go on meanwhile. A failure is retried an

@@ -13,24 +13,33 @@ internal sealed class BackupScheduler : IDisposable
     private static readonly TimeSpan Period = TimeSpan.FromMinutes(10);
 
     private readonly string _source;
-    private readonly string _mirror;
     private readonly Func<TimeZoneInfo> _zone;
     private readonly Timer _timer;
-    private BackupPlan? _plan;
+    private Target _target;
     private int _running;
     private volatile bool _disposed;
 
-    public BackupScheduler(string sourcePath, Func<TimeZoneInfo> zone)
+    /// <param name="folder">Dossier du miroir ; <c>null</c> pour <c>backup\</c> à côté de la base.</param>
+    public BackupScheduler(string sourcePath, string? folder, Func<TimeZoneInfo> zone)
     {
         _source = sourcePath;
         _zone = zone;
-        // À côté de la base, dans backup\, sous le même nom.
-        string full = Path.GetFullPath(sourcePath);
-        _mirror = Path.Combine(Path.GetDirectoryName(full)!, "backup", Path.GetFileName(full));
+        _target = new Target(BackupMirror.PathFor(sourcePath, folder));
         _timer = new Timer(static o => ((BackupScheduler)o!).Check(), this, Timeout.Infinite, Timeout.Infinite);
     }
 
     public void Start() => _timer.Change(FirstCheck, Period);
+
+    /// <summary>
+    /// Un autre dossier repart de sa propre date de dernière copie : un miroir neuf est fait à la
+    /// prochaine vérification. Une copie en cours finit dans l'ancien dossier.
+    /// </summary>
+    public void SetFolder(string? folder)
+    {
+        string mirror = BackupMirror.PathFor(_source, folder);
+        if (!string.Equals(mirror, Volatile.Read(ref _target).Mirror, StringComparison.OrdinalIgnoreCase))
+            Volatile.Write(ref _target, new Target(mirror));
+    }
 
     /// <summary>
     /// Une vérification déjà en file ne lance plus rien. Une sauvegarde en cours n'est pas attendue : à
@@ -47,22 +56,30 @@ internal sealed class BackupScheduler : IDisposable
     {
         if (_disposed || Interlocked.Exchange(ref _running, 1) != 0) return;
         long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var target = Volatile.Read(ref _target);
         try
         {
-            _plan ??= new BackupPlan(BackupMirror.LastRunMs(_mirror));
-            if (_disposed || !_plan.ShouldRun(now, Environment.TickCount64, _zone())) return;
-            BackupMirror.Run(_source, _mirror, now);
-            _plan.Succeeded(now);
+            target.Plan ??= new BackupPlan(BackupMirror.LastRunMs(target.Mirror));
+            if (_disposed || !target.Plan.ShouldRun(now, Environment.TickCount64, _zone())) return;
+            BackupMirror.Run(_source, target.Mirror, now);
+            target.Plan.Succeeded(now);
         }
         catch (Exception)
         {
             // Le message pourrait citer un chemin : rien n'est gardé. L'heure d'attente part de l'échec,
             // pas du début d'une copie qui a pu durer.
-            (_plan ??= new BackupPlan(null)).Failed(Environment.TickCount64);
+            (target.Plan ??= new BackupPlan(null)).Failed(Environment.TickCount64);
         }
         finally
         {
             Volatile.Write(ref _running, 0);
         }
+    }
+
+    /// <summary>Un miroir et son calendrier, lus seulement par la vérification en cours (garde <c>_running</c>).</summary>
+    private sealed class Target(string mirror)
+    {
+        public string Mirror { get; } = mirror;
+        public BackupPlan? Plan { get; set; }
     }
 }
