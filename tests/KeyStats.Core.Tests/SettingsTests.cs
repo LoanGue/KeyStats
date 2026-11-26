@@ -204,5 +204,20 @@ public sealed class SettingsTests : IDisposable
             string max = b.Key == "activeGapMs" ? "`sessionGapMs`" : b.Max.ToString(CultureInfo.InvariantCulture);
             Assert.Contains($"| `{b.Key}` | {b.Get(defaults)} | {b.Min} | {max}", doc);
         }
+        (string Key, double Default, string Max)[] ratios =
+        [
+            ("minTextRatio", defaults.MinTextRatio, "1"),
+            ("maxRepeatRatio", defaults.MaxRepeatRatio, "1"),
+            ("proseMaxSymbolRatio", defaults.ProseMaxSymbolRatio, "`codeMinSymbolRatio`"),
+            ("codeMinSymbolRatio", defaults.CodeMinSymbolRatio, "1"),
+        ];
+        foreach (var r in ratios)
+            Assert.Contains($"| `{r.Key}` | {r.Default.ToString(CultureInfo.InvariantCulture)} | 0 | {r.Max} |", doc);
+
+        // Aucune ligne de la table sans seuil dans le code : une clé retirée du code ne reste pas documentée.
+        string table = doc[doc.IndexOf("| Key | Default | Min | Max |", StringComparison.Ordinal)..];
+        var documented = table.Split('\n').TakeWhile(l => l.StartsWith('|')).Skip(2).Select(l => l.Split('`')[1]);
+        var known = SettingsStore.IntBounds.Select(b => b.Key).Concat(ratios.Select(r => r.Key));
+        Assert.Equal(known.Order(), documented.Order());
     }
 }
