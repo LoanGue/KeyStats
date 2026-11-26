@@ -33,7 +33,7 @@ Analyse continue de la frappe clavier sous Windows (AZERTY), avec un agent perma
 ## Commandes
 
 ```powershell
-dotnet build KeyStats.slnx
+dotnet build KeyStats.slnx -warnaserror
 dotnet format KeyStats.slnx --verify-no-changes
 dotnet test --project tests/KeyStats.Core.Tests
 dotnet publish src/KeyStats.Agent -c Release   # NativeAOT
@@ -41,7 +41,7 @@ dotnet publish src/KeyStats.Agent -c Release   # NativeAOT
 
 ## Méthode de travail
 
-- `main` est en lecture seule. Une issue, une branche et une PR par étape du plan (`TODO.md`), fusionnée par squash après revue. La CI (`.github/workflows/ci.yml`) vérifie format, compilation sans avertissement et tests ; au-delà de 400 lignes, la PR porte le label `large-pr` et une justification.
+- `main` est en lecture seule. Une issue, une branche et une PR par étape du plan (`TODO.md`), fusionnée par squash après revue. Format, compilation sans avertissement et tests se vérifient en local (voir `CONTRIBUTING.md`) ; la CI (`.github/workflows/pr-gate.yml`, exigée par la règle de `main`) ne contrôle que la taille et la section `## Tests` du corps de la PR. Au-delà de 400 lignes, la PR porte le label `large-pr` et une justification.
 - Les tests passent avant chaque commit.
 - Interface du tableau de bord : skill `frontend-design:frontend-design`. Tester les pages dans le navigateur intégré avec des données d'exemple (`wwwroot` fonctionne aussi hors WebView2).
 - Textes de l'interface en français, sans formules creuses ni chiffres inventés.
