@@ -51,7 +51,7 @@ Sans `--db`, il ouvre `%LOCALAPPDATA%\KeyStats\keystats.db`. La fenêtre affiche
 ## Vie privée
 
 - Les données restent sur la machine locale. Aucun envoi réseau, aucun port ouvert.
-- Le texte tapé et les titres de fenêtres ne sont jamais écrits en clair : ils sont chiffrés avec une clé publique, et seuls Windows Hello ou la phrase de secours permettent de les relire.
-- Les rapports de plantage du moteur de la page ne sont pas envoyés à Microsoft. Un vidage mémoire peut contenir la phrase saisie ou du texte déchiffré : le tableau de bord le supprime dans les secondes qui suivent le plantage, et à chaque ouverture s'il n'a pas pu le faire. Reste hors de portée un vidage du tableau de bord lui-même par le rapport d'erreurs de Windows.
+- Le texte tapé et les titres de fenêtres ne sont jamais écrits en clair par KeyStats : ils sont chiffrés avec une clé publique, et seuls Windows Hello ou la phrase de secours permettent de les relire. Le point suivant traite des vidages mémoire après plantage.
+- Un vidage mémoire du moteur de la page peut contenir la phrase saisie ou du texte déchiffré. Ces rapports ne sont pas envoyés à Microsoft, le tableau de bord interdit leur écriture dans son profil WebView2, et supprime ce qui y serait quand même arrivé. Reste hors de portée un vidage du tableau de bord lui-même par le rapport d'erreurs de Windows.
 - Les gestionnaires de mots de passe et le bureau à distance sont exclus par défaut.
 - Un clic sur l'icône de notification met l'enregistrement en pause 5 minutes, chaque clic suivant ajoute 5 minutes.
