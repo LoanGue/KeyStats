@@ -1,6 +1,7 @@
 ﻿using KeyStats.Agent.Capture;
 using KeyStats.Agent.Lifecycle;
 using KeyStats.Agent.Recording;
+using KeyStats.Core.Control;
 
 namespace KeyStats.Agent;
 
@@ -27,7 +28,9 @@ internal static class Program
         }
         try
         {
-            return AgentHost.Run(path);
+            // Un agent par base et par session : un second lancement s'arrête sans rien faire.
+            using var instance = new Mutex(true, $@"Local\KeyStats.Agent.{ControlProtocol.InstanceKey(path)}", out bool first);
+            return first ? AgentHost.Run(path) : 0;
         }
         catch (Exception e)
         {
