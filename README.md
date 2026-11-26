@@ -48,6 +48,8 @@ dotnet run --project src/KeyStats.Dashboard -- --db $env:TEMP\keystats-test.db
 
 Sans `--db`, il ouvre `%LOCALAPPDATA%\KeyStats\keystats.db`. La fenêtre affiche une page WebView2 servie en mémoire sous `https://keystats.app/` : les fichiers de `wwwroot` et les routes `/api/…` passent par l'interception des requêtes, sans serveur ni port ouvert. Toute autre adresse est refusée. `/api/status` indique si le chiffrement est configuré et si un agent tourne sur la même base. Le profil WebView2 est rangé dans `webview\`, à côté de la base.
 
+Une fois le chiffrement configuré, la page propose de déverrouiller les données chiffrées par Windows Hello ou par la phrase de secours. La clé privée reste alors dans la mémoire du tableau de bord seulement, jusqu'au bouton « Verrouiller » ou à la fermeture de la fenêtre. Le corps de la requête qui porte la phrase est effacé après usage, mais les chaînes JavaScript et .NET restent en mémoire jusqu'au passage du ramasse-miettes : un vidage après plantage peut donc la contenir (voir « Vie privée » pour ce qui en est fait).
+
 ## Vie privée
 
 - Les données restent sur la machine locale. Aucun envoi réseau, aucun port ouvert.

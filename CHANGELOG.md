@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: unlock the encrypted data with Windows Hello or the
+  passphrase, and lock it again, from the page. The key is wiped when the
+  window closes.
 - `KeyStats.Dashboard`: POST requests from the page reach the router through
   a bridge; `RequestBody` in Core reads at most 16 KiB of body and clears its
   buffers.
