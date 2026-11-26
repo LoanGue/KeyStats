@@ -35,8 +35,15 @@ public sealed class LiveMeter
 
     public LiveMeter(AnalysisSettings? settings = null) => _s = settings ?? AnalysisSettings.Default;
 
+    /// <summary>
+    /// Appelé, hors du verrou et sur le thread d'analyse, quand une vraie frappe commence : l'interface
+    /// n'interroge le compteur que pendant qu'il est affiché.
+    /// </summary>
+    public Action? Shown { get; set; }
+
     public void OnChar(long ms, char c)
     {
+        bool shown = false;
         lock (_lock)
         {
             long gap = Touch(ms);
@@ -46,8 +53,9 @@ public sealed class LiveMeter
             _space[_head] = CharClass.IsWhitespace(c);
             _head = (_head + 1) % Ring;
             if (_count < Ring) _count++;
-            if (!_visible) _visible = ShouldShow(ms);
+            if (!_visible && ShouldShow(ms)) _visible = shown = true;
         }
+        if (shown) Shown?.Invoke();
     }
 
     public void OnDelete(long ms, int n)
