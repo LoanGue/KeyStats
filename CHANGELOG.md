@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: the real agent. `KeyStats.Agent.exe [--db <path>]` runs
+  capture, analysis and writing until the Windows session ends. A hidden window
+  pauses on lock and sleep (epoch key dropped), resumes with a key-state reset
+  and a clock resync, follows time zone changes and writes everything on
+  `WM_ENDSESSION`. The capture clock is also resynced every 10 minutes.
 - `KeyStats.Core`: lifecycle commands (pause, resume, epoch drop, time zone,
   flush) posted from any thread and applied by the ring pump in time order
   between keystrokes; a failing command is counted and skipped.
