@@ -42,6 +42,27 @@ public static class SettingsStore
         }
     }
 
+    /// <summary>
+    /// Écrit dans un fichier temporaire puis le met à la place : un lecteur voit l'ancien fichier ou le nouveau, jamais un fichier tronqué.
+    /// Un seul écrivain, le tableau de bord. En cas d'échec, le temporaire est supprimé.
+    /// </summary>
+    public static void Save(string path, KeyStatsSettings settings)
+    {
+        if (!IsValid(settings)) throw new ArgumentException("Réglages hors bornes.", nameof(settings));
+        string tmp = path + ".tmp";
+        try
+        {
+            File.WriteAllBytes(tmp, JsonSerializer.SerializeToUtf8Bytes(settings, SettingsJson.Default.KeyStatsSettings));
+            File.Move(tmp, path, overwrite: true);
+        }
+        catch
+        {
+            // L'erreur d'origine compte : un temporaire impossible à supprimer ne la masque pas.
+            try { File.Delete(tmp); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+            throw;
+        }
+    }
+
     private static SettingsLoad Invalid() => new(KeyStatsSettings.Default, SettingsStatus.Invalid);
 
     internal static bool IsValid(KeyStatsSettings s) =>
