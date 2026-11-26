@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: `KeySession` keeps the master key in memory once unlocked by
+  Windows Hello (through `IHelloSigner`) or the passphrase, and accepts only the
+  key matching the stored public key. `/api/key` gives the state, POST
+  `/api/key/unlock` and `/api/key/lock` change it. The router takes POST routes
+  (body capped at 16 KiB, cleared once answered).
 - `KeyStats.Dashboard`: WebView2 window that serves `https://keystats.app/`
   from memory through `WebResourceRequested`, with no server and no open port.
   Navigation to any other address and new windows are refused, SmartScreen
