@@ -15,11 +15,11 @@ Sans `--db`, l'agent écrit dans `%LOCALAPPDATA%\KeyStats\keystats.db`. Il tourn
 
 ## Compteur en direct
 
-Quand une vraie frappe commence (au moins 12 caractères et 2 espaces en 6 secondes), un petit compteur apparaît en bas à droite de l'écran où se trouve la fenêtre active, au-dessus de la barre des tâches : vitesse en mots par minute, et en caractères par minute en dessous. Après 4 secondes sans frappe, il affiche le bilan de la rafale (vitesse et précision) pendant 3 secondes, puis disparaît. Il laisse passer les clics, ne prend jamais le focus et n'apparaît ni dans Alt+Tab ni sur les captures et partages d'écran. Une pause le cache aussitôt. `liveCounter.enabled` à `false` dans `settings.json` le désactive.
+Quand une vraie frappe commence (au moins 12 caractères et 2 espaces en 6 secondes), un petit compteur apparaît en bas à droite de l'écran où se trouve la fenêtre active, au-dessus de la barre des tâches : vitesse en mots par minute, et en caractères par minute en dessous. Après 4 secondes sans frappe, il affiche le bilan de la rafale (vitesse et précision) pendant 3 secondes, puis disparaît. Il laisse passer les clics, ne prend jamais le focus et n'apparaît ni dans Alt+Tab ni sur les captures et partages d'écran. Il reste caché quand une application occupe tout l'écran (jeu, vidéo) et en mode présentation. Une pause le cache aussitôt. `liveCounter.enabled` à `false` dans `settings.json` le désactive.
 
 ## Icône de notification
 
-- Clic gauche : pause de 5 minutes, et 5 minutes de plus à chaque clic. L'icône passe en gris avec un badge pause ; l'infobulle donne l'heure de reprise.
+- Clic gauche : pause de 5 minutes, et 5 minutes de plus à chaque clic. L'icône passe en gris avec un badge pause ; l'infobulle donne l'heure de reprise. Le compteur confirme chaque clic pendant 1,5 seconde (« ⏸ 15 min ») ; la commande `snooze` du tube ne l'affiche pas.
 - Clic droit : pause jusqu'à reprise manuelle, reprise immédiate, quitter.
 - Pendant une pause, rien n'est enregistré, ni compteurs ni brut.
 
