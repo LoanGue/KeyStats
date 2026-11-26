@@ -52,7 +52,7 @@ internal static class Probe
             signal.WaitOne((int)Math.Min(left, 1000));
             tally.Drain(ring, buf);
         }
-        capture.Stop();
+        capture.Stop(TimeSpan.FromSeconds(5));
         tally.Drain(ring, buf);
         return $"""
             key_down={tally.KeyDown} key_up={tally.KeyUp} mouse_down={tally.MouseDown} mouse_up={tally.MouseUp} non_monotonic={tally.NonMonotonic}
@@ -75,7 +75,7 @@ internal static class Probe
         }
         finally
         {
-            capture.Stop();
+            capture.Stop(TimeSpan.FromSeconds(5));
             stopped = loop.Stop(TimeSpan.FromSeconds(10));
             // Sans arrêt confirmé, le thread d'analyse peut encore écrire : la base reste ouverte.
             if (stopped) storage.Dispose();
