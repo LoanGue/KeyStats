@@ -1,3 +1,4 @@
+using System.Globalization;
 using KeyStats.Core.Settings;
 
 namespace KeyStats.Core.Tests;
@@ -138,4 +139,70 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal(SettingsStatus.Invalid, SettingsStore.Load(Path_).Status);
     }
 
+    [Fact]
+    public void Aller_retour_sans_perte_ni_fichier_temporaire()
+    {
+        var settings = new KeyStatsSettings
+        {
+            ExcludedApps = ["Signal.exe"],
+            Analysis = new() { SessionGapMs = 4000, MinTextRatio = 0.6 },
+            LiveCounter = new() { Enabled = false },
+            BackupFolder = Path.Combine(_dir, "miroir"),
+        };
+        SettingsStore.Save(Path_, settings);
+        Assert.Equal([SettingsStore.FileName], Directory.GetFiles(_dir).Select(Path.GetFileName));
+
+        var load = SettingsStore.Load(Path_);
+        Assert.Equal(SettingsStatus.Loaded, load.Status);
+        Assert.Equal(["Signal.exe"], load.Settings.ExcludedApps!);
+        Assert.Equal(4000, load.Settings.Analysis.SessionGapMs);
+        Assert.Equal(0.6, load.Settings.Analysis.MinTextRatio);
+        Assert.Equal(2000, load.Settings.Analysis.ActiveGapMs);
+        Assert.False(load.Settings.LiveCounter.Enabled);
+        Assert.Equal(settings.BackupFolder, load.Settings.BackupFolder);
+        Assert.True(load.Settings.Exclusions().Contains(@"C:\Apps\signal.EXE"));
+        Assert.False(load.Settings.Exclusions().Contains("KeePass.exe"));
+    }
+
+    [Fact]
+    public void Noms_des_cles_du_format()
+    {
+        // Contrat lu par le tableau de bord : noms en camelCase.
+        SettingsStore.Save(Path_, new KeyStatsSettings { ExcludedApps = [] });
+        string json = File.ReadAllText(Path_);
+        foreach (string key in new[] { "\"version\": 1", "\"excludedApps\": []", "\"analysis\"", "\"sessionGapMs\": 5000", "\"liveCounter\"", "\"enabled\": true", "\"backupFolder\": null" })
+            Assert.Contains(key, json);
+    }
+
+    [Fact]
+    public void Ecriture_echouee_ne_laisse_pas_de_temporaire()
+    {
+        Directory.CreateDirectory(Path_);
+        Assert.ThrowsAny<Exception>(() => SettingsStore.Save(Path_, KeyStatsSettings.Default));
+        Assert.False(File.Exists(Path_ + ".tmp"));
+    }
+
+    [Fact]
+    public void Reglages_hors_bornes_jamais_ecrits()
+    {
+        File.WriteAllText(Path_, "{}");
+        var bad = new KeyStatsSettings { Analysis = new() { HoldCapMs = -1 } };
+        Assert.Throws<ArgumentException>(() => SettingsStore.Save(Path_, bad));
+        Assert.Equal("{}", File.ReadAllText(Path_));
+        Assert.Single(Directory.GetFiles(_dir));
+    }
+
+    [Fact]
+    public void Table_des_bornes_de_la_doc_conforme_au_code()
+    {
+        string dir = AppContext.BaseDirectory;
+        while (!File.Exists(Path.Combine(dir, "docs", "settings.md"))) dir = Path.GetDirectoryName(dir)!;
+        string doc = File.ReadAllText(Path.Combine(dir, "docs", "settings.md"));
+        var defaults = Analysis.AnalysisSettings.Default;
+        foreach (var b in SettingsStore.IntBounds)
+        {
+            string max = b.Key == "activeGapMs" ? "`sessionGapMs`" : b.Max.ToString(CultureInfo.InvariantCulture);
+            Assert.Contains($"| `{b.Key}` | {b.Get(defaults)} | {b.Min} | {max}", doc);
+        }
+    }
 }
