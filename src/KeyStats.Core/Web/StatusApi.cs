@@ -26,4 +26,6 @@ public static class StatusApi
 [JsonSerializable(typeof(DashboardStatus))]
 [JsonSerializable(typeof(KeyState))]
 [JsonSerializable(typeof(UnlockRequest))]
+[JsonSerializable(typeof(SetupRequest))]
+[JsonSerializable(typeof(SetupResult))]
 public sealed partial class WebJson : JsonSerializerContext;
