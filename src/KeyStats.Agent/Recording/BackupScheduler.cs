@@ -5,7 +5,7 @@ namespace KeyStats.Agent.Recording;
 /// <summary>
 /// Sauvegarde nocturne : vérifie toutes les 10 minutes si elle est due (<see cref="BackupPlan"/>),
 /// et met alors à jour le miroir sur un thread du pool, avec ses propres connexions. La capture et
-/// l'analyse continuent pendant ce temps (WAL). Un échec est compté, puis réessayé une heure plus tard.
+/// l'analyse continuent pendant ce temps (WAL). Un échec est réessayé une heure plus tard.
 /// </summary>
 internal sealed class BackupScheduler : IDisposable
 {
@@ -47,18 +47,18 @@ internal sealed class BackupScheduler : IDisposable
     {
         if (_disposed || Interlocked.Exchange(ref _running, 1) != 0) return;
         long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        long tick = Environment.TickCount64;
         try
         {
             _plan ??= new BackupPlan(BackupMirror.LastRunMs(_mirror));
-            if (_disposed || !_plan.ShouldRun(now, tick, _zone())) return;
+            if (_disposed || !_plan.ShouldRun(now, Environment.TickCount64, _zone())) return;
             BackupMirror.Run(_source, _mirror, now);
             _plan.Succeeded(now);
         }
         catch (Exception)
         {
-            // Le message pourrait citer un chemin : rien n'est gardé, la vérification suivante réessaie.
-            (_plan ??= new BackupPlan(null)).Failed(tick);
+            // Le message pourrait citer un chemin : rien n'est gardé. L'heure d'attente part de l'échec,
+            // pas du début d'une copie qui a pu durer.
+            (_plan ??= new BackupPlan(null)).Failed(Environment.TickCount64);
         }
         finally
         {
