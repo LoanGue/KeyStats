@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: WebView2 window that serves `https://keystats.app/`
+  from memory through `WebResourceRequested`, with no server and no open port.
+  Navigation to any other address and new windows are refused, SmartScreen
+  URL checks are off, and responses carry a strict Content-Security-Policy and
+  `Cache-Control: no-store`. `--db` picks the database.
 - `KeyStats.Core`: `WebRouter` for the dashboard (API routes, then files of
   `wwwroot` under a closed list of types, path traversal refused, a fixed 500
   for any exception so no request is left to the network) and `/api/status`
