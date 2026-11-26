@@ -33,7 +33,7 @@ Analyse continue de la frappe clavier sous Windows (AZERTY), avec un agent perma
 ## Commandes
 
 ```powershell
-dotnet build KeyStats.slnx
+dotnet build KeyStats.slnx -warnaserror
 dotnet format KeyStats.slnx --verify-no-changes
 dotnet test --project tests/KeyStats.Core.Tests
 dotnet publish src/KeyStats.Agent -c Release   # NativeAOT
