@@ -43,17 +43,21 @@ internal sealed class DashboardForm : Form
         }
         catch (WebView2RuntimeNotFoundException)
         {
-            MessageBox.Show(this, "Le moteur WebView2 de Microsoft Edge est introuvable : installez-le puis rouvrez KeyStats.",
-                "KeyStats", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            Close();
+            Fail("Le moteur WebView2 de Microsoft Edge est introuvable : installez-le puis rouvrez KeyStats.");
         }
         catch (Exception)
         {
             // Aucun texte d'exception affiché : il pourrait venir de la page ou de la base.
-            MessageBox.Show(this, "Le tableau de bord n'a pas pu démarrer. Rouvrez KeyStats.",
-                "KeyStats", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            Close();
+            Fail("Le tableau de bord n'a pas pu démarrer. Rouvrez KeyStats.");
         }
+    }
+
+    // Fenêtre déjà fermée pendant le démarrage : personne à prévenir, et un message sur elle lèverait.
+    private void Fail(string message)
+    {
+        if (IsDisposed) return;
+        MessageBox.Show(this, message, "KeyStats", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        Close();
     }
 
     private async Task StartAsync()
