@@ -1,6 +1,7 @@
-// Page Réglages : seuils de détection (/api/settings).
+// Page Réglages : seuils de détection et applications exclues (/api/settings).
 
 import { getJson } from "./api.js";
+import { appsCard } from "./settings-apps.js";
 import { thresholdsCard } from "./settings-thresholds.js";
 import { el } from "./states.js";
 
@@ -22,6 +23,6 @@ export async function renderSettings(view, ctx) {
   if (!ctx.isCurrent()) return;
   const locked = !settings.readable;
   const grid = el("div", "settings-grid");
-  grid.append(thresholdsCard(settings, locked));
+  grid.append(thresholdsCard(settings, locked), appsCard(settings, locked));
   view.replaceChildren(...(locked ? [unreadableAlert()] : []), grid);
 }
