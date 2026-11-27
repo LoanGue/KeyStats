@@ -8,7 +8,7 @@ namespace KeyStats.Core.Stats;
 /// <param name="RealWpm">Mots nets par minute sur la durée réelle, pauses comprises.</param>
 /// <param name="TypingWpm">Mots par minute de temps actif, toutes les frappes de texte comptées, corrections comprises.</param>
 /// <param name="PeakWpm">Meilleure fenêtre de 30 s ; null pour une session plus courte.</param>
-/// <param name="Accuracy">1 − fautes / caractères tapés ; null hors des sessions de texte.</param>
+/// <param name="Accuracy">1 − fautes / caractères tapés ; null hors des sessions de prose, seules analysées.</param>
 public sealed record SpeedSession(long StartMs, int AppId, double RealWpm, double TypingWpm, double? PeakWpm, double? Accuracy, long DurationMs);
 
 /// <param name="Monday">Lundi de la semaine (aaaa-mm-jj).</param>
