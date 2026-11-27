@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/speed` gives each session of the period (start,
+  application, real and typing speed, peak, accuracy, duration; the 5,000 most
+  recent at most) and the typing speed and real throughput of the last 8
+  calendar weeks.
 - `KeyStats.Dashboard`: weekly progression chart on the overview page: speed,
   accuracy or writing time over the last 12 weeks, the current week dashed.
 - `KeyStats.Dashboard`: overview page from the design: the period's keys,
