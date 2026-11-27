@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: weekly progression chart on the overview page: speed,
+  accuracy or writing time over the last 12 weeks, the current week dashed.
 - `KeyStats.Dashboard`: overview page from the design: the period's keys,
   words, writing time, real speed and accuracy, each compared with the
   previous period.
