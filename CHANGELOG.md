@@ -68,6 +68,9 @@ All notable changes to this project are documented here. The format follows
   legend and a warm ramp for the measures where a high value is a defect.
 - `KeyStats.Dashboard`: Rythme page, first card: the bigrams that cost the most
   (frequency × delay over the median), sortable by cost or by error rate.
+- `KeyStats.Dashboard`: Rythme page, hold durations with the overlap rate, load
+  per finger and per hand, same-finger bigrams, hand alternation and capitals
+  made with the opposite Shift, from the standard AZERTY fingering.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
