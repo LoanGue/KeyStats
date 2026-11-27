@@ -1,10 +1,13 @@
 // Carte « Types de fautes » de la page Fautes, avec le délai de détection ; barres empilées partagées.
 
+import { swatch } from "./chart-card.js";
 import { baseOption, token, valueAxis } from "./charts.js";
-import { nf, nf1, pct } from "./format.js";
+import { nf, pct, shortDelay as ms } from "./format.js";
 import { el } from "./states.js";
 
-const sum = (values) => values.reduce((a, b) => a + b, 0);
+/** Somme des compteurs d'un objet ({ substitutions: 3, … }). */
+export const total = (counts) =>
+  Object.values(counts).reduce((a, b) => a + b, 0);
 
 /** Barre empilée décorative : [valeur, jeton CSS], les parts nulles en moins. */
 export function stack(parts, className) {
@@ -18,17 +21,6 @@ export function stack(parts, className) {
   }
   return bar;
 }
-
-export function swatch(color) {
-  const node = el("span", "swatch");
-  node.setAttribute("aria-hidden", "true");
-  node.style.background = `var(${color})`;
-  return node;
-}
-
-/** Durée en millisecondes, en secondes à partir d'une seconde. */
-const ms = (v) =>
-  v < 1000 ? `${nf.format(Math.round(v))} ms` : `${nf1.format(v / 1000)} s`;
 
 const TYPES = [
   ["substitutions", "Substitution", "une touche pour une autre", "--chart"],
@@ -88,8 +80,8 @@ export function typesCard(types, delay) {
     note: "Déduits de ce que vous effacez puis retapez.",
     className: "typos-delay",
   };
-  const total = sum(Object.values(types));
-  if (!total)
+  const sum = total(types);
+  if (!sum)
     return { ...card, empty: "Aucune faute corrigée sur cette période." };
   const body = el("div", "typos-types");
   const keys = el("div", "typos-types-legend");
@@ -100,7 +92,7 @@ export function typesCard(types, delay) {
     item.append(
       swatch(color),
       text,
-      el("span", "typos-muted", pct(types[key] / total)),
+      el("span", "typos-muted", pct(types[key] / sum)),
     );
     keys.append(item);
   }

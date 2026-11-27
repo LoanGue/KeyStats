@@ -29,6 +29,12 @@ export const wpm = (v) => `${nf.format(Math.round(v))}\u00a0mots/min`;
 export const sessionCount = (n) =>
   `${nf.format(n)}\u00a0session${n > 1 ? "s" : ""}`;
 
+/** Délai court : « 412 ms », puis « 1,2 s » à partir d'une seconde. */
+export const shortDelay = (v) =>
+  v < 1000
+    ? `${nf.format(Math.round(v))}\u00a0ms`
+    : `${nf.format(Math.round(v / 100) / 10)}\u00a0s`;
+
 /** Durée en « 3 h 25 min », « 42 min » ou « moins d'une minute ». */
 export function duration(ms) {
   const minutes = Math.round(ms / 60000);

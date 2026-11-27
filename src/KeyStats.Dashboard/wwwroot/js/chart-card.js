@@ -41,15 +41,20 @@ export function chartFailed(node, text = chartsMissing) {
   node.textContent = text;
 }
 
+/** Pastille de couleur décorative ; forme : dot, line, square ou rien. */
+export function swatch(color, shape) {
+  const node = el("span", shape ? `swatch ${shape}` : "swatch");
+  node.setAttribute("aria-hidden", "true");
+  node.style.background = `var(${color})`;
+  return node;
+}
+
 /** Légende : [libellé, forme (dot, line, square), jeton CSS de la couleur]. */
 export function legend(items) {
   const box = el("div", "chart-legend");
   for (const [label, shape, color] of items) {
     const item = el("span");
-    const swatch = el("span", `swatch ${shape}`);
-    swatch.setAttribute("aria-hidden", "true");
-    swatch.style.background = `var(${color})`;
-    item.append(swatch, label);
+    item.append(swatch(color, shape), label);
     box.append(item);
   }
   return box;
@@ -70,7 +75,7 @@ export function chartCard(spec) {
   const head = el("div", "chart-head");
   const text = el("div");
   const note = el("p");
-  note.append(...[spec.note].flat());
+  note.append(...[spec.note ?? []].flat());
   text.append(el("h2", null, spec.title), note);
   head.append(text);
   if (spec.aside) head.append(spec.aside);
