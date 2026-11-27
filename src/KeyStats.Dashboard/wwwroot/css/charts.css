@@ -61,6 +61,24 @@
   height: 3px;
 }
 
+/* Grille des cartes d'une page : deux colonnes, une seule sous 860 px. */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.chart-grid .wide {
+  grid-column: span 2;
+}
+@media (max-width: 860px) {
+  .chart-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chart-grid .wide {
+    grid-column: auto;
+  }
+}
+
 /* Avertissement en tête de page, au-dessus des cartes. */
 .page-note {
   margin: 0;
