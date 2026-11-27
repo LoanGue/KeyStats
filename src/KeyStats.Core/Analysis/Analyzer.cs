@@ -217,6 +217,9 @@ public sealed class Analyzer
             _down[k] = true;
             _downMs[k] = ms;
             _downCount++;
+            // Suivi même dans une appli exclue : l'état des verrous vaut pour toutes les fenêtres.
+            if (k == KeyCode.CapsLock) _capsLock = !_capsLock;
+            else if (k == KeyCode.NumLock) _numLock = !_numLock;
         }
         if (_excluded)
         {
@@ -240,8 +243,6 @@ public sealed class Analyzer
                 _altAlone = false;
             }
             else _altAlone = _winAlone = false;
-            if (k == KeyCode.CapsLock) _capsLock = !_capsLock;
-            else if (k == KeyCode.NumLock) _numLock = !_numLock;
         }
 
         TextAction action = KeyTranslator.Translate(_down, _layout, _capsLock, _numLock, k, out char c, out ShortcutModifiers mods);
@@ -339,7 +340,8 @@ public sealed class Analyzer
         {
             int day = _stats.DayKey(ms);
             _stats.AddMetric(day, DayMetric.CharPresses, 1);
-            if (action == TextAction.Char && CapitalShift.Classify(_down, _capsLock, k, c) is { } capital) _stats.AddMetric(day, capital, 1);
+            if (action == TextAction.Char && CapitalShift.Classify(_down, _capsLock, k, c) is { } capital)
+                _stats.AddMetric(day, capital, 1);
             if (_textDownCount > 0)
             {
                 overlap = true;
