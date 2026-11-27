@@ -11,6 +11,7 @@ import { renderKeyboard } from "./keyboard.js";
 import { renderLetters } from "./letters.js";
 import { renderOverview } from "./overview.js";
 import { renderRhythm } from "./rhythm.js";
+import { renderSettings } from "./settings.js";
 import { renderSpeed } from "./speed.js";
 import { renderTypos } from "./typos.js";
 
@@ -75,6 +76,7 @@ export const pages = {
     description:
       "Détection, compteur à l'écran, confidentialité et sauvegardes.",
     filters: false,
+    render: renderSettings,
   },
 };
 
