@@ -7,6 +7,7 @@
 // d'écrire, car une autre page a pu être ouverte entre-temps.
 // Une exception levée par render affiche l'état d'erreur avec « Réessayer ».
 
+import { renderLetters } from "./letters.js";
 import { renderOverview } from "./overview.js";
 import { renderSpeed } from "./speed.js";
 import { renderTypos } from "./typos.js";
@@ -48,6 +49,7 @@ export const pages = {
     title: "Lettres et mots",
     description: "Ce que vous écrivez, comparé à un français courant.",
     filters: true,
+    render: renderLetters,
   },
   raccourcis: {
     title: "Raccourcis et combinaisons",
