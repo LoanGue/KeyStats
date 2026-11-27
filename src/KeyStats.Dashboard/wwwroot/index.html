@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/header.css">
   <link rel="stylesheet" href="css/states.css">
+  <link rel="stylesheet" href="css/unlock.css">
   <script type="module" src="js/main.js"></script>
   <script src="app.js" defer></script>
 </head>
@@ -77,5 +78,33 @@
       </section>
     </main>
   </div>
+
+  <dialog id="unlock-dialog" class="dialog" aria-labelledby="unlock-title">
+    <span id="unlock-icon" class="dialog-icon">
+      <svg id="unlock-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      <span id="unlock-spin" class="spinner" aria-hidden="true"></span>
+    </span>
+    <div id="unlock-status" role="status">
+      <h2 id="unlock-title"></h2>
+      <p id="unlock-text"></p>
+    </div>
+    <div id="unlock-alert" class="alert" role="alert" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.5h0"/></svg>
+      <span id="unlock-alert-text"></span>
+    </div>
+    <form id="unlock-phrase" class="phrase" hidden>
+      <label for="unlock-input">Saisissez votre phrase de secours</label>
+      <span class="phrase-row">
+        <input id="unlock-input" type="password" autocomplete="off" spellcheck="false" aria-describedby="unlock-error">
+        <button id="unlock-eye" class="icon-btn" type="button" aria-label="Afficher la phrase" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </span>
+      <span id="unlock-error" class="field-error" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.5h0"/></svg><span id="unlock-error-text"></span></span>
+    </form>
+    <button id="unlock-main" class="btn btn-primary btn-lg" type="button"><svg id="unlock-face" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M9 10h0M15 10h0M9.5 15a3.5 3.5 0 0 0 5 0"/></svg><span id="unlock-main-text"></span></button>
+    <div class="dialog-foot">
+      <button id="unlock-switch" class="link-btn" type="button"></button>
+      <button id="unlock-cancel" class="btn btn-sm" type="button">Annuler</button>
+    </div>
+  </dialog>
 </body>
 </html>
