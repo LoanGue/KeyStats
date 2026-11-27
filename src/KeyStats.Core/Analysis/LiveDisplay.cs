@@ -1,4 +1,5 @@
 using System.Globalization;
+using KeyStats.Core.Settings;
 
 namespace KeyStats.Core.Analysis;
 
@@ -44,9 +45,19 @@ public static class LiveDisplay
         return Text(reading.Mode, wpm, cpm, reading.Accuracy);
     }
 
-    /// <summary>Coin bas droit de la zone de travail, donc au-dessus de la barre des tâches.</summary>
-    public static (int X, int Y) BottomRight(ScreenRect work, int width, int height, int margin) =>
-        (work.Right - width - margin, work.Bottom - height - margin);
+    /// <summary>
+    /// Coin <paramref name="corner"/> (<see cref="LiveCorner"/>) de la zone de travail, donc à l'écart de la
+    /// barre des tâches ; le coin bas droit pour une valeur inconnue.
+    /// </summary>
+    public static (int X, int Y) Corner(ScreenRect work, int width, int height, int margin, string corner)
+    {
+        bool left = corner is LiveCorner.TopLeft or LiveCorner.BottomLeft;
+        bool top = corner is LiveCorner.TopLeft or LiveCorner.TopRight;
+        return (left ? work.Left + margin : work.Right - width - margin, top ? work.Top + margin : work.Bottom - height - margin);
+    }
+
+    /// <summary>Opacité en pour cent, bornée, en alpha constant de 0 à 255 pour <c>UpdateLayeredWindow</c>.</summary>
+    public static byte Alpha(int opacityPercent) => (byte)((Math.Clamp(opacityPercent, 0, 100) * 255 + 50) / 100);
 
     /// <summary>Une mesure à 96 ppp, mise à l'échelle de l'écran.</summary>
     public static int Scale(int value, int dpi) => (value * dpi + 48) / 96;
