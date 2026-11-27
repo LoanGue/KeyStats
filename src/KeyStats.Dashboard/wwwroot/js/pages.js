@@ -12,6 +12,7 @@ import { renderKeyboard } from "./keyboard.js";
 import { renderLetters } from "./letters.js";
 import { renderOverview } from "./overview.js";
 import { renderRhythm } from "./rhythm.js";
+import { renderShortcuts } from "./shortcuts.js";
 import { renderSpeed } from "./speed.js";
 import { renderTypos } from "./typos.js";
 
@@ -59,6 +60,7 @@ export const pages = {
     title: "Raccourcis et combinaisons",
     description: "Les touches que vous tenez ensemble, volontairement ou non.",
     filters: true,
+    render: renderShortcuts,
   },
   activite: {
     title: "Activité et origine",
