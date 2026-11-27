@@ -4,9 +4,8 @@ namespace KeyStats.Core.Reference;
 
 /// <summary>Fréquences de référence d'une langue, pour comparer avec ta propre frappe.</summary>
 /// <param name="Letters">Part de chaque lettre parmi les lettres (somme = 1), accents compris s'ils sont dans la source.</param>
-/// <param name="AverageWordLength">Longueur moyenne des mots en lettres ; null si aucune source fiable n'a été trouvée.</param>
 public sealed record LanguageReference(
-    string Code, string Name, FrozenDictionary<char, double> Letters, double? AverageWordLength, string Source);
+    string Code, string Name, FrozenDictionary<char, double> Letters, string Source);
 
 /// <summary>Références publiées. Les chiffres sont recopiés de leur source, sans retouche.</summary>
 public static class LetterFrequencies
@@ -30,7 +29,6 @@ public static class LetterFrequencies
             ('ù', 151236), ('ï', 138221), ('á', 73751), ('ü', 55172), ('ë', 53862),
             ('ö', 51020), ('í', 48391),
         }),
-        AverageWordLength: null, // [à compléter : longueur moyenne des mots en français, avec sa source]
         "Corpus Wikipédia FR 2008 (REDAC, CLLE-ERSS), via fr.wikipedia.org « Fréquence d'apparition des lettres »");
 
     /// <summary>
@@ -47,7 +45,6 @@ public static class LetterFrequencies
             ('s', 6.327), ('t', 9.056), ('u', 2.758), ('v', 0.978), ('w', 2.360), ('x', 0.150),
             ('y', 1.974), ('z', 0.074),
         }),
-        AverageWordLength: null, // [à compléter : longueur moyenne des mots en anglais, avec sa source]
         "en.wikipedia.org « Letter frequency » (Lewand, 2000)");
 
     public static IReadOnlyList<LanguageReference> All { get; } = [French, English];
