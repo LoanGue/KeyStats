@@ -25,6 +25,8 @@ All notable changes to this project are documented here. The format follows
   days recorded earlier need a recalculation from the raw data.
 - `KeyStats.Dashboard`: Fautes page, first card: accuracy of each day of the
   period, with the period figure and the best day of at least 200 characters.
+- `KeyStats.Dashboard`: Fautes page, confused pairs (filter on AZERTY
+  neighbours) and the error rate of each accented character.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
