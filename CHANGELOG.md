@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Réglages page edits the detection thresholds. A
+  change restarts a running agent, which reads them only at start. A refused
+  `settings.json` is shown, never rewritten.
+
 - `KeyStats.Core`: GET `/api/activity/day?day=` gives one local day minute by
   minute: keys per minute, local hour marks (DST days included), the finished
   periods when the session was locked or asleep or capture was paused, and the
