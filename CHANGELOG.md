@@ -23,6 +23,8 @@ All notable changes to this project are documented here. The format follows
   and the characters deleted by single, held and Ctrl+Backspace. Two new day
   metrics count backspace repeats and characters erased by Ctrl+Backspace;
   days recorded earlier need a recalculation from the raw data.
+- `KeyStats.Dashboard`: Fautes page, first card: accuracy of each day of the
+  period, with the period figure and the best day of at least 200 characters.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
