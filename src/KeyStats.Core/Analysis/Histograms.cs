@@ -40,6 +40,13 @@ public sealed class LogScale
 
     public double UpperBound(int bucket) => bucket >= Buckets - 1 ? double.PositiveInfinity : Min * Math.Exp(_ratio * (bucket + 1) / Buckets);
 
+    /// <summary>Milieu géométrique de la case, les cases ouvertes bornées à Min / 2 et Max × 1,5.</summary>
+    public double Middle(int bucket)
+    {
+        double lo = Math.Max(LowerBound(bucket), Min / 2), hi = Math.Min(UpperBound(bucket), Max * 1.5);
+        return Math.Sqrt(lo * hi);
+    }
+
     /// <summary>Médiane approchée (milieu géométrique de la case médiane), ou NaN si vide.</summary>
     public double Median(ReadOnlySpan<int> counts)
     {
@@ -50,11 +57,7 @@ public sealed class LogScale
         for (int i = 0; i < counts.Length; i++)
         {
             run += counts[i];
-            if (run >= half)
-            {
-                double lo = Math.Max(LowerBound(i), Min / 2), hi = Math.Min(UpperBound(i), Max * 1.5);
-                return Math.Sqrt(lo * hi);
-            }
+            if (run >= half) return Middle(i);
         }
         return Max;
     }
