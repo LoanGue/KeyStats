@@ -16,6 +16,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: GET and POST `/api/settings` read and edit the
+  detection thresholds, the excluded applications and the live counter switch
+  in `settings.json`. Values are checked against the agent's own bounds before
+  anything is written, and a refused file is never rewritten. A changed
+  threshold restarts a running agent with the same executable; any other
+  change sends `reload`.
+
 - `KeyStats.Dashboard`: the Activité et origine page shows the writing time
   per day over the last twelve months as a calendar, and per hour and weekday
   over the period as a heatmap, both on a five-step ramp with a hidden table
