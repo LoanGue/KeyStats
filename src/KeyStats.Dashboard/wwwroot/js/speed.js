@@ -35,7 +35,7 @@ export async function renderSpeed(view, ctx) {
     ? [
         el(
           "p",
-          "speed-note",
+          "page-note",
           `La période compte plus de ${nf.format(MAX_SESSIONS)} sessions : seules les ${nf.format(MAX_SESSIONS)} plus récentes sont affichées.`,
         ),
       ]
