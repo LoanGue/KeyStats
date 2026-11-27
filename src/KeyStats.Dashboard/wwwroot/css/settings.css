@@ -71,6 +71,9 @@
   gap: 8px;
   justify-content: flex-end;
 }
+.settings-actions.start {
+  justify-content: flex-start;
+}
 .settings-actions .btn {
   min-height: 36px;
 }
@@ -93,4 +96,56 @@
 }
 .settings-alert p {
   margin: 0;
+}
+
+.settings-empty {
+  padding: 18px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.settings-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-apps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.settings-app {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: 1px solid var(--chip);
+}
+.settings-app-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--chip);
+}
+.settings-app-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--muted-strong);
+}
+.settings-app-exe {
+  color: var(--muted);
+}
+.settings-app .btn-sm {
+  min-height: 32px;
+  padding: 0 10px;
 }
