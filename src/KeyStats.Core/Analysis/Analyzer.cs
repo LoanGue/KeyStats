@@ -374,7 +374,11 @@ public sealed class Analyzer
                         Emit(c, ms, isolated: true);
                     }
                 }
-                else Emit(c, ms, repeat);
+                else
+                {
+                    CountDigit(k, c, ms);
+                    Emit(c, ms, repeat);
+                }
                 break;
 
             case TextAction.DeadKey:
@@ -418,6 +422,14 @@ public sealed class Analyzer
                 _altDigits++;
                 break;
         }
+    }
+
+    /// <summary>Chiffre tapé directement par une touche : rangée du haut ou pavé numérique.</summary>
+    private void CountDigit(ushort k, char c, long ms)
+    {
+        if (c is < '0' or > '9') return;
+        DayMetric first = KeyCode.NumpadDigit(k) >= 0 ? DayMetric.NumpadDigit0 : DayMetric.TopRowDigit0;
+        _stats.AddMetric(_stats.DayKey(ms), first + (c - '0'), 1);
     }
 
     private void Emit(char c, long ms, bool isolated)
