@@ -29,7 +29,7 @@ export async function renderSpeed(view, ctx) {
     hoursCard(sessions),
     weeksCard(data.weeks),
   ].map(chartCard);
-  const grid = el("div", "speed-grid");
+  const grid = el("div", "chart-grid");
   grid.append(...cards.map((c) => c.section));
   const notes = data.truncated
     ? [
