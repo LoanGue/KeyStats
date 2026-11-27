@@ -7,7 +7,7 @@ const icons = {
   alert: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5h0"/>',
 };
 
-function el(tag, className, text) {
+export function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;

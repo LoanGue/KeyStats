@@ -1,0 +1,29 @@
+/* Vue d'ensemble : indicateurs, repris de la maquette (Main). */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px;
+}
+.kpi {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.kpi-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-strong);
+}
+.kpi-value {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-note {
+  font-size: 12px;
+  color: var(--muted);
+}
