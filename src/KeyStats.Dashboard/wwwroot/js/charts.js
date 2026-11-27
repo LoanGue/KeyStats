@@ -8,14 +8,16 @@ export function loadCharts() {
   loading ??= new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = "vendor/echarts/echarts.min.js";
-    script.onload = () => resolve(window.echarts);
-    script.onerror = () => {
+    const fail = () => {
       loading = null;
       script.remove();
       reject(
         new Error("vendor/echarts/echarts.min.js : chargement impossible"),
       );
     };
+    // Un fichier chargé qui ne définit pas echarts compte comme un échec, sans rester en cache.
+    script.onload = () => (window.echarts ? resolve(window.echarts) : fail());
+    script.onerror = fail;
     document.head.append(script);
   });
   return loading;
