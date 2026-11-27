@@ -1,7 +1,7 @@
 // Carte « Calendrier » de la page Activité : temps d'écriture par jour sur 53 semaines (maquette Activite).
 
+import { cell, levels, rampLegend } from "./activity-ramp.js";
 import { describedBy, fillTable } from "./chart-card.js";
-import { cell, rampLegend } from "./activity-ramp.js";
 import { duration, nf } from "./format.js";
 import { el } from "./states.js";
 
