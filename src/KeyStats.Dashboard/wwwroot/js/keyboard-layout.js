@@ -111,3 +111,9 @@ export const numpad = [
 
 /** Nom complet d'une touche, pour les lecteurs d'écran et le détail. */
 export const keyName = (k) => k.name ?? (k.pad ? `Pavé ${k.label}` : k.label);
+
+/** Touche de la carte qui porte code ; la moitié basse d'Entrée n'est pas retenue. */
+export const keyOfCode = (code) =>
+  [...rows.flatMap((r) => r.keys), ...numpad].find(
+    (k) => k.code === code && !k.twin,
+  );

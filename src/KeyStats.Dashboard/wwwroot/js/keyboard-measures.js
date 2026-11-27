@@ -3,7 +3,7 @@
 import { nf, pct, shortDelay } from "./format.js";
 
 /** Écart à la moyenne des touches : « +12 % », « −8 % ». */
-const gap = (r) => {
+export const gap = (r) => {
   const v = Math.round((r - 1) * 100);
   return `${v > 0 ? "+" : v < 0 ? "−" : ""}${nf.format(Math.abs(v))} %`;
 };
