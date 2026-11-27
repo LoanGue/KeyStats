@@ -31,6 +31,7 @@ public sealed class LayoutTable
     private readonly char[] _chars = new char[KeyCode.ScanCodeLimit * SlotCount];
     private readonly bool[] _dead = new bool[KeyCode.ScanCodeLimit * SlotCount];
     private Dictionary<char, (ushort Key, int Slot)>? _reverse;
+    private HashSet<char> _shared = [];
 
     public LayoutTable(string id, bool hasAltGr)
     {
@@ -74,9 +75,20 @@ public sealed class LayoutTable
         return false;
     }
 
+    /// <summary>
+    /// Vrai si une seule touche produit ce caractère directement : faux pour les chiffres et les opérateurs que le pavé
+    /// numérique double, dont la touche ne se déduit pas du caractère.
+    /// </summary>
+    public bool HasSingleKey(char c)
+    {
+        _reverse ??= BuildReverse();
+        return _reverse.ContainsKey(c) && !_shared.Contains(c);
+    }
+
     private Dictionary<char, (ushort, int)> BuildReverse()
     {
         var map = new Dictionary<char, (ushort, int)>();
+        var shared = new HashSet<char>();
         // On parcourt les cases dans l'ordre (sans modificateur d'abord) : la combinaison la plus simple gagne.
         // Les cases avec Verr Maj sont ignorées : elles doublent les autres.
         for (int slot = 0; slot < SlotCount; slot++)
@@ -85,9 +97,11 @@ public sealed class LayoutTable
             for (ushort key = 1; key < KeyCode.ScanCodeLimit; key++)
             {
                 int i = key * SlotCount + slot;
-                if (_chars[i] != '\0' && !_dead[i]) map.TryAdd(_chars[i], (key, slot));
+                if (_chars[i] == '\0' || _dead[i]) continue;
+                if (!map.TryAdd(_chars[i], (key, slot)) && map[_chars[i]].Item1 != key) shared.Add(_chars[i]);
             }
         }
+        _shared = shared;
         return map;
     }
 
