@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/shortcuts` gives the most used shortcuts, how
+  many keys are held at each press, what overlapping presses are (letter
+  rolls, held Shift, shortcuts), the overlap duration and the pairs of keys
+  that overlap most, and how often Ctrl, Alt, Ctrl + Alt and Win were combined
+  with each key group, with the last day of use.
+
 - `KeyStats.Core`: the analysis measures how long two character keys stay
   pressed together, from the second press to the first release, per pair of
   keys, in a new `day_hist` kind (`OverlapMs`). An overlap longer than the
