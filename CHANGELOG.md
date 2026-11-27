@@ -21,6 +21,8 @@ All notable changes to this project are documented here. The format follows
   for each digit how many were typed on the top row and on the numeric keypad.
   Twenty new day metrics count digits by origin; days recorded earlier need a
   recalculation from the raw data.
+- `KeyStats.Core`: GET `/api/keyboard/minutes?key=` gives the presses of one key
+  minute by minute on the latest day of the period it was used.
 - `KeyStats.Core`: GET `/api/typos` gives the accuracy of each day of the
   period, the most confused pairs with an AZERTY neighbour flag, the error rate
   of accented characters, error types, the detection delay (median and
