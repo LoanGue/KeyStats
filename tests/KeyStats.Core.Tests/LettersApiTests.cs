@@ -18,6 +18,7 @@ public sealed class LettersApiTests : IDisposable
         AddChar(20261126, SessionKind.Code, 'a', 10);
         AddChar(20261126, SessionKind.Code, '{', 500);
         AddChar(20261118, SessionKind.Prose, 'z', 1000);
+        _temp.Db.Exec($"INSERT INTO day_char VALUES (20261126, {(int)SessionKind.Prose}, {0x10061}, 7)"); // U+10061 tronqué vaudrait 'a'
 
         // Prose : 4 mots de 2 lettres, 2 de 5, 1 de 20. Code : 3 mots de 8 lettres.
         AddLength(20261126, SessionKind.Prose, 2, 4);

@@ -81,7 +81,9 @@ public static class LettersApi
         {
             while (r.Read())
             {
-                char c = LetterFrequencies.Fold((char)r.GetInt32(0));
+                int code = r.GetInt32(0);
+                if (code > char.MaxValue) continue; // hors plan de base : ni lettre a-z, ni repliable sans troncature
+                char c = LetterFrequencies.Fold((char)code);
                 if (c is >= 'a' and <= 'z') counts[c - 'a'] += (long)r.GetDouble(1);
             }
         }
