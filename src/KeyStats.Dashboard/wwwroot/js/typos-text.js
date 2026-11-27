@@ -96,7 +96,7 @@ export function accuracyCard(data) {
 
 const keyLabel = (c) => (c === " " ? "espace" : c);
 
-function key(c, typed) {
+export function key(c, typed) {
   return el("kbd", typed ? "typos-key typed" : "typos-key", keyLabel(c));
 }
 
