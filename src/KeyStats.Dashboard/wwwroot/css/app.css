@@ -22,13 +22,18 @@
   --chart-green: #00b894;
   --chart-amber: #f2a600;
   --key-typed-bg: #fff6f0;
-  /* Rampe de la carte de chaleur du clavier : 0 sans appui, puis de faible à élevé. */
+  /* Rampes de la carte de chaleur du clavier : 0 sans mesure, puis de faible à élevé ; la chaude pour un défaut. */
   --heat-0: #f1f3f6;
   --heat-1: #cce3fd;
   --heat-2: #9dc8f7;
   --heat-3: #519ced;
   --heat-4: #2370cd;
   --heat-5: #0f4a96;
+  --heat-warm-1: #fde3d3;
+  --heat-warm-2: #fbc4a3;
+  --heat-warm-3: #f8a272;
+  --heat-warm-4: #c24e14;
+  --heat-warm-5: #8f3a10;
   --warn-bg: #fdf0e6;
   --warn-text: #8a3c08;
   --nav-bg: #121823;

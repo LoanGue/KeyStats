@@ -63,3 +63,47 @@
 .key.strong {
   color: var(--on-primary);
 }
+
+.keyboard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.heat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted-strong);
+}
+.heat-legend .muted {
+  color: var(--muted);
+}
+.heat-scale {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.heat-none {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.heat-none > span {
+  background: var(--heat-0);
+  width: 18px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--border-strong);
+}
+.heat-ramp {
+  display: inline-flex;
+  gap: 2px;
+}
+.heat-ramp > span {
+  width: 22px;
+  height: 14px;
+  border-radius: 3px;
+}

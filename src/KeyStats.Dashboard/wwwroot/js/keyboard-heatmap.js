@@ -1,24 +1,31 @@
-// Carte de chaleur de la page Clavier : niveaux de couleur et touches.
+// Carte de chaleur de la page Clavier : niveaux de couleur, touches et légende.
 
 import { keyName, numpad, rows } from "./keyboard-layout.js";
 import { measures } from "./keyboard-measures.js";
 import { el } from "./states.js";
 
 /**
- * Niveau de 1 à 5 sur la racine carrée de la valeur, de zéro au maximum ; 0 sans appui.
- * La racine garde distinguables des appuis très inégaux (l'espace face aux lettres rares).
+ * Niveau de 1 à 5 de chaque valeur, 0 sans mesure. Avec root, sur la racine carrée de zéro au maximum,
+ * et 0 aussi sans appui : la racine garde distinguables des appuis très inégaux (l'espace face aux
+ * lettres rares). Sinon, de la plus petite à la plus grande valeur mesurée.
  */
-function leveller(values) {
-  const hi = Math.sqrt(Math.max(...values));
-  return (v) =>
-    v ? 1 + Math.min(4, Math.floor((5 * Math.sqrt(v)) / (hi + 1e-9))) : 0;
+function leveller(values, root) {
+  const f = root ? Math.sqrt : (v) => v;
+  const empty = (v) => v == null || (root && !v);
+  const shown = values.filter((v) => !empty(v)).map(f);
+  const lo = root ? 0 : Math.min(...shown);
+  const hi = Math.max(...shown);
+  return (v) => {
+    if (empty(v)) return 0;
+    if (hi <= lo) return 3;
+    return 1 + Math.min(4, Math.floor((5 * (f(v) - lo)) / (hi - lo + 1e-9)));
+  };
 }
 
 const allKeys = [...rows.flatMap((r) => r.keys), ...numpad];
 
-/** Valeurs de la mesure pour chaque touche qui a un code. */
-function valuesOf(data, measure) {
-  const m = measures[measure];
+/** Valeurs de la mesure m pour chaque touche qui a un code. */
+function valuesOf(data, m) {
   const values = new Map();
   for (const k of allKeys) {
     if (k.code == null || values.has(k.code)) continue;
@@ -28,14 +35,14 @@ function valuesOf(data, measure) {
   return values;
 }
 
-/** Couleur d'un niveau : 0 sans appui, puis de faible à élevé. */
-const heat = (level) => `var(--heat-${level})`;
+/** Couleur d'un niveau : 0 sans mesure, puis de faible à élevé sur la rampe froide ou chaude. */
+const heat = (level, warm) =>
+  `var(--heat-${level && warm ? "warm-" : ""}${level})`;
 
 /** Touche colorée selon son niveau, décrite aux lecteurs d'écran par sa valeur. */
-function keyNode(k, value, level, measure) {
-  const m = measures[measure];
+function keyNode(k, value, level, m) {
   const node = el("span", "key");
-  node.style.background = heat(level);
+  node.style.background = heat(level, m.warm);
   if (level === 0) node.classList.add("empty");
   if (level >= 4) node.classList.add("strong");
   if (k.shown.length > 2) node.classList.add("long");
@@ -49,17 +56,19 @@ function keyNode(k, value, level, measure) {
   }
   node.setAttribute("role", "img");
   const name = k.shifted ? `${keyName(k)} ${k.shifted}` : keyName(k);
-  node.setAttribute("aria-label", `Touche ${name} : ${m.text(value)}`);
+  const text = value == null ? "pas de mesure" : m.text(value);
+  node.setAttribute("aria-label", `Touche ${name} : ${text}`);
   return node;
 }
 
-/** Portable et pavé, colorés selon measure. */
+/** Portable et pavé, colorés selon la mesure nommée measure. */
 export function heatmap(data, measure) {
-  const values = valuesOf(data, measure);
-  const level = leveller([...values.values()]);
+  const m = measures[measure];
+  const values = valuesOf(data, m);
+  const level = leveller([...values.values()], m.root);
   const keyOf = (k) => {
     const v = k.code == null ? null : values.get(k.code);
-    return keyNode(k, v, level(v), measure);
+    return keyNode(k, v, level(v), m);
   };
   const main = el("div", "keys-main");
   for (const r of rows) {
@@ -72,12 +81,39 @@ export function heatmap(data, measure) {
   pad.append(...numpad.map(keyOf));
   const box = el("div", "keys");
   box.setAttribute("role", "group");
-  box.setAttribute(
-    "aria-label",
-    `Carte de chaleur : ${measures[measure].help}`,
-  );
+  box.setAttribute("aria-label", `Carte de chaleur du clavier : ${m.legend}`);
   box.append(main, pad);
   const scroll = el("div", "keys-scroll");
   scroll.append(box);
   return scroll;
+}
+
+/** Légende : de « aucune » à « élevé » sur la rampe de la mesure. */
+export function heatLegend(measure) {
+  const m = measures[measure];
+  const ramp = el("span", "heat-ramp");
+  ramp.setAttribute("aria-hidden", "true");
+  for (let i = 1; i <= 5; i++) {
+    const step = el("span");
+    step.style.background = heat(i, m.warm);
+    ramp.append(step);
+  }
+  const none = el("span", "heat-none");
+  const noneBox = el("span");
+  noneBox.setAttribute("aria-hidden", "true");
+  none.append(noneBox, m.root ? "aucun appui" : "aucune mesure");
+  const scale = el("div", "heat-scale");
+  scale.append(
+    el("span", null, m.legend),
+    none,
+    el("span", "muted", "faible"),
+    ramp,
+    el("span", "muted", "élevé"),
+  );
+  const foot = el("div", "heat-legend");
+  foot.append(
+    scale,
+    el("span", "muted", "Le filtre Clavier choisit les appuis comptés."),
+  );
+  return foot;
 }
