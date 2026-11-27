@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: shared view states from the design: loading, period
+  without typing, agent stopped, read error with retry, and page not yet
+  available. A slow view no longer overwrites the page opened after it.
 - `KeyStats.Dashboard`: the page header shows whether the agent runs and whether
   the detailed data is unlocked, and carries the global filters (period,
   application, content, keyboard), kept in the address across pages.
