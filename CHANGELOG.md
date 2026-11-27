@@ -16,6 +16,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/letters` gives the frequency of each letter a–z
+  (accents folded), next to French and English reference shares, word counts
+  by length from 1 to 15 and over, and the average and median word length,
+  overall, in prose and in code, next to French. The French word lengths come
+  from Lexique 4.15 (CC BY-SA 4.0), weighted by film subtitle frequencies and
+  split at non-letters like the typed words: 3.95 letters per word.
+  `LanguageReference` loses its unused `AverageWordLength`.
+
 - `KeyStats.Core`: GET `/api/typos` gives the accuracy of each day of the
   period, the most confused pairs with an AZERTY neighbour flag, the error rate
   of accented characters, error types, the detection delay (median and
