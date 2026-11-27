@@ -6,6 +6,8 @@ import { el } from "./states.js";
 
 const LEVELS = 5;
 
+const presses = (n) => `${nf.format(n)} appui${n > 1 ? "s" : ""}`;
+
 /** Teinte de 1 (rare) à LEVELS (fréquent), en échelle logarithmique ; 0 si jamais. */
 function level(count, max) {
   if (!count) return 0;
@@ -79,12 +81,12 @@ function chordShares(chords) {
   box.append(el("h3", null, "Touches tenues à chaque appui"));
   const list = el("dl");
   buckets.forEach((n, i) => {
-    const label = i === 3 ? "4 ou plus" : `${i + 1} touche${i ? "s" : ""}`;
+    const label = i === 3 ? "4 touches ou plus" : `${i + 1} touche${i ? "s" : ""}`;
     const item = el("div");
     item.append(
       el("dt", null, label),
       el("dd", null, sum ? pct(n / sum) : "—"),
-      el("dd", "shortcuts-chord-count", `${nf.format(n)} appuis`),
+      el("dd", "shortcuts-chord-count", presses(n)),
     );
     list.append(item);
   });
