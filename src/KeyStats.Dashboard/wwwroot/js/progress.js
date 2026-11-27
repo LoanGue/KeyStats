@@ -2,7 +2,7 @@
 
 import { chartFailed, describedBy, fillTable } from "./chart-card.js";
 import { loadCharts, mount, reducedMotion, token } from "./charts.js";
-import { nf, nf1 } from "./format.js";
+import { isoWeek, nf, nf1 } from "./format.js";
 import { el } from "./states.js";
 
 // Mesures de la courbe : valeur d'une semaine (null = aucune session), unité et légende.
@@ -30,17 +30,6 @@ const measures = {
   },
 };
 let measure = "vitesse";
-
-/** Numéro de semaine ISO 8601 du lundi donné (aaaa-mm-jj). */
-function isoWeek(monday) {
-  const d = new Date(`${monday}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + 3); // le jeudi de la même semaine
-  const jan4 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
-  return (
-    1 +
-    Math.round((d - jan4) / 604800000 + (((jan4.getUTCDay() + 6) % 7) - 3) / 7)
-  );
-}
 
 function chartOption(weeks, id) {
   const m = measures[id];

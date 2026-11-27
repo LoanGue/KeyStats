@@ -25,6 +25,17 @@ export function duration(ms) {
     : `${nf.format(h)}\u00a0h`;
 }
 
+/** Numéro de semaine ISO 8601 du lundi donné (aaaa-mm-jj). */
+export function isoWeek(monday) {
+  const d = new Date(`${monday}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 3); // le jeudi de la même semaine
+  const jan4 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  return (
+    1 +
+    Math.round((d - jan4) / 604800000 + (((jan4.getUTCDay() + 6) % 7) - 3) / 7)
+  );
+}
+
 /** Texte reçu de l'API, sûr dans une infobulle HTML. */
 export const escapeHtml = (text) =>
   String(text).replace(
