@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/activity/day?day=` gives one local day minute by
+  minute: keys per minute, local hour marks (DST days included), the periods
+  when the agent was stopped, the session locked or capture paused, and the
+  writing, pause and unobserved totals. Without `day`, the last written day;
+  links to the previous and next written days.
+
 - `KeyStats.Dashboard`: the Activité et origine page breaks the writing time
   down by application. Opening an application lists its window titles once the
   key is unlocked; while it is locked, the row offers Windows Hello or the
