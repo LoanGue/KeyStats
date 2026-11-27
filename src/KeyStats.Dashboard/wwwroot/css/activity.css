@@ -1,4 +1,4 @@
-/* Page Activité et origine : calendrier et heure × jour (maquette Activite). */
+/* Page Activité et origine : calendrier, heure × jour, répartition par application (maquette Activite). */
 
 /* Rampe commune au calendrier et à la grille horaire */
 .activity-cell {
@@ -95,4 +95,107 @@
 }
 .activity-hours .activity-cell {
   height: 24px;
+}
+
+/* Répartition par application */
+.activity-apps {
+  display: flex;
+  flex-direction: column;
+}
+.activity-app {
+  border-bottom: 1px solid var(--chip);
+}
+.activity-app-head {
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 16px 120px minmax(0, 1fr) 64px;
+  gap: 10px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.activity-chevron svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.activity-app-head[aria-expanded="true"] .activity-chevron svg {
+  transform: rotate(90deg);
+}
+.activity-name {
+  overflow: hidden;
+  color: var(--muted-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-bar {
+  display: block;
+  height: 12px;
+  border-radius: 0 4px 4px 0;
+  background: var(--chart);
+}
+.activity-ms {
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.activity-detail {
+  padding: 2px 0 12px 26px;
+  font-size: 13px;
+}
+.activity-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.activity-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: 10px;
+}
+.activity-title span:first-child {
+  overflow: hidden;
+  color: var(--muted-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-note {
+  margin: 0;
+  color: var(--muted);
+}
+.activity-lock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.activity-lock > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-strong);
+}
+.activity-lock svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

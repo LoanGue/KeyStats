@@ -1,5 +1,6 @@
 // Page Activité et origine : quand et dans quelles applications on écrit (/api/activity).
 
+import { appsCard } from "./activity-apps.js";
 import { calendarCard } from "./activity-calendar.js";
 import { hoursCard } from "./activity-hours.js";
 import { getJson } from "./api.js";
@@ -16,7 +17,7 @@ export async function renderActivity(view, ctx) {
   }
   const grid = el("div", "chart-grid");
   grid.append(
-    ...[calendarCard(data), hoursCard(data.hours)]
+    ...[calendarCard(data), hoursCard(data.hours), appsCard(data.apps, ctx)]
       .map(chartCard)
       .map((c) => c.section),
   );
