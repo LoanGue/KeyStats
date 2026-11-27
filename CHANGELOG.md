@@ -22,6 +22,12 @@ All notable changes to this project are documented here. The format follows
   zones offset by 30 or 45 minutes stay right), and per application. Every
   figure comes from the writing sessions and follows all the header filters.
 
+- `KeyStats.Core`: the analysis measures how long two character keys stay
+  pressed together, from the second press to the first release, per pair of
+  keys, in a new `day_hist` kind (`OverlapMs`). An overlap longer than the
+  hold cap (2 s) is not measured. Days analysed before this
+  change have no overlap durations until history is recalculated.
+
 - `KeyStats.Dashboard`: the Lettres et mots page shows the share of each letter
   typed against French reference ticks, with an optional English comparison,
   the average word length overall, in prose and in code, the median, and the
