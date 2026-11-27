@@ -1,4 +1,4 @@
-/* Page Fautes : chiffres en tête de carte, paires confondues, caractères accentués et types de fautes (maquette Fautes). */
+/* Page Fautes : chiffres en tête de carte, paires confondues, caractères accentués et corrections (maquette Fautes). */
 
 .typos-figures {
   display: flex;
@@ -171,7 +171,9 @@
 .typos-stack > span:only-child {
   border-radius: 4px;
 }
-.typos-types {
+.typos-types,
+.typos-cost,
+.typos-deletion {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -217,6 +219,76 @@
 }
 @media (max-width: 640px) {
   .typos-types-legend {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Coût des corrections et manière d'effacer. */
+.typos-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.typos-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.typos-tile-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-strong);
+}
+.typos-tile-value {
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.typos-tile-caption {
+  font-size: 12px;
+  color: var(--muted);
+}
+.typos-cost-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted-strong);
+}
+.typos-cost-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.typos-cost-line + .typos-cost-line {
+  padding-top: 10px;
+  border-top: 1px solid var(--chip);
+}
+.typos-ways {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  font-size: 13px;
+}
+.typos-way {
+  display: flex;
+  gap: 10px;
+}
+.typos-way .swatch {
+  flex: none;
+  margin-top: 4px;
+}
+.typos-way-title {
+  font-weight: 600;
+}
+.typos-way-title .typos-muted {
+  font-weight: 400;
+}
+@media (max-width: 640px) {
+  .typos-ways {
     grid-template-columns: minmax(0, 1fr);
   }
 }
