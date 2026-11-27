@@ -137,6 +137,18 @@ public sealed class KeyboardApiTests : IDisposable
     }
 
     [Fact]
+    public void Appuis_bornes_au_jour_local()
+    {
+        var paris = new LocalDayClock(TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris"));
+        // 23 h 30 UTC le 26 : 0 h 30 le 27 à Paris. Une heure plus tôt, c'est encore le 26.
+        long minute = LocalDayClock.MinuteOf(paris.MidnightUtcMs(LocalDayClock.DateOf(20261127))) + 30;
+        _temp.Db.Exec($"INSERT INTO key_minute VALUES ({minute}, {KeyE}, {_laptop}, 7, 0)");
+        _temp.Db.Exec($"INSERT INTO key_minute VALUES ({minute - 60}, {KeyE}, {_laptop}, 1000, 0)");
+
+        Assert.Equal(7, KeyboardApi.Read(_temp.Db, paris, Filter("period=day")).Presses);
+    }
+
+    [Fact]
     public void Chiffres_de_la_rangee_du_haut_et_du_pave()
     {
         var digits = Read("period=week").Digits;

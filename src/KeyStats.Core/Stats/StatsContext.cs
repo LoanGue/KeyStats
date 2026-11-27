@@ -20,6 +20,7 @@ public sealed class StatsContext(KeyStatsDb db, Func<long> nowMs, TimeZoneInfo? 
     /// </summary>
     public LocalDayClock Clock => new(zone ?? TimeZoneInfo.Local);
 
+    /// <summary>Jour local en cours, au fuseau de <see cref="Clock"/>.</summary>
     public int Today => Clock.DayKey(nowMs());
 
     /// <summary>Premier jour qui a des statistiques ; null pour une base vide.</summary>
