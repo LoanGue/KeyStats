@@ -68,6 +68,16 @@ export function showEmpty(view, agentRunning, onAll) {
   }
 }
 
+/** Période vide d'une page filtrée : propose tout l'historique, sauf quand la période y est déjà. */
+export function showEmptyPeriod(view, ctx) {
+  const all = ctx.filters.period === "all";
+  showEmpty(
+    view,
+    ctx.status.agentRunning,
+    all ? null : () => ctx.setFilters({ ...ctx.filters, period: "all" }),
+  );
+}
+
 export function showStopped(view) {
   panel(view, {
     icon: "pause",
