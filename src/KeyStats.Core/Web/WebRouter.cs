@@ -13,6 +13,9 @@ public sealed record WebResponse(int Status, string ContentType, byte[] Body)
 
     public static WebResponse BadRequest() => new(400, Text, Encoding.UTF8.GetBytes("Requête invalide"));
 
+    /// <summary>Données chiffrées demandées alors que la clé est verrouillée.</summary>
+    public static WebResponse Forbidden() => new(403, Text, Encoding.UTF8.GetBytes("Données verrouillées"));
+
     public static WebResponse MethodNotAllowed() => new(405, Text, Encoding.UTF8.GetBytes("Méthode refusée"));
 
     /// <summary>Message fixe : une exception peut porter du texte lu dans la base, il ne sort jamais.</summary>
