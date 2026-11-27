@@ -53,6 +53,7 @@ public static class KeyboardApi
         ArgumentNullException.ThrowIfNull(router);
         ArgumentNullException.ThrowIfNull(stats);
         router.Get(Path, q => stats.Respond(q, f => Read(stats.Db, stats.Clock, f), StatsJson.Default.Keyboard));
+        // TryGetId refuse 0, qui n'est pas un code de touche.
         router.Get(MinutesPath, q => q.TryGetId("key", out int? key) && key < KeyCode.Count
             ? stats.Respond(q, f => Minutes(stats.Db, stats.Clock, f, key.Value), StatsJson.Default.KeyboardMinutes)
             : WebResponse.BadRequest());
@@ -92,7 +93,7 @@ public static class KeyboardApi
         if (last is not long lastMinute) return new KeyboardMinutes(key, null, []);
         int day = clock.DayKey(lastMinute * 60_000);
         var dayRange = new DayRange(day, day);
-        where = KeyMinuteWhere(clock, filter, dayRange, out values) + " AND key = $key";
+        where = KeyMinuteWhere(clock, filter, dayRange, out values) + " AND key = $key AND presses > 0";
         long midnight = LocalDayClock.MinuteOf(clock.MidnightUtcMs(LocalDayClock.DateOf(day)));
         var minutes = new List<KeyMinute>();
         using (var cmd = db.Command($"SELECT ts_min, SUM(presses) FROM key_minute WHERE {where} GROUP BY ts_min HAVING SUM(presses) > 0 ORDER BY ts_min",
