@@ -86,6 +86,19 @@ public sealed class LettersApiTests : IDisposable
     }
 
     [Fact]
+    public void Longueur_nulle_ignoree_et_longueur_excessive_ramenee_a_30()
+    {
+        AddLength(20261126, SessionKind.Prose, 0, 5);
+        AddLength(20261126, SessionKind.Prose, 40, 1);
+
+        var l = Read("period=week");
+
+        Assert.Equal(11, l.Words.Count);
+        Assert.Equal(2, l.WordLengths[^1].Count);
+        Assert.Equal((4 * 2 + 2 * 5 + 20 + 3 * 8 + 30) / 11.0, l.Words.Average!.Value, 6);
+    }
+
+    [Fact]
     public void Filtre_de_nature_applique_aux_lettres_et_aux_mots()
     {
         var l = Read("period=week&kind=code");
