@@ -117,6 +117,12 @@ public enum DayMetric
     TopRowDigit0 = 50,
     /// <summary>Chiffre 0 tapé sur le pavé numérique ; les chiffres 1 à 9 suivent (61 à 69).</summary>
     NumpadDigit0 = 60,
+    /// <summary>Majuscules tapées avec la touche Maj de l'autre main que la lettre (doigté AZERTY standard).</summary>
+    ShiftOppositeCapitals = 70,
+    /// <summary>Majuscules tapées avec la touche Maj du même côté que la lettre.</summary>
+    ShiftSameSideCapitals = 71,
+    /// <summary>Majuscules tapées sous Verr. Maj, sans touche Maj.</summary>
+    CapsLockCapitals = 72,
 }
 
 /// <summary>Histogrammes journaliers (table <c>day_hist</c>). Valeurs enregistrées en base.</summary>
