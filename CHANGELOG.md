@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: speed page from the design: each session of the period
+  with the rolling median of the last 10, speed against accuracy for text
+  sessions, and the distribution of speeds with the median and the peak.
 - `KeyStats.Core`: GET `/api/speed` gives each session of the period (start,
   application, real and typing speed, peak, accuracy, duration; the 5,000 most
   recent at most) and the typing speed and real throughput of the last 8
