@@ -31,6 +31,11 @@
   --info-text: #174b8f;
   --chip: #eef0f4;
   --pill-muted-text: #3b424d;
+  --alert-text: #7f1717;
+  --field-bad: #b42318;
+  --spinner-track: #cce3fd;
+  --backdrop: rgba(18, 24, 35, 0.55);
+  --dialog-shadow: 0 12px 32px rgba(18, 24, 35, 0.28);
   --radius: 10px;
   --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --mono: "Cascadia Mono", Consolas, monospace;

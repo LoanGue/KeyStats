@@ -9,12 +9,21 @@ import {
 } from "./filters.js";
 import { defaultPage, pages } from "./pages.js";
 import { showError, showLoading, showPending } from "./states.js";
+import { initUnlock } from "./unlock.js";
 
 const $ = (id) => document.getElementById(id);
 const view = $("view");
 let status = { setup: false, agentRunning: false };
 let key = null;
 let renderId = 0;
+// Après un déverrouillage ou un verrouillage, l'en-tête et la vue suivent la nouvelle clé.
+const openUnlock = initUnlock(
+  () => key,
+  async () => {
+    await refreshStatus();
+    render();
+  },
+);
 
 function parseHash() {
   const [path, query = ""] = location.hash.replace(/^#\/?/, "").split("?");
@@ -38,6 +47,9 @@ async function refreshStatus() {
   const setup = key && key.setup;
   $("key-locked").hidden = !setup || key.unlocked;
   $("key-open").hidden = !setup || !key.unlocked;
+  const canUnlock = setup && !key.unlocked && (key.hello || key.passphrase);
+  $("unlock-open").hidden = !canUnlock;
+  $("key-lock").hidden = !setup || !key.unlocked;
   document.querySelector(".pill-sep").hidden =
     s.status !== "fulfilled" || !setup;
 }
@@ -77,6 +89,7 @@ async function render() {
     key,
     setFilters: (next) => go(id, next),
     retry: render,
+    unlock: openUnlock,
     // Une vue plus récente a pu être demandée pendant le chargement.
     isCurrent: () => current === renderId,
   };
