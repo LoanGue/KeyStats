@@ -1,0 +1,175 @@
+/* Déverrouillage : boutons de l'en-tête et dialogue, repris de la maquette (Deverrouillage, EnTete). */
+
+.btn svg,
+.icon-btn svg,
+.dialog svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.btn-sm {
+  min-height: 32px;
+  padding: 0 12px;
+}
+.btn-sm svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+.btn-lg {
+  min-height: 44px;
+  gap: 10px;
+  font-size: 14px;
+}
+.btn-dark {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--on-primary);
+  gap: 6px;
+}
+
+.dialog {
+  width: min(400px, calc(100vw - 40px));
+  padding: 24px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--dialog-shadow);
+}
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dialog::backdrop {
+  background: var(--backdrop);
+}
+.dialog h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.dialog p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted-strong);
+}
+.dialog-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--info-bg);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.dialog-icon .spinner {
+  width: 22px;
+  height: 22px;
+  border-color: var(--spinner-track);
+  border-top-color: var(--primary);
+}
+.dialog-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dialog-foot .btn-sm {
+  margin-left: auto;
+  font-weight: 400;
+}
+.link-btn {
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-btn:hover {
+  color: var(--primary-hover);
+}
+
+.alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--bad-bg);
+  color: var(--alert-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.alert svg,
+.field-error svg {
+  flex: none;
+  margin-top: 1px;
+  stroke-width: 2.2;
+}
+
+.phrase {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.phrase label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.phrase-row {
+  display: flex;
+  gap: 6px;
+}
+.phrase input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+.phrase input[aria-invalid="true"] {
+  border: 2px solid var(--field-bad);
+}
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted-strong);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn[aria-pressed="true"] {
+  background: var(--chip);
+}
+.field-error {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--field-bad);
+}
+.field-error svg {
+  width: 16px;
+  height: 16px;
+}
