@@ -33,6 +33,15 @@ public sealed record SettingsPatch(int? ActiveGapMs, int? SessionGapMs, IReadOnl
 /// <param name="Restarted">L'agent a été arrêté et relancé, parce qu'un seuil a changé.</param>
 public sealed record SettingsSaved(string Outcome, bool AgentApplied, bool Restarted, SettingsView Settings);
 
+/// <summary>Valeurs de <see cref="SettingsSaved.Outcome"/>, lues telles quelles par la page Réglages.</summary>
+public static class SettingsOutcome
+{
+    public const string Saved = "saved";
+    public const string Invalid = "invalid";
+    public const string Unreadable = "unreadable";
+    public const string Failed = "failed";
+}
+
 /// <summary>
 /// <c>GET /api/settings</c> et <c>POST /api/settings</c> : lecture et modification de <c>settings.json</c>.
 /// Seuls des seuils, des noms d'exécutables et des interrupteurs passent par ces routes.
@@ -57,7 +66,7 @@ public static class SettingsApi
         {
             if (Parse(body) is not { } patch) return WebResponse.BadRequest();
             var (outcome, restart, view) = Save(settingsPath, patch);
-            bool applied = outcome == "saved"
+            bool applied = outcome == SettingsOutcome.Saved
                 // Reprise sur le thread de l'interface, qui pose la réponse.
                 && await (restart ? agent.RestartAsync() : agent.ReloadAsync()).ConfigureAwait(true);
             return WebResponse.Json(new SettingsSaved(outcome, applied, applied && restart, view), WebJson.Default.SettingsSaved);
@@ -82,9 +91,9 @@ public static class SettingsApi
     {
         ArgumentNullException.ThrowIfNull(patch);
         var load = SettingsStore.Load(settingsPath);
-        if (load.Status == SettingsStatus.Invalid) return ("unreadable", false, View(load));
+        if (load.Status == SettingsStatus.Invalid) return (SettingsOutcome.Unreadable, false, View(load));
         IReadOnlyList<string>? apps = null;
-        if (patch.ExcludedApps is not null && (apps = CleanApps(patch.ExcludedApps)) is null) return ("invalid", false, View(load));
+        if (patch.ExcludedApps is not null && (apps = CleanApps(patch.ExcludedApps)) is null) return (SettingsOutcome.Invalid, false, View(load));
         var s = load.Settings;
         var a = s.Analysis;
         bool restart = (patch.ActiveGapMs is { } active && active != a.ActiveGapMs)
@@ -93,16 +102,16 @@ public static class SettingsApi
         a.SessionGapMs = patch.SessionGapMs ?? a.SessionGapMs;
         if (patch.LiveCounter is { } live) s.LiveCounter.Enabled = live;
         if (apps is not null) s.ExcludedApps = apps;
-        if (!SettingsStore.IsValid(s)) return ("invalid", false, View(SettingsStore.Load(settingsPath)));
+        if (!SettingsStore.IsValid(s)) return (SettingsOutcome.Invalid, false, View(SettingsStore.Load(settingsPath)));
         try
         {
             SettingsStore.Save(settingsPath, s);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return ("failed", false, View(SettingsStore.Load(settingsPath)));
+            return (SettingsOutcome.Failed, false, View(SettingsStore.Load(settingsPath)));
         }
-        return ("saved", restart, View(new SettingsLoad(s, SettingsStatus.Loaded)));
+        return (SettingsOutcome.Saved, restart, View(new SettingsLoad(s, SettingsStatus.Loaded)));
     }
 
     /// <summary>
