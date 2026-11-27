@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: the live counter takes its corner of the work area and its
+  opacity (20 to 100 %) from `liveCounter.position` and `liveCounter.opacity`
+  in `settings.json`, applied at once on `reload`.
+
 - `KeyStats.Dashboard`: the Réglages page lists the excluded applications.
   An executable is added through the Windows file picker or removed. A running
   agent applies the list at once, a stopped one at its next start.
