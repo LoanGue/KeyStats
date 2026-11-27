@@ -1,0 +1,15 @@
+/* Page Fautes : chiffres en tête de carte (maquette Fautes). */
+
+.typos-figures {
+  display: flex;
+  gap: 28px;
+}
+.typos-figure-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.typos-figure-value {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
