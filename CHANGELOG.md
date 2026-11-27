@@ -27,6 +27,12 @@ All notable changes to this project are documented here. The format follows
   zones offset by 30 or 45 minutes stay right), and per application. Every
   figure comes from the writing sessions and follows all the header filters.
 
+- `KeyStats.Core`: GET `/api/shortcuts` gives the most used shortcuts, how
+  many keys are held at each press, what overlapping presses are (letter
+  rolls, held Shift, shortcuts), the overlap duration and the pairs of keys
+  that overlap most, and how often Ctrl, Alt, Ctrl + Alt and Win were combined
+  with each key group, with the last day of use.
+
 - `KeyStats.Core`: the analysis measures how long two character keys stay
   pressed together, from the second press to the first release, per pair of
   keys, in a new `day_hist` kind (`OverlapMs`). An overlap longer than the
