@@ -3,6 +3,7 @@
 import { getJson } from "./api.js";
 import { chartCard, drawCharts } from "./chart-card.js";
 import { el, showEmptyPeriod } from "./states.js";
+import { typesCard } from "./typos-correction.js";
 import { accentsCard, accuracyCard, pairsCard } from "./typos-text.js";
 
 // Les tables par jour ignorent l'application, la nature et le clavier choisis.
@@ -30,6 +31,7 @@ export async function renderTypos(view, ctx) {
     accuracyCard(data),
     { ...pairsCard(data.pairs), footnote },
     { ...accentsCard(data.accents), footnote },
+    { ...typesCard(data.types, data.delay), footnote },
   ].map(chartCard);
   const grid = el("div", "chart-grid");
   grid.append(...cards.map((c) => c.section));
