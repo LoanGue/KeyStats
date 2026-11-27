@@ -78,5 +78,15 @@ public sealed class SpeedApiTests : IDisposable
         Assert.Equal((10_000L, 10_000L + SpeedApi.MaxSessions - 1), (s.Sessions[0].StartMs, s.Sessions[^1].StartMs));
     }
 
+    [Fact]
+    public void Periode_sans_session()
+    {
+        int notepad = _temp.Db.GetOrAddApp("notepad.exe");
+        var s = Read($"period=week&app={notepad}");
+        Assert.Equal((0, false), (s.Sessions.Count, s.Truncated));
+        Assert.Equal(SpeedApi.WeekCount, s.Weeks.Count);
+        Assert.All(s.Weeks, w => Assert.Equal((null, null), (w.TypingWpm, w.RealWpm)));
+    }
+
     public void Dispose() => _temp.Dispose();
 }
