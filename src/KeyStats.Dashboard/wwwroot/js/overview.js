@@ -1,28 +1,11 @@
 // Vue d'ensemble : chiffres clés de la période et progression semaine par semaine (/api/overview).
 
 import { getJson } from "./api.js";
+import { duration, nf, nf1 } from "./format.js";
 import { renderProgress } from "./progress.js";
-import { el, showEmpty } from "./states.js";
-
-const nf = new Intl.NumberFormat("fr-FR");
-const nf1 = new Intl.NumberFormat("fr-FR", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
+import { el, showEmptyPeriod } from "./states.js";
 
 const signed = (n, text) => (n > 0 ? "+" : n < 0 ? "−" : "±") + text;
-
-/** Durée en « 3 h 25 min », « 42 min » ou « moins d'une minute ». */
-function duration(ms) {
-  const minutes = Math.round(ms / 60000);
-  if (minutes < 1) return "moins d'une minute";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (!h) return `${m}\u00a0min`;
-  return m
-    ? `${nf.format(h)}\u00a0h\u00a0${m}\u00a0min`
-    : `${nf.format(h)}\u00a0h`;
-}
 
 /** Écart en pourcentage de la période précédente ; null quand elle n'a rien à comparer. */
 function relative(now, before) {
@@ -99,12 +82,7 @@ export async function renderOverview(view, ctx) {
   if (!ctx.isCurrent()) return;
   const { current, previous, weeks } = data;
   if (!current.keys && !current.sessions) {
-    const all = ctx.filters.period === "all";
-    showEmpty(
-      view,
-      ctx.status.agentRunning,
-      all ? null : () => ctx.setFilters({ ...ctx.filters, period: "all" }),
-    );
+    showEmptyPeriod(view, ctx);
     return;
   }
   const progress = renderProgress(weeks);
