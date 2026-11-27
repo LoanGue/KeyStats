@@ -1,8 +1,9 @@
-// Page Lettres et mots : fréquence des lettres comparée au français (/api/letters).
+// Page Lettres et mots : fréquence des lettres et longueur des mots, comparées au français (/api/letters).
 
 import { getJson } from "./api.js";
 import { chartCard, drawCharts } from "./chart-card.js";
 import { frequencyCard } from "./letters-frequency.js";
+import { lengthsCard, wordsCard } from "./letters-words.js";
 import { el, showEmptyPeriod } from "./states.js";
 
 // Les tables par jour connaissent la nature de session, pas l'application ni le clavier.
@@ -19,10 +20,18 @@ export async function renderLetters(view, ctx) {
     showEmptyPeriod(view, ctx);
     return;
   }
-  const [frenchLetters, englishLetters] = data.sources;
-  const notes = [`Références : ${frenchLetters} ; ${englishLetters}.`];
+  const [frenchLetters, englishLetters, frenchWords] = data.sources;
+  const notes = [
+    `Références : ${frenchLetters} ; ${englishLetters}.`,
+    `Référence française : ${frenchWords}. Ce français parlé a des mots un peu plus courts qu'un texte écrit.`,
+    `Référence française : ${frenchWords}.`,
+  ];
   const frequency = frequencyCard(data.letters);
-  const cards = [frequency].map((spec, i) =>
+  const cards = [
+    frequency,
+    wordsCard(data.words),
+    lengthsCard(data.wordLengths),
+  ].map((spec, i) =>
     chartCard({
       ...spec,
       footnote: [notes[i], data.dayTablesUnfiltered && unfiltered]

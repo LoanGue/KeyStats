@@ -1,4 +1,4 @@
-/* Page Lettres et mots : grille à trois colonnes, interrupteur de l'anglais. */
+/* Page Lettres et mots : grille à trois colonnes, interrupteur de l'anglais, carte des lettres par mot. */
 
 .letters-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6,11 +6,15 @@
 .letters-grid .letters-frequency {
   grid-column: span 3;
 }
+.letters-grid .letters-lengths {
+  grid-column: span 2;
+}
 @media (max-width: 860px) {
   .letters-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .letters-grid .letters-frequency {
+  .letters-grid .letters-frequency,
+  .letters-grid .letters-lengths {
     grid-column: auto;
   }
 }
@@ -36,4 +40,46 @@
   height: 16px;
   margin: 0;
   accent-color: var(--primary);
+}
+
+.letters-words {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 6px;
+}
+.letters-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.letters-value {
+  font-size: 32px;
+  font-weight: 600;
+}
+.letters-muted {
+  font-size: 13px;
+  color: var(--muted);
+}
+.letters-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+}
+.letters-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--chip);
+}
+.letters-line:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.letters-definition {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
 }
