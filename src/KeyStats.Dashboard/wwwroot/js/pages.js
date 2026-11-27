@@ -7,6 +7,7 @@
 // d'écrire, car une autre page a pu être ouverte entre-temps.
 // Une exception levée par render affiche l'état d'erreur avec « Réessayer ».
 
+import { renderActivity } from "./activity.js";
 import { renderKeyboard } from "./keyboard.js";
 import { renderLetters } from "./letters.js";
 import { renderOverview } from "./overview.js";
@@ -63,6 +64,7 @@ export const pages = {
     title: "Activité et origine",
     description: "Quand vous écrivez, et dans quelles applications.",
     filters: true,
+    render: renderActivity,
   },
   detail: {
     title: "Détail à la milliseconde",
