@@ -1,7 +1,6 @@
 // Vue d'ensemble : chiffres clés de la période et progression semaine par semaine (/api/overview).
 
 import { getJson } from "./api.js";
-import { loadCharts } from "./charts.js";
 import { renderProgress } from "./progress.js";
 import { el, showEmpty } from "./states.js";
 
@@ -96,10 +95,7 @@ function renderFigures(current, previous) {
 }
 
 export async function renderOverview(view, ctx) {
-  const [data, echarts] = await Promise.all([
-    getJson(`/api/overview${ctx.query}`),
-    loadCharts(),
-  ]);
+  const data = await getJson(`/api/overview${ctx.query}`);
   if (!ctx.isCurrent()) return;
   const { current, previous, weeks } = data;
   if (!current.keys && !current.sessions) {
@@ -111,7 +107,7 @@ export async function renderOverview(view, ctx) {
     );
     return;
   }
-  const progress = renderProgress(weeks, echarts);
+  const progress = renderProgress(weeks);
   view.replaceChildren(renderFigures(current, previous), progress.section);
   progress.attach();
 }
