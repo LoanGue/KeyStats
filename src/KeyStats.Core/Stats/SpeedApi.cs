@@ -53,7 +53,7 @@ public static class SpeedApi
         var (where, values) = filter.SessionWhere(filter.Range);
         using var cmd = db.Command(
             "SELECT start_ms, app_id, real_cpm, gross_cpm, peak_cpm, kind, typed, typos, end_ms - start_ms FROM session WHERE "
-            + where + $" ORDER BY start_ms DESC LIMIT {MaxSessions + 1}", values);
+            + where + $" ORDER BY start_ms DESC, id DESC LIMIT {MaxSessions + 1}", values);
         using var r = cmd.ExecuteReader();
         var list = new List<SpeedSession>();
         while (r.Read())
