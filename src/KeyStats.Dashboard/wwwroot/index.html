@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>KeyStats</title>
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/header.css">
   <script type="module" src="js/main.js"></script>
   <script src="app.js" defer></script>
 </head>
@@ -39,6 +40,19 @@
             <h1 id="page-title"></h1>
             <p id="page-description"></p>
           </div>
+          <div class="pills" role="status" aria-label="État de l'agent et des données">
+            <span id="agent-on" class="pill pill-ok" hidden><span class="dot"></span>Agent actif</span>
+            <span id="agent-off" class="pill pill-bad" hidden><span class="dot"></span>Agent arrêté</span>
+            <span class="pill-sep" aria-hidden="true"></span>
+            <span id="key-locked" class="pill pill-muted" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Données verrouillées</span>
+            <span id="key-open" class="pill pill-info" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>Données déverrouillées</span>
+          </div>
+        </div>
+        <div id="filters" class="filters" role="group" aria-label="Filtres globaux" hidden>
+          <div class="field"><span class="label" id="l-period">Période</span><div class="seg" data-filter="period" role="group" aria-labelledby="l-period"></div></div>
+          <label class="field"><span class="label">Application</span><select id="f-app"></select></label>
+          <div class="field"><span class="label" id="l-kind">Contenu</span><div class="seg" data-filter="kind" role="group" aria-labelledby="l-kind"></div></div>
+          <div class="field" id="device-field"><span class="label" id="l-device">Clavier</span><div class="seg" data-filter="device" role="group" aria-labelledby="l-device"></div></div>
         </div>
       </header>
       <div id="view" class="view"></div>
