@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Activité et origine page breaks the writing time
+  down by application. Opening an application lists its window titles once the
+  key is unlocked; while it is locked, the row offers Windows Hello or the
+  passphrase instead.
+
 - `KeyStats.Dashboard`: the Activité et origine page shows the writing time
   per day over the last twelve months as a calendar, and per hour and weekday
   over the period as a heatmap, both on a five-step ramp with a hidden table
