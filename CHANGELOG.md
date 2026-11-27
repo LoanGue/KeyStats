@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/overview` gives the key figures of the period
+  and of the previous one (keys, words, writing time, real speed, accuracy)
+  and the last 12 calendar weeks of speed, accuracy and writing time.
 - `KeyStats.Core`: the dashboard header filters (period, application, text
   kind, keyboard) are read from the request query by `StatsFilter`, with the
   previous period of the same length for comparisons. GET `/api/filters` lists
