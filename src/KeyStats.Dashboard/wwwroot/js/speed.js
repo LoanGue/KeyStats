@@ -3,6 +3,7 @@
 import { getJson } from "./api.js";
 import { chartCard, drawCharts } from "./chart-card.js";
 import { nf } from "./format.js";
+import { appsCard, hoursCard, weeksCard } from "./speed-breakdown.js";
 import {
   accuracyCard,
   distributionCard,
@@ -24,6 +25,9 @@ export async function renderSpeed(view, ctx) {
     sessionsCard(sessions),
     accuracyCard(sessions),
     distributionCard(sessions),
+    appsCard(sessions),
+    hoursCard(sessions),
+    weeksCard(data.weeks),
   ].map(chartCard);
   const grid = el("div", "speed-grid");
   grid.append(...cards.map((c) => c.section));
