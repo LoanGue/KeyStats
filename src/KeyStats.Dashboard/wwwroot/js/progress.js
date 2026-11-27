@@ -195,6 +195,8 @@ export function renderProgress(weeks) {
       } catch {
         // Sans ECharts, seule la courbe manque : les chiffres et le tableau restent.
         chartNode.classList.add("progress-missing");
+        chartNode.removeAttribute("role");
+        chartNode.removeAttribute("aria-label");
         chartNode.textContent =
           "La courbe n'a pas pu être affichée : le fichier vendor/echarts/echarts.min.js est introuvable.";
       }
