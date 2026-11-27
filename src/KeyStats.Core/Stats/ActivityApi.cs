@@ -12,11 +12,13 @@ public sealed record ActivityDay(string Day, long WritingMs);
 /// <param name="Name">Nom de l'exécutable.</param>
 public sealed record ActivityApp(int Id, string Name, long WritingMs);
 
-/// <param name="CalendarFrom">Lundi de la première des <see cref="ActivityApi.CalendarWeeks"/> semaines du calendrier.</param>
+/// <param name="CalendarFrom">Lundi de la première des <see cref="ActivityApi.WeekCount"/> semaines du calendrier.</param>
 /// <param name="Calendar">Jours du calendrier qui ont du temps d'écriture, dans l'ordre. Le calendrier ignore la période, pas les autres filtres.</param>
 /// <param name="Hours">
 /// Temps actif de la période par jour de la semaine (du lundi au dimanche) et heure locale (0 à 23). Une session à cheval sur
-/// plusieurs heures est répartie au prorata de sa durée.
+/// plusieurs heures est répartie au prorata de sa durée. Les heures et jours de la semaine sont ceux du fuseau actuel : après
+/// un changement de fuseau, une session passée peut y tomber un autre jour que dans <c>Calendar</c>, qui garde le jour
+/// local de la frappe. Chaque case est arrondie à la milliseconde, la somme peut différer de quelques millisecondes de celle des applis.
 /// </param>
 /// <param name="Apps">Applis de la période, de la plus utilisée à la moins utilisée.</param>
 public sealed record Activity(string From, string To, string CalendarFrom, IReadOnlyList<ActivityDay> Calendar,
@@ -31,7 +33,7 @@ public static class ActivityApi
     public const string Path = "/api/activity";
 
     /// <summary>53 semaines : les 12 derniers mois au complet, quel que soit le jour de la semaine.</summary>
-    public const int CalendarWeeks = 53;
+    public const int WeekCount = 53;
 
     /// <summary>Pas de la répartition par heure : un quart d'heure suit aussi les fuseaux décalés de 30 ou 45 min.</summary>
     private const long SliceMs = 900_000;
@@ -48,7 +50,7 @@ public static class ActivityApi
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(zone);
         ArgumentNullException.ThrowIfNull(filter);
-        var calendar = new CalendarWeeks(filter.Range.ToDay, CalendarWeeks);
+        var calendar = new CalendarWeeks(filter.Range.ToDay, WeekCount);
         var days = new List<ActivityDay>();
         Query(db, filter, calendar.Range, "day, TOTAL(active_ms)", " GROUP BY day ORDER BY day",
             r => days.Add(new ActivityDay(StatsFilter.Iso(r.GetInt32(0)), (long)r.GetDouble(1))));
@@ -84,7 +86,7 @@ public static class ActivityApi
         }
         for (long from = startMs; from < endMs;)
         {
-            long to = Math.Min(endMs, (Math.DivRem(from, SliceMs, out long r) - (r < 0 ? 1 : 0) + 1) * SliceMs);
+            long to = Math.Min(endMs, (from / SliceMs + 1) * SliceMs);
             Add(grid, zone, from, (double)activeMs * (to - from) / (endMs - startMs));
             from = to;
         }

@@ -71,6 +71,10 @@ public sealed class ActivityApiTests : IDisposable
         Assert.Equal([new ActivityApp(_code, "code.exe", 6 * Minute)], a.Apps);
         Assert.Equal(6 * Minute, a.Hours.Sum(d => d.Sum()));
         Assert.Equal([new ActivityDay("2026-11-27", 20 * Minute)], Read($"period=week&app={_word}&kind=prose").Calendar.TakeLast(1));
+        var other = Read("period=week&device=2");
+        Assert.Empty(other.Calendar);
+        Assert.Empty(other.Apps);
+        Assert.Equal(0, other.Hours.Sum(d => d.Sum()));
     }
 
     [Fact]
