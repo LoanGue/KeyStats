@@ -1,13 +1,9 @@
 // Courbe de progression semaine par semaine de la vue d'ensemble (vitesse, précision ou temps).
 
+import { chartFailed, describedBy, fillTable } from "./chart-card.js";
 import { loadCharts, mount, reducedMotion, token } from "./charts.js";
+import { nf, nf1 } from "./format.js";
 import { el } from "./states.js";
-
-const nf = new Intl.NumberFormat("fr-FR");
-const nf1 = new Intl.NumberFormat("fr-FR", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
 
 // Mesures de la courbe : valeur d'une semaine (null = aucune session), unité et légende.
 const measures = {
@@ -120,21 +116,15 @@ function chartOption(weeks, id) {
   };
 }
 
-/** Tableau masqué qui donne aux lecteurs d'écran les valeurs de la courbe. */
-function fillTable(table, weeks, m) {
-  const head = el("tr");
-  head.append(el("th", null, "Semaine"), el("th", null, m.label));
-  const rows = weeks.map((w) => {
+/** Valeurs de la courbe pour le tableau masqué des lecteurs d'écran. */
+const tableRows = (weeks, m) =>
+  weeks.map((w) => {
     const v = m.of(w);
-    const tr = el("tr");
-    tr.append(
-      el("td", null, `S${isoWeek(w.monday)}${w.partial ? " (en cours)" : ""}`),
-      el("td", null, v == null ? "aucune session" : m.format(v)),
-    );
-    return tr;
+    return [
+      `S${isoWeek(w.monday)}${w.partial ? " (en cours)" : ""}`,
+      v == null ? "aucune session" : m.format(v),
+    ];
   });
-  table.replaceChildren(head, ...rows);
-}
 
 /** Section de la courbe ; attach() la trace une fois la section dans la page. */
 export function renderProgress(weeks) {
@@ -147,13 +137,7 @@ export function renderProgress(weeks) {
   pills.setAttribute("role", "group");
   pills.setAttribute("aria-label", "Mesure affichée");
   const chartNode = el("div", "progress-chart");
-  chartNode.setAttribute("role", "img");
-  // Masqué dans un bloc : un tableau ne se réduit pas sous la largeur de son contenu.
-  const hidden = el("div", "sr-only");
-  const table = el("table");
-  table.id = "progress-values";
-  hidden.append(table);
-  chartNode.setAttribute("aria-describedby", table.id);
+  const { hidden, table } = describedBy(chartNode);
   head.append(title, pills);
   section.append(head, chartNode, hidden);
 
@@ -170,7 +154,7 @@ export function renderProgress(weeks) {
     );
     for (const b of pills.children)
       b.setAttribute("aria-pressed", String(b.dataset.measure === measure));
-    fillTable(table, weeks, m);
+    fillTable(table, ["Semaine", m.label], tableRows(weeks, m));
     if (chart) chart.setOption(chartOption(weeks, measure), true);
   }
   for (const [id, m] of Object.entries(measures)) {
@@ -194,11 +178,10 @@ export function renderProgress(weeks) {
           chart = mount(echarts, chartNode, chartOption(weeks, measure));
       } catch {
         // Sans ECharts, seule la courbe manque : les chiffres et le tableau restent.
-        chartNode.classList.add("progress-missing");
-        chartNode.removeAttribute("role");
-        chartNode.removeAttribute("aria-label");
-        chartNode.textContent =
-          "La courbe n'a pas pu être affichée : le fichier vendor/echarts/echarts.min.js est introuvable.";
+        chartFailed(
+          chartNode,
+          "La courbe n'a pas pu être affichée : le fichier vendor/echarts/echarts.min.js est introuvable.",
+        );
       }
     },
   };

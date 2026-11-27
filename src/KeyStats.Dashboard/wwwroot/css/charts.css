@@ -1,0 +1,80 @@
+/* Cartes de graphique communes aux pages : en-tête, légende, zone ECharts, message sans graphique. */
+
+.chart-card {
+  padding: 18px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.chart-card h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.chart-head p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.chart {
+  height: 260px;
+  min-width: 0;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--muted-strong);
+}
+.chart-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.swatch.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.swatch.line {
+  width: 16px;
+  height: 3px;
+}
+
+/* Graphique impossible à tracer, ou sans données : un message à sa place. */
+.card .chart-missing {
+  display: grid;
+  place-items: center;
+  height: auto;
+  min-height: 120px;
+  margin: 0;
+  padding: 32px 16px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Lisible par les lecteurs d'écran seulement. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
