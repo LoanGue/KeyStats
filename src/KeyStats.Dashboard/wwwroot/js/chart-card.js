@@ -49,6 +49,17 @@ export function swatch(color, shape) {
   return node;
 }
 
+/** Lignes « libellé … valeur » d'une carte de chiffres, séparées par un filet : [libellé, valeur]. */
+export function cardLines(items) {
+  const box = el("div", "card-lines");
+  for (const [label, value] of items) {
+    const row = el("div", "card-line");
+    row.append(el("span", null, label), el("span", "card-line-value", value));
+    box.append(row);
+  }
+  return box;
+}
+
 /** Légende : [libellé, forme (dot, line, square), jeton CSS de la couleur]. */
 export function legend(items) {
   const box = el("div", "chart-legend");
