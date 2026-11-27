@@ -1,9 +1,10 @@
 // Page Clavier : carte de chaleur AZERTY du portable, pavé numérique compris (/api/keyboard),
-// et détail de la touche choisie.
+// détail de la touche choisie et chiffres tapés sur la rangée du haut ou au pavé.
 
 import { getJson } from "./api.js";
 import { chartCard, drawCharts } from "./chart-card.js";
 import { detailCard } from "./keyboard-detail.js";
+import { digitsCard } from "./keyboard-digits.js";
 import { heatLegend, heatmap } from "./keyboard-heatmap.js";
 import { keyName, keyOfCode } from "./keyboard-layout.js";
 import { measures, prepare } from "./keyboard-measures.js";
@@ -139,7 +140,11 @@ export async function renderKeyboard(view, ctx) {
     markSelected(grid, code);
     showDetail(state, data, ctx, code, true);
   };
-  grid.append(heatCard(data, state, pick), state.detail);
+  grid.append(
+    heatCard(data, state, pick),
+    state.detail,
+    chartCard(digitsCard(data)).section,
+  );
   view.replaceChildren(grid, state.live);
   if (state.selected != null)
     await showDetail(state, data, ctx, state.selected);
