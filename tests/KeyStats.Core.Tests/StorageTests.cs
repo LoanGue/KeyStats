@@ -164,6 +164,32 @@ public sealed class StorageTests
     }
 
     [Fact]
+    public void Longueurs_de_mots_rangees_sous_la_nature_de_la_session()
+    {
+        using var tmp = new TempDb();
+        var stats = Typist.Analyze(new Typist().Type("le chat dort sur le canapé du salon depuis ce matin ").ToArray());
+        new StatsWriter(tmp.Db).Write(stats);
+
+        long kind = tmp.Count("SELECT kind FROM session");
+        Assert.Equal(11, tmp.Count($"SELECT sum(n) FROM day_wordlen WHERE kind = {kind}"));
+        Assert.Equal(4, tmp.Count($"SELECT n FROM day_wordlen WHERE kind = {kind} AND len = 2"));
+        Assert.Equal(0, tmp.Count($"SELECT count(*) FROM day_wordlen WHERE kind <> {kind}"));
+    }
+
+    [Fact]
+    public void Migration_2_garde_les_longueurs_de_mots_sans_nature()
+    {
+        using var tmp = new TempDb();
+        tmp.Db.Exec("DROP TABLE day_wordlen");
+        tmp.Db.Exec("CREATE TABLE day_wordlen (day INTEGER NOT NULL, len INTEGER NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, len)) WITHOUT ROWID");
+        tmp.Db.Exec("INSERT INTO day_wordlen VALUES (20261102, 4, 7)");
+        tmp.Db.Exec("PRAGMA user_version = 1");
+
+        Assert.Equal(Schema.CurrentVersion, tmp.Reopen().UserVersion);
+        Assert.Equal(7, tmp.Count("SELECT n FROM day_wordlen WHERE day = 20261102 AND kind = 0 AND len = 4"));
+    }
+
+    [Fact]
     public void Histogrammes_fusionnes_et_non_ecrases()
     {
         using var tmp = new TempDb();

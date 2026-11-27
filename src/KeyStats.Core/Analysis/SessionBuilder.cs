@@ -308,7 +308,7 @@ public sealed class SessionBuilder : ICorrectionSink
         }
         for (int len = 1; len <= MaxWordLength; len++)
         {
-            if (_wordLengths[len] > 0) _stats.AddWordLength(day, len, _wordLengths[len]);
+            if (_wordLengths[len] > 0) _stats.AddWordLength(day, r.Kind, len, _wordLengths[len]);
         }
 
         // Les fautes ne sont fiables qu'en prose : dans un éditeur de code, l'auto-complétion

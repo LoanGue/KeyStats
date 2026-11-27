@@ -43,7 +43,7 @@ public sealed class StatsAccumulator
     internal List<SessionRecord> Sessions { get; } = new();
     internal Dictionary<(int Day, SessionKind Kind, char Ch), int> Chars { get; } = new();
     internal Dictionary<(int Day, char A, char B), BigramTotal> Bigrams { get; } = new();
-    internal Dictionary<(int Day, int Length), int> WordLengths { get; } = new();
+    internal Dictionary<(int Day, SessionKind Kind, int Length), int> WordLengths { get; } = new();
     internal Dictionary<(int Day, ShortcutModifiers Mods, ushort Key), int> Shortcuts { get; } = new();
     internal Dictionary<(int Day, char Typed, char Wanted, ErrorType Type), int> ErrorPairs { get; } = new();
     internal Dictionary<(int Day, DayMetric Metric), long> Metrics { get; } = new();
@@ -140,8 +140,8 @@ public sealed class StatsAccumulator
     public void AddBigramError(int day, char a, char b) =>
         CollectionsMarshal.GetValueRefOrAddDefault(Bigrams, (day, a, b), out _).Errors++;
 
-    public void AddWordLength(int day, int length, int n = 1) =>
-        CollectionsMarshal.GetValueRefOrAddDefault(WordLengths, (day, length), out _) += n;
+    public void AddWordLength(int day, SessionKind kind, int length, int n = 1) =>
+        CollectionsMarshal.GetValueRefOrAddDefault(WordLengths, (day, kind, length), out _) += n;
 
     public void AddShortcut(int day, ShortcutModifiers mods, ushort key)
     {

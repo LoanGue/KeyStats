@@ -165,10 +165,10 @@ public sealed class StatsWriter
     {
         if (s.WordLengths.Count == 0) return;
         using var cmd = Prepare(
-            "INSERT INTO day_wordlen(day, len, n) VALUES($d, $l, $n) ON CONFLICT DO UPDATE SET n = n + excluded.n",
-            "$d", "$l", "$n");
-        foreach (var ((day, len), n) in s.WordLengths)
-            Exec(cmd, day, len, n);
+            "INSERT INTO day_wordlen(day, kind, len, n) VALUES($d, $k, $l, $n) ON CONFLICT DO UPDATE SET n = n + excluded.n",
+            "$d", "$k", "$l", "$n");
+        foreach (var ((day, kind, len), n) in s.WordLengths)
+            Exec(cmd, day, (int)kind, len, n);
     }
 
     private void WriteShortcuts(StatsAccumulator s)

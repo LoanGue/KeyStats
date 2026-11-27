@@ -7,7 +7,7 @@ namespace KeyStats.Core.Storage;
 /// </summary>
 public static class Schema
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     internal static readonly string[] Migrations =
     [
@@ -197,6 +197,22 @@ public static class Schema
             data BLOB NOT NULL,
             PRIMARY KEY (day, hist, sub)
         ) WITHOUT ROWID;
+        """,
+
+        // Version 2 : longueurs de mots par nature de session (prose, code). Les lignes d'avant n'en ont
+        // pas : elles passent sous kind = 0 (SessionKind.None), comptées dans les totaux, ni en prose ni en
+        // code, jusqu'au recalcul depuis le brut.
+        """
+        CREATE TABLE day_wordlen_v2 (
+            day  INTEGER NOT NULL,
+            kind INTEGER NOT NULL,
+            len  INTEGER NOT NULL,
+            n    INTEGER NOT NULL,
+            PRIMARY KEY (day, kind, len)
+        ) WITHOUT ROWID;
+        INSERT INTO day_wordlen_v2(day, kind, len, n) SELECT day, 0, len, n FROM day_wordlen;
+        DROP TABLE day_wordlen;
+        ALTER TABLE day_wordlen_v2 RENAME TO day_wordlen;
         """,
     ];
 }
