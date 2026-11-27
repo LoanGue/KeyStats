@@ -212,6 +212,21 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
+    public void Chiffres_comptes_selon_la_rangee_du_haut_ou_le_pave()
+    {
+        var stats = new Typist().Reset(LockKeys.NumLock).Type("112").Key(KeyCode.Num1).Key(KeyCode.Num0)
+            .AltCode("0156").Analyze();
+
+        Assert.Equal(2, Metric(stats, DayMetric.TopRowDigit0 + 1));
+        Assert.Equal(1, Metric(stats, DayMetric.TopRowDigit0 + 2));
+        Assert.Equal(1, Metric(stats, DayMetric.NumpadDigit0 + 1));
+        Assert.Equal(1, Metric(stats, DayMetric.NumpadDigit0));
+        // Les chiffres d'un code Alt ne sont pas tapés : ils composent un autre caractère.
+        Assert.Equal(5, Enumerable.Range(0, 10).Sum(d =>
+            Metric(stats, DayMetric.TopRowDigit0 + d) + Metric(stats, DayMetric.NumpadDigit0 + d)));
+    }
+
+    [Fact]
     public void Relachement_de_Win_perdu_puis_remise_a_zero_pas_de_faux_raccourcis()
     {
         var stats = new Typist().Down(KeyCode.LeftWin).Reset().Type("ceci est du texte").Analyze();
