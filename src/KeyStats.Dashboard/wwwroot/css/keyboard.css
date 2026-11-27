@@ -63,6 +63,18 @@
 .key.strong {
   color: var(--on-primary);
 }
+.key[data-code] {
+  cursor: pointer;
+}
+.key.selected {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--text);
+}
+.key:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 
 .keyboard-body {
   display: flex;
@@ -106,4 +118,68 @@
   width: 22px;
   height: 14px;
   border-radius: 3px;
+}
+
+.key-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.key-cap {
+  min-width: 56px;
+  height: 56px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 3px;
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 600;
+  background: var(--surface);
+}
+.key-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+.key-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.key-tile-label,
+.key-tile-caption {
+  font-size: 12px;
+  color: var(--muted);
+}
+.key-tile-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.key-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--muted);
+}
+.key-detail-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.key-detail-none {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-strong);
 }
