@@ -212,6 +212,24 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
+    public void Verr_num_presse_dans_une_appli_exclue_reste_suivi()
+    {
+        var t = new Typist().Reset(LockKeys.None).Key(KeyCode.NumLock);
+        var stats = new StatsAccumulator(new LocalDayClock(TimeZoneInfo.Utc));
+        var analyzer = new Analyzer(stats);
+        analyzer.SetFocus(new FocusInfo(Typist.Start - 1000, 1, 0, null, FocusState.NewWindow | FocusState.Excluded));
+        foreach (var e in t.Events) analyzer.Process(e);
+
+        int from = t.Events.Count;
+        analyzer.SetFocus(new FocusInfo(t.Ms, 2, 0, null, FocusState.NewWindow));
+        t.Key(KeyCode.Num1).Key(KeyCode.Num2);
+        for (int i = from; i < t.Events.Count; i++) analyzer.Process(t.Events[i]);
+        analyzer.EndAll();
+
+        Assert.Equal(2, Metric(stats, DayMetric.CharPresses));
+    }
+
+    [Fact]
     public void Relachement_de_Win_perdu_puis_remise_a_zero_pas_de_faux_raccourcis()
     {
         var stats = new Typist().Down(KeyCode.LeftWin).Reset().Type("ceci est du texte").Analyze();
