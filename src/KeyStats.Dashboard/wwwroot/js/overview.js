@@ -56,7 +56,7 @@ const figures = [
     note: () => "mots/min nets",
     delta: (t, p) => {
       if (t.realWpm == null || p.realWpm == null) return null;
-      // \u00c9cart des valeurs affich\u00e9es : le signe suit l'arrondi (+0,4 donne \u00b10).
+      // Écart des valeurs affichées : le signe suit l'arrondi (+0,4 donne ±0).
       const gap = Math.round(t.realWpm) - Math.round(p.realWpm);
       return signed(gap, `${nf.format(Math.abs(gap))}\u00a0mots/min`);
     },
