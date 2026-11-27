@@ -55,6 +55,31 @@ public sealed class CapitalShiftTests
     }
 
     [Fact]
+    public void Deux_touches_Maj_enfoncees_comptent_comme_Maj_opposee()
+    {
+        var stats = new Typist().Combo(KeyCode.LeftShift, KeyCode.RightShift, KeyOf('a')).Analyze();
+        Assert.Equal(1, Metric(stats, DayMetric.ShiftOppositeCapitals));
+        Assert.Equal(0, Metric(stats, DayMetric.ShiftSameSideCapitals));
+    }
+
+    [Theory]
+    [InlineData(FocusState.Excluded)]
+    [InlineData(FocusState.Secret)]
+    public void Majuscules_d_une_appli_exclue_ou_d_un_mot_de_passe_ne_sont_pas_comptees(FocusState state)
+    {
+        var t = new Typist().Type("Pomme").Key(KeyCode.CapsLock).Type("kiwi");
+        var stats = new StatsAccumulator(new LocalDayClock(TimeZoneInfo.Utc));
+        var analyzer = new Analyzer(stats);
+        analyzer.SetFocus(new FocusInfo(Typist.Start - 1000, 1, 0, null, FocusState.NewWindow | state));
+        foreach (var e in t.Events) analyzer.Process(e);
+        analyzer.EndAll();
+
+        long capitals = Metric(stats, DayMetric.ShiftOppositeCapitals) + Metric(stats, DayMetric.ShiftSameSideCapitals)
+            + Metric(stats, DayMetric.CapsLockCapitals);
+        Assert.Equal(0, capitals);
+    }
+
+    [Fact]
     public void Verr_Maj_pressee_dans_une_appli_exclue_reste_suivie()
     {
         var t = new Typist().Key(KeyCode.CapsLock);
