@@ -84,10 +84,16 @@ public sealed class StatsAccumulator
         AddMetric(_clock.DayKey(ms), DayMetric.CharsTyped, n);
     }
 
-    public void AddBackspace(long ms, bool word)
+    /// <summary>
+    /// Un retour arrière. <paramref name="extra"/> : 1 pour une répétition de l'appui maintenu, ou les
+    /// caractères effacés par Ctrl+Retour arrière.
+    /// </summary>
+    public void AddBackspace(long ms, bool word, int extra)
     {
         Minute(LocalDayClock.MinuteOf(ms)).Backspaces++;
-        AddMetric(_clock.DayKey(ms), word ? DayMetric.WordBackspaces : DayMetric.Backspaces, 1);
+        int day = _clock.DayKey(ms);
+        AddMetric(day, word ? DayMetric.WordBackspaces : DayMetric.Backspaces, 1);
+        if (extra > 0) AddMetric(day, word ? DayMetric.WordBackspaceChars : DayMetric.BackspaceRepeats, extra);
     }
 
     public void AddClick(long ms)

@@ -108,6 +108,10 @@ public enum DayMetric
     WordDeletes = 41,
     DetectionDelaySumMs = 42,
     DetectionDelayCount = 43,
+    /// <summary>Retours arrière répétés par l'appui maintenu (un caractère chacun).</summary>
+    BackspaceRepeats = 44,
+    /// <summary>Caractères effacés par Ctrl+Retour arrière.</summary>
+    WordBackspaceChars = 45,
 }
 
 /// <summary>Histogrammes journaliers (table <c>day_hist</c>). Valeurs enregistrées en base.</summary>
