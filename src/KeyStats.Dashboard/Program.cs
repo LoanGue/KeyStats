@@ -34,6 +34,7 @@ internal static class Program
         LettersApi.Register(router, stats);
         RhythmApi.Register(router, stats);
         ActivityApi.Register(router, stats, session);
+        ShortcutsApi.Register(router, stats);
         using var form = new DashboardForm(router, Path.Combine(dataDir, "webview"));
         // La clé privée ne survit pas à la fenêtre.
         form.FormClosed += (_, _) => session.Lock();
