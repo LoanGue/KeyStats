@@ -125,6 +125,18 @@ public sealed class KeyboardApiTests : IDisposable
     }
 
     [Fact]
+    public void Caracteres_doubles_par_le_pave_rattaches_a_aucune_touche()
+    {
+        AddChar(20261126, SessionKind.Prose, '/', 50);
+        AddPair(20261126, '/', 'a', ErrorType.Substitution, 5);
+        AddBigram(20261126, 'a', '/', LogScale.BigramLatency.Bucket(200), 5);
+        AddBigram(20261126, 'a', '1', LogScale.BigramLatency.Bucket(200), 5);
+
+        var k = Read("period=week");
+        Assert.DoesNotContain(k.Keys, x => x.Code is KeyCode.NumDivide or 0x34 or 0x02 or KeyCode.Num1);
+    }
+
+    [Fact]
     public void Chiffres_de_la_rangee_du_haut_et_du_pave()
     {
         var digits = Read("period=week").Digits;

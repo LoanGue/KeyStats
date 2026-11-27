@@ -39,10 +39,20 @@ internal static class KeyboardTables
         using var r = cmd.ExecuteReader();
         while (r.Read())
         {
-            if (!LayoutTable.FrenchAzerty.TryFindKey((char)r.GetInt32(0), out ushort key, out _)) continue;
+            if (!TryFindKey((char)r.GetInt32(0), out ushort key)) continue;
             map[key] = map.GetValueOrDefault(key) + (long)r.GetDouble(1);
         }
         return map;
+    }
+
+    /// <summary>
+    /// Touche du caractère, si une seule le produit : un chiffre ou un opérateur doublé par le pavé ne se rattache à
+    /// aucune des deux touches.
+    /// </summary>
+    private static bool TryFindKey(char c, out ushort key)
+    {
+        key = 0;
+        return LayoutTable.FrenchAzerty.HasSingleKey(c) && LayoutTable.FrenchAzerty.TryFindKey(c, out key, out _);
     }
 
     /// <summary>Durée d'appui médiane par touche (<c>day_hist</c>, sous-clé = code de touche).</summary>
@@ -67,7 +77,7 @@ internal static class KeyboardTables
         {
             while (r.Read())
             {
-                if (LayoutTable.FrenchAzerty.TryFindKey((char)r.GetInt32(0), out ushort key, out _))
+                if (TryFindKey((char)r.GetInt32(0), out ushort key))
                     HistogramCodec.AddTo(KeyStatsDb.Blob(r, 1), Counts(sums, key));
             }
         }

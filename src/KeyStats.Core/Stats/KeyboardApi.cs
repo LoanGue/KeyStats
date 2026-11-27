@@ -7,9 +7,11 @@ namespace KeyStats.Core.Stats;
 
 /// <param name="Code">Touche physique (<see cref="KeyCode"/>).</param>
 /// <param name="Presses">Appuis, répétitions automatiques non comprises.</param>
-/// <param name="ErrorRate">Fautes de prose sur le caractère que produit la touche, rapportées aux caractères de prose qu'elle a tapés ; null sans prose.</param>
+/// <param name="ErrorRate">Fautes de prose sur le caractère que produit la touche, rapportées aux caractères de prose qu'elle a tapés ; null sans prose. Null aussi pour les chiffres et opérateurs que le pavé double : le caractère ne dit
+/// pas quelle touche l'a tapé.</param>
 /// <param name="HoldMs">Durée d'appui médiane ; null sans mesure.</param>
-/// <param name="DelayMs">Délai médian entre le caractère précédent et celui de cette touche ; null sans mesure.</param>
+/// <param name="DelayMs">Délai médian entre le caractère précédent et celui de cette touche ; null sans mesure, et pour les
+/// caractères que le pavé double.</param>
 public sealed record KeyboardKey(int Code, long Presses, double? ErrorRate, double? HoldMs, double? DelayMs);
 
 /// <param name="TopRow">Chiffres tapés sur la rangée du haut.</param>
