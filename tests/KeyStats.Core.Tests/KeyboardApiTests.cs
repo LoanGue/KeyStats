@@ -132,4 +132,36 @@ public sealed class KeyboardApiTests : IDisposable
         Assert.Equal(new KeyboardDigit(0, 0, 3), digits[0]);
         Assert.Equal(new KeyboardDigit(1, 6, 2), digits[1]);
     }
+
+    [Fact]
+    public void Appuis_minute_par_minute_du_dernier_jour_utilise()
+    {
+        var m = KeyboardApi.Minutes(_temp.Db, Clock, Filter("period=week"), KeyE);
+        Assert.Equal((KeyE, "2026-11-26"), (m.Code, m.Day));
+        Assert.Equal([new KeyMinute(600, 30), new KeyMinute(601, 10)], m.Minutes);
+
+        var external = KeyboardApi.Minutes(_temp.Db, Clock, Filter($"period=week&device={_external}"), KeyE);
+        Assert.Equal([new KeyMinute(601, 10)], external.Minutes);
+    }
+
+    [Fact]
+    public void Touche_jamais_utilisee_sur_la_periode()
+    {
+        var m = KeyboardApi.Minutes(_temp.Db, Clock, Filter("period=day"), KeyE);
+        Assert.Null(m.Day);
+        Assert.Empty(m.Minutes);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("?key=0")]
+    [InlineData("?key=abc")]
+    [InlineData("?key=99999")]
+    public void Minutes_sans_touche_valide_refusees(string query)
+    {
+        var router = new WebRouter(Path.GetTempPath());
+        KeyboardApi.Register(router, new StatsContext(_temp.Db, () => 0, TimeZoneInfo.Utc));
+        Assert.Equal(400, router.Handle("GET", WebRouter.Origin + KeyboardApi.MinutesPath + query).Status);
+        Assert.Equal(200, router.Handle("GET", WebRouter.Origin + KeyboardApi.MinutesPath + "?key=18").Status);
+    }
 }
