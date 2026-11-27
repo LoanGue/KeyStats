@@ -1,7 +1,7 @@
 // Courbe de progression semaine par semaine de la vue d'ensemble (vitesse, précision ou temps).
 
 import { chartFailed, describedBy, fillTable } from "./chart-card.js";
-import { loadCharts, mount, reducedMotion, token } from "./charts.js";
+import { baseOption, loadCharts, mount, token, valueAxis } from "./charts.js";
 import { nf, nf1 } from "./format.js";
 import { el } from "./states.js";
 
@@ -45,8 +45,6 @@ function isoWeek(monday) {
 function chartOption(weeks, id) {
   const m = measures[id];
   const color = token("--chart");
-  const muted = token("--muted");
-  const grid = token("--border");
   const values = weeks.map((w) => m.of(w));
   const last = weeks.length - 1;
   const partial = weeks[last].partial;
@@ -59,31 +57,21 @@ function chartOption(weeks, id) {
   });
   const labels = weeks.map((w) => `S${isoWeek(w.monday)}`);
   const line = { color, width: 2.5 };
+  const base = baseOption();
   return {
-    animation: !reducedMotion(),
-    grid: { left: 8, right: 16, top: 32, bottom: 8, containLabel: true },
-    textStyle: { fontFamily: token("--font") },
+    ...base,
     xAxis: {
       type: "category",
       data: labels,
       boundaryGap: false,
       axisLine: { lineStyle: { color: token("--border-strong") } },
       axisTick: { show: false },
-      axisLabel: { color: muted, fontSize: 12 },
+      axisLabel: { color: token("--muted"), fontSize: 12 },
     },
-    yAxis: {
-      type: "value",
-      name: m.unit,
-      nameTextStyle: { color: muted, fontSize: 12, align: "left" },
-      scale: id !== "temps",
-      splitLine: { lineStyle: { color: grid } },
-      axisLabel: { color: muted, fontSize: 12, formatter: (v) => nf.format(v) },
-    },
+    yAxis: valueAxis({ name: m.unit, scale: id !== "temps" }),
     tooltip: {
+      ...base.tooltip,
       trigger: "axis",
-      backgroundColor: token("--text"),
-      borderWidth: 0,
-      textStyle: { color: token("--on-primary"), fontSize: 12 },
       formatter: (items) => {
         const i = items[0].dataIndex;
         const v = values[i];
