@@ -16,6 +16,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/activity/day?day=` gives one local day minute by
+  minute: keys per minute, local hour marks (DST days included), the finished
+  periods when the session was locked or asleep or capture was paused, and the
+  writing, pause and unobserved totals. Without `day`, the last written day;
+  links to the previous and next written days. The time the agent is not
+  running is not recorded yet and counts as pause (#332).
+
 - `KeyStats.Dashboard`: GET and POST `/api/settings` read and edit the
   detection thresholds, the excluded applications and the live counter switch
   in `settings.json`. Values are checked against the agent's own bounds before
