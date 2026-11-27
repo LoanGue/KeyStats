@@ -46,6 +46,8 @@ All notable changes to this project are documented here. The format follows
 - `KeyStats.Dashboard`: Fautes page, cost of corrections (collateral deletions,
   KSPC, keys lost) and the share of characters deleted by single, held and
   Ctrl+Backspace.
+- `KeyStats.Dashboard`: Rythme page, first card: the bigrams that cost the most
+  (frequency × delay over the median), sortable by cost or by error rate.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
