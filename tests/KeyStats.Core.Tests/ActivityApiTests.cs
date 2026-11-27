@@ -94,6 +94,16 @@ public sealed class ActivityApiTests : IDisposable
     }
 
     [Fact]
+    public void Heure_repetee_au_passage_a_l_heure_d_hiver()
+    {
+        // Paris, 25 octobre 2026 : 3 h d'été redevient 2 h. De 0 h 30 à 1 h 30 UTC, il est deux fois 2 h 30 à 3 h, puis 2 h à 2 h 30.
+        Add(20261025, At(20261025, 0, 30), 60 * Minute, 60 * Minute, _word, SessionKind.Prose);
+        var hours = Read("period=year", TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris")).Hours;
+        Assert.Equal(60 * Minute, hours[6][2]);
+        Assert.Equal((0, 0), (hours[6][1], hours[6][3]));
+    }
+
+    [Fact]
     public void Heures_locales_du_fuseau_y_compris_decale_d_une_demi_heure()
     {
         var india = TimeZoneInfo.CreateCustomTimeZone("IST", TimeSpan.FromMinutes(330), "IST", "IST");
