@@ -10,6 +10,7 @@
 import { renderKeyboard } from "./keyboard.js";
 import { renderLetters } from "./letters.js";
 import { renderOverview } from "./overview.js";
+import { renderRhythm } from "./rhythm.js";
 import { renderSpeed } from "./speed.js";
 import { renderTypos } from "./typos.js";
 
@@ -45,6 +46,7 @@ export const pages = {
     description:
       "L'enchaînement des touches : ce qui vous ralentit, comment vous tenez les touches, quels doigts travaillent.",
     filters: true,
+    render: renderRhythm,
   },
   lettres: {
     title: "Lettres et mots",
