@@ -339,6 +339,7 @@ public sealed class Analyzer
         {
             int day = _stats.DayKey(ms);
             _stats.AddMetric(day, DayMetric.CharPresses, 1);
+            if (action == TextAction.Char && CapitalShift.Classify(_down, _capsLock, k, c) is { } capital) _stats.AddMetric(day, capital, 1);
             if (_textDownCount > 0)
             {
                 overlap = true;

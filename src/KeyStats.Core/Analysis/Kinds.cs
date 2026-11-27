@@ -112,6 +112,13 @@ public enum DayMetric
     BackspaceRepeats = 44,
     /// <summary>Caractères effacés par Ctrl+Retour arrière ; minorant, un appui sur un tampon inconnu compte pour un.</summary>
     WordBackspaceChars = 45,
+
+    /// <summary>Majuscules tapées avec la touche Maj de l'autre main que la lettre (doigté AZERTY standard).</summary>
+    ShiftOppositeCapitals = 50,
+    /// <summary>Majuscules tapées avec la touche Maj du même côté que la lettre.</summary>
+    ShiftSameSideCapitals = 51,
+    /// <summary>Majuscules tapées sous Verr. Maj, sans touche Maj.</summary>
+    CapsLockCapitals = 52,
 }
 
 /// <summary>Histogrammes journaliers (table <c>day_hist</c>). Valeurs enregistrées en base.</summary>
