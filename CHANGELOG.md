@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: ECharts 6.1.0 (Apache-2.0) is vendored under
+  `wwwroot/vendor/echarts/` for the charts, served locally like the rest of
+  the page.
 - `KeyStats.Core`: GET `/api/overview` gives the key figures of the period
   and of the previous one (keys, words, writing time, real speed, accuracy)
   and the last 12 calendar weeks of speed, accuracy and writing time.
