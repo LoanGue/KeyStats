@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Activité et origine page shows the writing time
+  per day over the last twelve months as a calendar, and per hour and weekday
+  over the period as a heatmap, both on a five-step ramp with a hidden table
+  for screen readers.
+
 - `KeyStats.Core`: GET `/api/activity/titles?target=` gives the writing time
   of one application per window title, the ten most used decrypted, the rest
   and the untitled time summed. It answers 403 while the key is locked; titles
