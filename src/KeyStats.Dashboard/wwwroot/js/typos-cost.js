@@ -1,7 +1,7 @@
 // Cartes de la page Fautes sur le coût des corrections et la manière d'effacer.
 
 import { nf, nf1, pct } from "./format.js";
-import { swatch } from "./chart-card.js";
+import { cardLines, swatch } from "./chart-card.js";
 import { el } from "./states.js";
 import { stack } from "./typos-correction.js";
 
@@ -18,12 +18,6 @@ function tile(label, value, caption) {
     el("span", "typos-tile-caption", caption),
   );
   return box;
-}
-
-function line(label, value) {
-  const row = el("div", "typos-cost-line");
-  row.append(el("span", null, label), el("span", "typos-muted", value));
-  return row;
 }
 
 export function costCard(cost) {
@@ -50,14 +44,13 @@ export function costCard(cost) {
       "touches par caractère conservé ; 1,00 = aucune touche perdue",
     ),
   );
-  const lines = el("div", "typos-cost-lines");
-  lines.append(
-    line("Fautes corrigées", nf.format(cost.typos)),
-    line(
+  const lines = cardLines([
+    ["Fautes corrigées", nf.format(cost.typos)],
+    [
       "Touches perdues en corrections",
       `${nf.format(cost.lostKeys)} · ${pct(cost.lostKeys / cost.keys)} du total`,
-    ),
-  );
+    ],
+  ]);
   const body = el("div", "typos-cost");
   body.append(tiles, lines);
   return { ...card, body };

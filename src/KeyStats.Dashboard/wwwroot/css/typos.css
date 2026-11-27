@@ -251,22 +251,6 @@
   font-size: 12px;
   color: var(--muted);
 }
-.typos-cost-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--muted-strong);
-}
-.typos-cost-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-.typos-cost-line + .typos-cost-line {
-  padding-top: 10px;
-  border-top: 1px solid var(--chip);
-}
 .typos-ways {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

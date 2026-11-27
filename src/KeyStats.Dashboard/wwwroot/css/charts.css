@@ -116,3 +116,24 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Lignes « libellé … valeur » d'une carte de chiffres (cardLines). */
+.card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted-strong);
+}
+.card-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card-line + .card-line {
+  padding-top: 10px;
+  border-top: 1px solid var(--chip);
+}
+.card-line-value {
+  color: var(--muted);
+}
