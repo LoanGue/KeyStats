@@ -1,6 +1,6 @@
 // Courbe de progression semaine par semaine de la vue d'ensemble (vitesse, précision ou temps).
 
-import { mount, reducedMotion, token } from "./charts.js";
+import { loadCharts, mount, reducedMotion, token } from "./charts.js";
 import { el } from "./states.js";
 
 const nf = new Intl.NumberFormat("fr-FR");
@@ -46,7 +46,8 @@ function isoWeek(monday) {
   );
 }
 
-function chartOption(weeks, m) {
+function chartOption(weeks, id) {
+  const m = measures[id];
   const color = token("--chart");
   const muted = token("--muted");
   const grid = token("--border");
@@ -78,7 +79,7 @@ function chartOption(weeks, m) {
       type: "value",
       name: m.unit,
       nameTextStyle: { color: muted, fontSize: 12, align: "left" },
-      scale: measure !== "temps",
+      scale: id !== "temps",
       splitLine: { lineStyle: { color: grid } },
       axisLabel: { color: muted, fontSize: 12, formatter: (v) => nf.format(v) },
     },
@@ -119,8 +120,24 @@ function chartOption(weeks, m) {
   };
 }
 
+/** Tableau masqué qui donne aux lecteurs d'écran les valeurs de la courbe. */
+function fillTable(table, weeks, m) {
+  const head = el("tr");
+  head.append(el("th", null, "Semaine"), el("th", null, m.label));
+  const rows = weeks.map((w) => {
+    const v = m.of(w);
+    const tr = el("tr");
+    tr.append(
+      el("td", null, `S${isoWeek(w.monday)}${w.partial ? " (en cours)" : ""}`),
+      el("td", null, v == null ? "aucune session" : m.format(v)),
+    );
+    return tr;
+  });
+  table.replaceChildren(head, ...rows);
+}
+
 /** Section de la courbe ; attach() la trace une fois la section dans la page. */
-export function renderProgress(weeks, echarts) {
+export function renderProgress(weeks) {
   const section = el("section", "card progress");
   const head = el("div", "progress-head");
   const title = el("div");
@@ -131,8 +148,14 @@ export function renderProgress(weeks, echarts) {
   pills.setAttribute("aria-label", "Mesure affichée");
   const chartNode = el("div", "progress-chart");
   chartNode.setAttribute("role", "img");
+  // Masqué dans un bloc : un tableau ne se réduit pas sous la largeur de son contenu.
+  const hidden = el("div", "sr-only");
+  const table = el("table");
+  table.id = "progress-values";
+  hidden.append(table);
+  chartNode.setAttribute("aria-describedby", table.id);
   head.append(title, pills);
-  section.append(head, chartNode);
+  section.append(head, chartNode, hidden);
 
   let chart = null;
   function draw() {
@@ -147,7 +170,8 @@ export function renderProgress(weeks, echarts) {
     );
     for (const b of pills.children)
       b.setAttribute("aria-pressed", String(b.dataset.measure === measure));
-    if (chart) chart.setOption(chartOption(weeks, m), true);
+    fillTable(table, weeks, m);
+    if (chart) chart.setOption(chartOption(weeks, measure), true);
   }
   for (const [id, m] of Object.entries(measures)) {
     const b = el("button", "measure-btn", m.label);
@@ -163,8 +187,17 @@ export function renderProgress(weeks, echarts) {
   // Le graphique se trace une fois la section dans la page, pour qu'il en connaisse la taille.
   return {
     section,
-    attach: () => {
-      chart = mount(echarts, chartNode, chartOption(weeks, measures[measure]));
+    attach: async () => {
+      try {
+        const echarts = await loadCharts();
+        if (chartNode.isConnected)
+          chart = mount(echarts, chartNode, chartOption(weeks, measure));
+      } catch {
+        // Sans ECharts, seule la courbe manque : les chiffres et le tableau restent.
+        chartNode.classList.add("progress-missing");
+        chartNode.textContent =
+          "La courbe n'a pas pu être affichée : le fichier vendor/echarts/echarts.min.js est introuvable.";
+      }
     },
   };
 }
