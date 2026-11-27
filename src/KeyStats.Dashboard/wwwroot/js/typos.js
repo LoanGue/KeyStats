@@ -24,15 +24,6 @@ export async function renderTypos(view, ctx) {
   const cards = [accuracyCard(data)].map(chartCard);
   const grid = el("div", "chart-grid");
   grid.append(...cards.map((c) => c.section));
-  const notes = ["code", "mixed"].includes(ctx.filters.kind)
-    ? [
-        el(
-          "p",
-          "page-note",
-          "Les fautes ne s'analysent que sur le texte : avec ce filtre de nature, la précision et le coût des corrections restent vides.",
-        ),
-      ]
-    : [];
-  view.replaceChildren(...notes, grid);
+  view.replaceChildren(grid);
   await drawCharts(cards, ctx.isCurrent);
 }
