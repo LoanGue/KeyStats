@@ -117,6 +117,13 @@ internal sealed class Typist
         return this;
     }
 
+    /// <summary>Relâchement d'une touche tenue par <see cref="Down"/>, à l'heure du prochain appui.</summary>
+    public Typist Up(ushort key)
+    {
+        Add(Ms, EventKind.KeyUp, key);
+        return this;
+    }
+
     public Typist Click()
     {
         Add(Ms, EventKind.MouseDown, MouseButton.Left);
