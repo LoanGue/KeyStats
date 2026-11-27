@@ -21,6 +21,11 @@ All notable changes to this project are documented here. The format follows
   key is unlocked; while it is locked, the row offers Windows Hello or the
   passphrase instead.
 
+- `KeyStats.Dashboard`: Raccourcis et combinaisons page, keys pressed
+  together. A matrix of Ctrl, Alt, Ctrl + Alt (AltGr) and Win against nine key
+  groups, shaded by use with the last day of use on hover, and the share of
+  presses made with one, two, three, or four keys or more held.
+
 - `KeyStats.Dashboard`: Raccourcis et combinaisons page, first cards. The
   most used shortcuts with a bar per use count, and the overlap card: the split
   between letter rolls, Maj held and shortcuts, the distribution of overlap
