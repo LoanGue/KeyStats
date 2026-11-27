@@ -15,7 +15,7 @@ const OVERLAP_SVG = `<svg viewBox="0 0 440 74" width="100%" role="img" aria-labe
 <path class="rhythm-axis" d="M0 64H440"/></svg>`;
 
 /** Titre et chiffre d'une sous-partie : « Médiane 95 ms ». */
-function figure(label, value) {
+export function figure(label, value) {
   const box = el("div", "rhythm-figure");
   box.append(el("span", null, label), el("strong", null, value));
   return box;
