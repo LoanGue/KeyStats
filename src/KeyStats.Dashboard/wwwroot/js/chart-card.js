@@ -85,14 +85,14 @@ export function chartCard(spec) {
 /** Trace les cartes une fois dans la page ; sans ECharts, seules leurs zones de graphique changent. */
 export async function drawCharts(cards, isCurrent) {
   const drawn = cards.filter((c) => c.node);
+  const shown = () => drawn.filter((c) => c.node.isConnected);
   let echarts;
   try {
     echarts = await loadCharts();
   } catch {
-    if (isCurrent()) for (const c of drawn) chartFailed(c.node);
+    if (isCurrent()) for (const c of shown()) chartFailed(c.node);
     return;
   }
   if (!isCurrent()) return;
-  for (const c of drawn)
-    if (c.node.isConnected) mount(echarts, c.node, c.option);
+  for (const c of shown()) mount(echarts, c.node, c.option);
 }

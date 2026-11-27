@@ -55,8 +55,13 @@ export function valueAxis(extra) {
     nameTextStyle: { color: muted, fontSize: 12, align: "left" },
     splitLine: { lineStyle: { color: token("--border") } },
     axisLine: { lineStyle: { color: token("--border-strong") } },
-    axisLabel: { color: muted, fontSize: 12, formatter: (v) => nf.format(v) },
     ...extra,
+    axisLabel: {
+      color: muted,
+      fontSize: 12,
+      formatter: (v) => nf.format(v),
+      ...extra?.axisLabel,
+    },
   };
 }
 
