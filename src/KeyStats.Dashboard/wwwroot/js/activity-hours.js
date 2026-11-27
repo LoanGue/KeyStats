@@ -24,7 +24,7 @@ function dayRows(hours) {
     return [
       dayNames[d],
       duration(total),
-      total ? `${peak} h à ${peak + 1} h` : "aucune",
+      total ? `${peak}\u00a0h à ${peak + 1}\u00a0h` : "aucune",
     ];
   });
 }
@@ -34,14 +34,14 @@ export function hoursCard(hours) {
   const grid = el("div", "activity-hours");
   grid.append(el("span"));
   for (let h = 0; h < 24; h++)
-    grid.append(el("span", "activity-hour", h % 6 ? "" : `${h} h`));
+    grid.append(el("span", "activity-hour", h % 6 ? "" : `${h}\u00a0h`));
   hours.forEach((row, d) => {
     grid.append(el("span", "activity-weekday", days[d]));
     row.forEach((ms, h) =>
       grid.append(
         cell(
           level(ms),
-          `${dayNames[d]}, ${h} h à ${h + 1} h : ${ms ? duration(ms) : "rien"}`,
+          `${dayNames[d]}, ${h}\u00a0h à ${h + 1}\u00a0h : ${ms ? duration(ms) : "rien"}`,
         ),
       ),
     );
