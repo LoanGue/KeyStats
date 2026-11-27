@@ -38,6 +38,13 @@ public sealed class KeySession : IDisposable
         lock (_gate) return use(_key ?? throw new InvalidOperationException("Session verrouillée."));
     }
 
+    /// <summary>Comme <see cref="Use{T}"/>, sans exception : <c>null</c> si la session est verrouillée, sous le même verrou.</summary>
+    public T? TryUse<T>(Func<MasterKey, T> use) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(use);
+        lock (_gate) return _key is null ? null : use(_key);
+    }
+
     public bool TryUnlockWithPassphrase(KeyStatsDb db, string phrase)
     {
         ArgumentNullException.ThrowIfNull(db);

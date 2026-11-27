@@ -1,4 +1,6 @@
 using KeyStats.Core.Analysis;
+using KeyStats.Core.Crypto;
+using KeyStats.Core.Storage;
 using KeyStats.Core.Stats;
 using KeyStats.Core.Web;
 
@@ -30,11 +32,11 @@ public sealed class ActivityApiTests : IDisposable
     private static long At(int day, int hour, int minute) =>
         new DateTimeOffset(LocalDayClock.DateOf(day).AddHours(hour).AddMinutes(minute), TimeSpan.Zero).ToUnixTimeMilliseconds();
 
-    private void Add(int day, long start, long durationMs, long activeMs, int app, SessionKind kind) =>
+    private void Add(int day, long start, long durationMs, long activeMs, int app, SessionKind kind, long? title = null) =>
         _temp.Db.Exec($"""
-            INSERT INTO session (day, start_ms, end_ms, app_id, device_id, kind, chars, typed, deleted, keys, text_keys, repeats,
+            INSERT INTO session (day, start_ms, end_ms, app_id, title_id, device_id, kind, chars, typed, deleted, keys, text_keys, repeats,
                 active_ms, gross_cpm, net_cpm, real_cpm, peak_cpm, typos, collateral, corrections, unanalyzed, retyped, reformulations, overlaps, kspc)
-            VALUES ({day}, {start}, {start + durationMs}, {app}, 1, {(int)kind}, 100, 100, 0, 100, 100, 0,
+            VALUES ({day}, {start}, {start + durationMs}, {app}, {title?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "NULL"}, 1, {(int)kind}, 100, 100, 0, 100, 100, 0,
                 {activeMs}, 300, 0, 250, NULL, 0, 0, 0, 0, 0, 0, 0, 1)
             """);
 
@@ -114,8 +116,76 @@ public sealed class ActivityApiTests : IDisposable
     public void Route_refuse_un_filtre_invalide()
     {
         var router = new WebRouter(Path.GetTempPath());
-        ActivityApi.Register(router, new StatsContext(_temp.Db, () => At(Today, 12, 0), TimeZoneInfo.Utc));
+        using var session = new KeySession();
+        ActivityApi.Register(router, new StatsContext(_temp.Db, () => At(Today, 12, 0), TimeZoneInfo.Utc), session);
         Assert.Equal(400, router.Handle("GET", WebRouter.Origin + ActivityApi.Path + "?period=decade").Status);
         Assert.Equal(200, router.Handle("GET", WebRouter.Origin + ActivityApi.Path + "?period=week").Status);
+    }
+
+    private long[] AddTitles(MasterKey master, params string[] titles)
+    {
+        using var writer = new RawArchiveWriter(_temp.Db, master.PublicKey, new TitleHasher(TitleHasher.NewKey()));
+        return [.. titles.Select(t => writer.GetOrAddTitle(_word, "winword.exe", t, At(Today, 8, 0)))];
+    }
+
+    [Fact]
+    public void Titres_les_plus_utilises_puis_les_autres_et_le_temps_sans_titre()
+    {
+        using var master = MasterKey.Generate();
+        var ids = AddTitles(master, [.. Enumerable.Range(1, 12).Select(i => $"Rapport {i}.docx - Word")]);
+        for (int i = 0; i < ids.Length; i++)
+            Add(20261125, At(20261125, 8, i), Minute, (20 - i) * 1000, _word, SessionKind.Prose, ids[i]);
+        Add(20261125, At(20261125, 9, 0), Minute, 2000, _code, SessionKind.Code, ids[0]);
+
+        var list = ActivityTitles.Read(_temp.Db, master, StatsFilter.Parse(WebQuery.Parse("period=week"), Today, 20251101)!, _word);
+
+        Assert.Equal(_word, list.App);
+        Assert.Equal(ActivityTitles.MaxTitles, list.Titles.Count);
+        Assert.Equal(new ActivityTitle("Rapport 1.docx - Word", 20_000), list.Titles[0]);
+        Assert.Equal(new ActivityTitle("Rapport 10.docx - Word", 11_000), list.Titles[^1]);
+        Assert.Equal(10_000 + 9_000, list.OtherMs);
+        // Les sessions de Word sans titre de cette semaine : 20 + 3 min.
+        Assert.Equal(23 * Minute, list.UntitledMs);
+    }
+
+    [Fact]
+    public void Titre_illisible_compte_avec_les_autres()
+    {
+        using var master = MasterKey.Generate();
+        var ids = AddTitles(master, "Lettre.docx - Word", "Notes.docx - Word");
+        Add(20261127, At(20261127, 6, 0), Minute, 5000, _word, SessionKind.Prose, ids[0]);
+        Add(20261127, At(20261127, 7, 0), Minute, 4000, _word, SessionKind.Prose, ids[1]);
+        _temp.Db.Exec($"UPDATE window_title SET title_enc = zeroblob(length(title_enc)) WHERE id = {ids[0]}");
+
+        var list = ActivityTitles.Read(_temp.Db, master, StatsFilter.Parse(WebQuery.Parse("period=day"), Today, 20251101)!, _word);
+
+        Assert.Equal([new ActivityTitle("Notes.docx - Word", 4000)], list.Titles);
+        Assert.Equal(5000, list.OtherMs);
+    }
+
+    [Fact]
+    public void Route_des_titres_seulement_apres_deverrouillage()
+    {
+        using var master = MasterKey.Generate();
+        var ids = AddTitles(master, "Lettre.docx - Word");
+        Add(20261127, At(20261127, 6, 0), Minute, 5000, _word, SessionKind.Prose, ids[0]);
+        var router = new WebRouter(Path.GetTempPath());
+        using var session = new KeySession();
+        ActivityApi.Register(router, new StatsContext(_temp.Db, () => At(Today, 12, 0), TimeZoneInfo.Utc), session);
+        string url = WebRouter.Origin + ActivityTitles.Path + $"?period=day&target={_word}";
+
+        var locked = router.Handle("GET", url);
+        Assert.Equal(403, locked.Status);
+        Assert.DoesNotContain("Lettre", System.Text.Encoding.UTF8.GetString(locked.Body), StringComparison.Ordinal);
+
+        session.Adopt(MasterKey.FromPkcs8(master.ExportPkcs8()));
+        Assert.Equal(400, router.Handle("GET", WebRouter.Origin + ActivityTitles.Path + "?period=day").Status);
+        Assert.Equal(400, router.Handle("GET", url.Replace("period=day", "period=decade", StringComparison.Ordinal)).Status);
+        var open = router.Handle("GET", url);
+        Assert.Equal(200, open.Status);
+        Assert.Contains("Lettre.docx - Word", System.Text.Encoding.UTF8.GetString(open.Body), StringComparison.Ordinal);
+
+        session.Lock();
+        Assert.Equal(403, router.Handle("GET", url).Status);
     }
 }

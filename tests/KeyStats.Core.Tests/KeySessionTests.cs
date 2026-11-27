@@ -41,10 +41,13 @@ public sealed class KeySessionTests : IDisposable
         Assert.False(session.TryUnlockWithPassphrase(_temp.Db, "cheval agrafe"));
         Assert.False(session.IsUnlocked);
         Assert.Throws<InvalidOperationException>(() => session.Use(k => k.PublicKey));
+        Assert.Null(session.TryUse(k => k.PublicKey));
         Assert.True(session.TryUnlockWithPassphrase(_temp.Db, "  cheval  agrafe batterie "));
         Assert.Equal(_publicKey, session.Use(k => k.PublicKey));
+        Assert.Equal(_publicKey, session.TryUse(k => k.PublicKey));
         session.Lock();
         Assert.False(session.IsUnlocked);
+        Assert.Null(session.TryUse(k => k.PublicKey));
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-using KeyStats.Core.Analysis;
+using KeyStats.Core.Crypto;
 using KeyStats.Core.Storage;
 using KeyStats.Core.Web;
 
@@ -38,11 +38,14 @@ public static class ActivityApi
     /// <summary>Pas de la répartition par heure : un quart d'heure suit aussi les fuseaux décalés de 30 ou 45 min.</summary>
     private const long SliceMs = 900_000;
 
-    public static void Register(WebRouter router, StatsContext stats)
+    /// <summary>Enregistre aussi <see cref="ActivityTitles.Path"/>, qui demande la clé de <paramref name="session"/>.</summary>
+    public static void Register(WebRouter router, StatsContext stats, KeySession session)
     {
         ArgumentNullException.ThrowIfNull(router);
         ArgumentNullException.ThrowIfNull(stats);
+        ArgumentNullException.ThrowIfNull(session);
         router.Get(Path, q => stats.Respond(q, f => Read(stats.Db, stats.Clock.Zone, f), StatsJson.Default.Activity));
+        ActivityTitles.Register(router, stats, session);
     }
 
     public static Activity Read(KeyStatsDb db, TimeZoneInfo zone, StatsFilter filter)
