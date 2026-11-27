@@ -1,5 +1,10 @@
 // Pages du tableau de bord : titre, description et filtres de l'en-tête, rendu de la vue.
 // Une page sans render n'est pas encore livrée.
+//
+// render(view, ctx) remplit view, où l'état de chargement est déjà affiché. ctx porte filters,
+// query (à ajouter aux routes de l'API), status, key, setFilters(next) et retry() ; après chaque
+// await, la vue vérifie ctx.isCurrent() avant d'écrire, car une autre page a pu être ouverte entre-temps.
+// Une exception levée par render affiche l'état d'erreur avec « Réessayer ».
 
 export const pages = {
   ensemble: {
