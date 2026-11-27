@@ -23,7 +23,7 @@ public readonly record struct DayRange(int FromDay, int ToDay)
     public DayRange Before()
     {
         DateTime end = LocalDayClock.DateOf(FromDay).AddDays(-1);
-        return new DayRange(StatsFilter.KeyOf(end.AddDays(1 - Days)), StatsFilter.KeyOf(end));
+        return new DayRange(LocalDayClock.KeyOf(end.AddDays(1 - Days)), LocalDayClock.KeyOf(end));
     }
 }
 
@@ -59,7 +59,7 @@ public sealed record StatsFilter(StatsPeriod Period, DayRange Range, DayRange? P
             return null;
         if (period == StatsPeriod.All)
             return new StatsFilter(period, new DayRange(Math.Min(firstDay ?? today, today), today), null, app, kind, device);
-        var range = new DayRange(KeyOf(LocalDayClock.DateOf(today).AddDays(1 - DaysOf(period))), today);
+        var range = new DayRange(LocalDayClock.KeyOf(LocalDayClock.DateOf(today).AddDays(1 - DaysOf(period))), today);
         return new StatsFilter(period, range, range.Before(), app, kind, device);
     }
 
@@ -89,20 +89,18 @@ public sealed record StatsFilter(StatsPeriod Period, DayRange Range, DayRange? P
         return (sql.ToString(), [.. values]);
     }
 
-    internal static int KeyOf(DateTime date) => date.Year * 10000 + date.Month * 100 + date.Day;
-
     private static bool TryPeriod(string? text, out StatsPeriod period)
     {
-        period = text switch
+        (bool ok, period) = text switch
         {
-            null or "" or "week" => StatsPeriod.Week,
-            "day" => StatsPeriod.Day,
-            "month" => StatsPeriod.Month,
-            "year" => StatsPeriod.Year,
-            "all" => StatsPeriod.All,
-            _ => (StatsPeriod)(-1),
+            null or "" or "week" => (true, StatsPeriod.Week),
+            "day" => (true, StatsPeriod.Day),
+            "month" => (true, StatsPeriod.Month),
+            "year" => (true, StatsPeriod.Year),
+            "all" => (true, StatsPeriod.All),
+            _ => (false, default),
         };
-        return Enum.IsDefined(period);
+        return ok;
     }
 
     private static bool TryKind(string? text, out SessionKind? kind)

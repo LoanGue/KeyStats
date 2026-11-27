@@ -14,7 +14,10 @@ public sealed class StatsContext(KeyStatsDb db, Func<long> nowMs, TimeZoneInfo? 
 {
     public KeyStatsDb Db => db;
 
-    /// <summary>Fuseau relu à chaque requête : un changement d'heure ou de fuseau est pris sans redémarrer.</summary>
+    /// <summary>
+    /// Fuseau relu à chaque requête : un changement d'heure ou de fuseau est pris sans redémarrer, pourvu que
+    /// l'hôte vide le cache de <see cref="TimeZoneInfo"/> sur <c>WM_TIMECHANGE</c> (le tableau de bord le fait).
+    /// </summary>
     public int Today => new LocalDayClock(zone ?? TimeZoneInfo.Local).DayKey(nowMs());
 
     /// <summary>Premier jour qui a des statistiques ; null pour une base vide.</summary>
@@ -44,6 +47,9 @@ public static class FiltersApi
 {
     public const string Path = "/api/filters";
 
+    /// <summary>Valeur de <c>device.kind</c> pour un clavier (2 : souris ou pavé tactile).</summary>
+    private const int KeyboardKind = 1;
+
     public static void Register(WebRouter router, StatsContext stats)
     {
         ArgumentNullException.ThrowIfNull(router);
@@ -55,7 +61,7 @@ public static class FiltersApi
     {
         ArgumentNullException.ThrowIfNull(stats);
         var apps = List(stats.Db, "SELECT id, exe FROM app WHERE id IN (SELECT DISTINCT app_id FROM app_hour) ORDER BY exe");
-        var devices = List(stats.Db, "SELECT id, label FROM device WHERE kind = 1 ORDER BY label, id");
+        var devices = List(stats.Db, $"SELECT id, label FROM device WHERE kind = {KeyboardKind} ORDER BY label, id");
         return new FilterOptions(apps, devices, stats.FirstDay is { } first ? StatsFilter.Iso(first) : null, StatsFilter.Iso(stats.Today));
     }
 
