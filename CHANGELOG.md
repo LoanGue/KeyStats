@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/keyboard` gives, for each key, its presses, its
+  prose error rate, its median hold time and the median delay before it, and
+  for each digit how many were typed on the top row and on the numeric keypad.
+  Twenty new day metrics count digits by origin; days recorded earlier need a
+  recalculation from the raw data.
 - `KeyStats.Core`: GET `/api/typos` gives the accuracy of each day of the
   period, the most confused pairs with an AZERTY neighbour flag, the error rate
   of accented characters, error types, the detection delay (median and
