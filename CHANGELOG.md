@@ -21,6 +21,10 @@ All notable changes to this project are documented here. The format follows
   for each digit how many were typed on the top row and on the numeric keypad.
   Twenty new day metrics count digits by origin; days recorded earlier need a
   recalculation from the raw data.
+- `KeyStats.Core`: three new day metrics count capitals typed with the Shift of
+  the opposite hand, with the Shift on the same side, or under Caps Lock, hands
+  taken from the standard AZERTY fingering. Days recorded earlier have no Shift
+  side until the recalculation from the raw data is available.
 - `KeyStats.Core`: GET `/api/typos` gives the accuracy of each day of the
   period, the most confused pairs with an AZERTY neighbour flag, the error rate
   of accented characters, error types, the detection delay (median and
