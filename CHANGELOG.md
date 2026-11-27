@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Réglages page edits the detection thresholds. A
+  change restarts a running agent, which reads them only at start. A refused
+  `settings.json` is shown, never rewritten.
+
 - `KeyStats.Dashboard`: GET and POST `/api/settings` read and edit the
   detection thresholds, the excluded applications and the live counter switch
   in `settings.json`. Values are checked against the agent's own bounds before
