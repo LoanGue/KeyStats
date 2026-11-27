@@ -19,9 +19,11 @@ All notable changes to this project are documented here. The format follows
 - `KeyStats.Core`: GET `/api/letters` gives the frequency of each letter a–z
   (accents folded), next to French and English reference shares, word counts
   by length from 1 to 15 and over, and the average and median word length,
-  overall, in prose and in code, next to the published French average of 4.8.
-  No per-length French distribution with published values was found, so that
-  reference stays empty.
+  overall, in prose and in code. The French reference average, 4.8, is a
+  published count of characters per word with attached punctuation, so it
+  runs slightly above a count of letters only. No per-length French
+  distribution with published values was found, so that reference stays
+  empty. `LanguageReference` loses its unused `AverageWordLength`.
 
 - `KeyStats.Core`: GET `/api/typos` gives the accuracy of each day of the
   period, the most confused pairs with an AZERTY neighbour flag, the error rate

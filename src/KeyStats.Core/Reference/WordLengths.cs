@@ -1,7 +1,7 @@
 namespace KeyStats.Core.Reference;
 
 /// <summary>Longueur des mots d'une langue de référence.</summary>
-/// <param name="Average">Lettres par mot.</param>
+/// <param name="Average">Longueur moyenne d'un mot, dans l'unité de la source (voir <paramref name="Source"/>).</param>
 /// <param name="Shares">
 /// Part des mots de chaque longueur, l'indice 0 valant 1 lettre ; null tant qu'aucune répartition publiée n'a été retenue.
 /// </param>
@@ -24,5 +24,5 @@ public static class WordLengths
     /// </summary>
     public static WordLengthReference French { get; } = new(
         4.8, Shares: null,
-        "Aabu, « Utilise-t-on plutôt des mots courts ou longs ? », Zeste de Savoir, 2018 (Zola, Voltaire, Proust)");
+        "Aabu, « Utilise-t-on plutôt des mots courts ou longs ? », Zeste de Savoir, 2018 (Zola, Voltaire, Proust ; caractères par mot, ponctuation comprise)");
 }

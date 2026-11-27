@@ -123,8 +123,7 @@ public sealed class LettersApiTests : IDisposable
     {
         var sources = Read("period=week").Sources;
 
-        Assert.Equal(3, sources.Count);
-        Assert.All(sources, s => Assert.False(string.IsNullOrWhiteSpace(s)));
+        Assert.Equal([LetterFrequencies.French.Source, LetterFrequencies.English.Source, WordLengths.French.Source], sources);
     }
 
     public void Dispose() => _temp.Dispose();

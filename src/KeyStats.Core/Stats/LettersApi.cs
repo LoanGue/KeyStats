@@ -17,10 +17,13 @@ public sealed record LettersLetter(string Letter, long Count, double French, dou
 public sealed record LettersWordLength(int Length, long Count, double? French);
 
 /// <param name="Average">Lettres par mot, toutes natures de session ; null sans mot.</param>
-/// <param name="Median">Longueur médiane ; null sans mot.</param>
+/// <param name="Median">Longueur médiane, la plus courte des deux si le nombre de mots est pair ; null sans mot.</param>
 /// <param name="Prose">Lettres par mot en prose ; null sans mot en prose.</param>
 /// <param name="Code">Lettres par mot dans les sessions de code ; null sans mot en code.</param>
-/// <param name="French">Lettres par mot du français de référence.</param>
+/// <param name="French">
+/// Longueur moyenne d'un mot en français de référence, en caractères ponctuation collée comprise :
+/// elle majore un peu la mesure en lettres seules faite ici.
+/// </param>
 public sealed record LettersWords(long Count, double? Average, int? Median, double? Prose, double? Code, double French);
 
 /// <param name="DayTablesUnfiltered">
@@ -85,10 +88,11 @@ public static class LettersApi
                 if (c is >= 'a' and <= 'z') counts[c - 'a'] += (long)r.GetDouble(1);
             }
         }
-        var french = Folded(LetterFrequencies.French);
-        var english = Folded(LetterFrequencies.English);
-        return [.. Enumerable.Range(0, 26).Select(i => new LettersLetter(((char)('a' + i)).ToString(), counts[i], french[i], english[i]))];
+        return [.. Enumerable.Range(0, 26).Select(i => new LettersLetter(((char)('a' + i)).ToString(), counts[i], FrenchShares[i], EnglishShares[i]))];
     }
+
+    private static readonly double[] FrenchShares = Folded(LetterFrequencies.French);
+    private static readonly double[] EnglishShares = Folded(LetterFrequencies.English);
 
     /// <summary>Parts a–z d'une référence, accents ramenés à leur lettre ; les lettres hors a–z (œ) sont écartées.</summary>
     private static double[] Folded(LanguageReference reference)
@@ -112,7 +116,8 @@ public static class LettersApi
         while (r.Read())
         {
             var kind = (SessionKind)r.GetInt32(0);
-            int len = Math.Clamp(r.GetInt32(1), 1, SessionBuilder.MaxWordLength);
+            int len = Math.Min(r.GetInt32(1), SessionBuilder.MaxWordLength);
+            if (len < 1) continue; // l'écrivain n'en produit pas : une telle ligne n'est rangée nulle part
             if (!map.TryGetValue(kind, out var counts)) map[kind] = counts = new long[SessionBuilder.MaxWordLength + 1];
             counts[len] += (long)r.GetDouble(2);
         }
