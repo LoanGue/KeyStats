@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: overview page from the design: the period's keys,
+  words, writing time, real speed and accuracy, each compared with the
+  previous period.
 - `KeyStats.Dashboard`: unlock dialog from the design (Windows Hello, waiting,
   failure, passphrase with show and hide), opened from a header button; a
   second header button locks the data again.
