@@ -20,6 +20,9 @@ public sealed class StatsContext(KeyStatsDb db, Func<long> nowMs, TimeZoneInfo? 
     /// </summary>
     public LocalDayClock Clock => new(zone ?? TimeZoneInfo.Local);
 
+    /// <summary>Instant présent, en ms UTC.</summary>
+    public long NowMs => nowMs();
+
     /// <summary>Jour local en cours, au fuseau de <see cref="Clock"/>.</summary>
     public int Today => Clock.DayKey(nowMs());
 
@@ -89,5 +92,6 @@ public static class FiltersApi
 [JsonSerializable(typeof(Rhythm))]
 [JsonSerializable(typeof(Activity))]
 [JsonSerializable(typeof(ActivityTitleList))]
+[JsonSerializable(typeof(DayTimeline))]
 [JsonSerializable(typeof(Shortcuts))]
 public sealed partial class StatsJson : JsonSerializerContext;

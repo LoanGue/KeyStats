@@ -38,7 +38,10 @@ public static class ActivityApi
     /// <summary>Pas de la répartition par heure : un quart d'heure suit aussi les fuseaux décalés de 30 ou 45 min.</summary>
     private const long SliceMs = 900_000;
 
-    /// <summary>Enregistre aussi <see cref="ActivityTitles.Path"/>, qui demande la clé de <paramref name="session"/>.</summary>
+    /// <summary>
+    /// Enregistre aussi <see cref="ActivityTitles.Path"/>, qui demande la clé de <paramref name="session"/>, et
+    /// <see cref="ActivityTimeline.Path"/>.
+    /// </summary>
     public static void Register(WebRouter router, StatsContext stats, KeySession session)
     {
         ArgumentNullException.ThrowIfNull(router);
@@ -46,6 +49,7 @@ public static class ActivityApi
         ArgumentNullException.ThrowIfNull(session);
         router.Get(Path, q => stats.Respond(q, f => Read(stats.Db, stats.Clock.Zone, f), StatsJson.Default.Activity));
         ActivityTitles.Register(router, stats, session);
+        ActivityTimeline.Register(router, stats);
     }
 
     public static Activity Read(KeyStatsDb db, TimeZoneInfo zone, StatsFilter filter)
