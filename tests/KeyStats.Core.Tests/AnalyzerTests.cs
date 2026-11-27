@@ -102,6 +102,8 @@ public sealed class AnalyzerTests
 
         Assert.Equal(1, Metric(stats, DayMetric.HeldBackspace));
         Assert.Equal(6, Metric(stats, DayMetric.Repeats));
+        Assert.Equal(7, Metric(stats, DayMetric.Backspaces));
+        Assert.Equal(6, Metric(stats, DayMetric.BackspaceRepeats));
     }
 
     [Fact]
@@ -113,6 +115,7 @@ public sealed class AnalyzerTests
         Assert.Empty(stats.Shortcuts);
         Assert.Equal(1, Metric(stats, DayMetric.WordBackspaces));
         Assert.Equal(1, Metric(stats, DayMetric.WordDeletes));
+        Assert.Equal(4, Metric(stats, DayMetric.WordBackspaceChars));
     }
 
     [Fact]

@@ -396,7 +396,7 @@ public sealed class Analyzer
                     _dead = '\0';
                     break;
                 }
-                _stats.AddBackspace(ms, word: false);
+                _stats.AddBackspace(ms, word: false, repeat ? 1 : 0);
                 _corrections.OnBackspace(ms, repeat);
                 _session.Backspace(ms, 1);
                 _live?.OnDelete(ms, 1);
@@ -404,8 +404,8 @@ public sealed class Analyzer
 
             case TextAction.WordBackspace:
                 _dead = '\0';
-                _stats.AddBackspace(ms, word: true);
                 int n = Math.Max(1, _corrections.OnWordBackspace(ms));
+                _stats.AddBackspace(ms, word: true, n);
                 _session.Backspace(ms, n);
                 _live?.OnDelete(ms, n);
                 break;
