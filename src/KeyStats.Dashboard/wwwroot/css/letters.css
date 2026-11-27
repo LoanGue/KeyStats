@@ -56,6 +56,7 @@
 .letters-value {
   font-size: 32px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 .letters-muted {
   font-size: 13px;
