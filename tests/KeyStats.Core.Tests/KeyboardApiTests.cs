@@ -156,4 +156,69 @@ public sealed class KeyboardApiTests : IDisposable
         Assert.Equal(new KeyboardDigit(0, 0, 3), digits[0]);
         Assert.Equal(new KeyboardDigit(1, 6, 2), digits[1]);
     }
+
+    [Fact]
+    public void Appuis_minute_par_minute_du_dernier_jour_utilise()
+    {
+        var m = KeyboardApi.Minutes(_temp.Db, Clock, Filter("period=week"), KeyE);
+        Assert.Equal((KeyE, "2026-11-26"), (m.Code, m.Day));
+        Assert.Equal([new KeyMinute(600, 30), new KeyMinute(601, 10)], m.Minutes);
+
+        var external = KeyboardApi.Minutes(_temp.Db, Clock, Filter($"period=week&device={_external}"), KeyE);
+        Assert.Equal([new KeyMinute(601, 10)], external.Minutes);
+    }
+
+    [Fact]
+    public void Touche_jamais_utilisee_sur_la_periode()
+    {
+        var m = KeyboardApi.Minutes(_temp.Db, Clock, Filter("period=day"), KeyE);
+        Assert.Null(m.Day);
+        Assert.Empty(m.Minutes);
+    }
+
+    [Fact]
+    public void Minutes_comptees_depuis_minuit_local_un_jour_de_changement_d_heure()
+    {
+        var paris = new LocalDayClock(TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris"));
+        const ushort keyD = 0x20;
+        // Le 25 octobre 2026 compte 25 heures à Paris : 2 h 30, second passage (1 h 30 UTC), tombe 210 minutes après minuit.
+        long midnight = LocalDayClock.MinuteOf(paris.MidnightUtcMs(LocalDayClock.DateOf(20261025)));
+        _temp.Db.Exec($"INSERT INTO key_minute VALUES ({midnight + 210}, {keyD}, {_laptop}, 4, 0)");
+
+        var filter = StatsFilter.Parse(WebQuery.Parse("period=day"), 20261025, 20261001)!;
+        var m = KeyboardApi.Minutes(_temp.Db, paris, filter, keyD);
+        Assert.Equal("2026-10-25", m.Day);
+        Assert.Equal([new KeyMinute(210, 4)], m.Minutes);
+    }
+
+    [Fact]
+    public void Dernier_jour_local_et_non_jour_utc()
+    {
+        var paris = new LocalDayClock(TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris"));
+        const ushort keyF = 0x21;
+        // 23 h 30 UTC le 26 : 0 h 30 le 27 à Paris.
+        long minute = LocalDayClock.MinuteOf(paris.MidnightUtcMs(LocalDayClock.DateOf(20261127))) + 30;
+        _temp.Db.Exec($"INSERT INTO key_minute VALUES ({minute}, {keyF}, {_laptop}, 2, 0)");
+
+        var m = KeyboardApi.Minutes(_temp.Db, paris, Filter("period=week"), keyF);
+        Assert.Equal("2026-11-27", m.Day);
+        Assert.Equal([new KeyMinute(30, 2)], m.Minutes);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("?key=0")]
+    [InlineData("?key=abc")]
+    [InlineData("?key=1280")]
+    public void Minutes_sans_touche_valide_refusees(string query) => Assert.Equal(400, MinutesStatus(query));
+
+    [Fact]
+    public void Minutes_de_la_derniere_touche_acceptees() => Assert.Equal(200, MinutesStatus("?key=1279"));
+
+    private int MinutesStatus(string query)
+    {
+        var router = new WebRouter(Path.GetTempPath());
+        KeyboardApi.Register(router, new StatsContext(_temp.Db, () => 0, TimeZoneInfo.Utc));
+        return router.Handle("GET", WebRouter.Origin + KeyboardApi.MinutesPath + query).Status;
+    }
 }
