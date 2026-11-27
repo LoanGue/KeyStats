@@ -28,13 +28,6 @@ public sealed record TyposChar(string Character, long Typed, long Errors);
 /// <param name="Insertions">Lettre en trop.</param>
 public sealed record TyposTypes(long Substitutions, long Omissions, long Insertions, long Transpositions);
 
-/// <param name="ToMs">Borne haute exclue ; null pour la dernière case, sans borne.</param>
-public sealed record TyposDelayBin(double FromMs, double? ToMs, long Count);
-
-/// <param name="MedianMs">Médiane approchée de l'histogramme ; null sans faute corrigée.</param>
-/// <param name="Bins">Cases logarithmiques de 50 ms à 30 s, de la plus courte à la dernière non vide.</param>
-public sealed record TyposDelay(double? MedianMs, IReadOnlyList<TyposDelayBin> Bins);
-
 /// <summary>Caractères effacés selon la méthode.</summary>
 /// <param name="Presses">Un retour arrière par caractère, premier appui d'une rafale compris.</param>
 /// <param name="Held">Répétitions automatiques d'un retour arrière maintenu.</param>
@@ -50,9 +43,10 @@ public sealed record TyposDeletion(long Presses, long Held, long Word, long Word
 /// <param name="Days">Chaque jour de la période, du plus ancien au plus récent.</param>
 /// <param name="Pairs">Substitutions les plus fréquentes, au plus <see cref="TyposApi.MaxPairs"/>.</param>
 /// <param name="Accents">Caractères accentués, dans l'ordre de <see cref="TyposApi.AccentedChars"/>.</param>
+/// <param name="Delay">Délai de détection, cases de 50 ms à 30 s ; médiane null sans faute corrigée.</param>
 public sealed record Typos(
     string From, string To, bool DayTablesUnfiltered, double? Accuracy, IReadOnlyList<TyposDay> Days, TyposCost Cost,
-    IReadOnlyList<TyposPair> Pairs, IReadOnlyList<TyposChar> Accents, TyposTypes Types, TyposDelay Delay, TyposDeletion Deletion);
+    IReadOnlyList<TyposPair> Pairs, IReadOnlyList<TyposChar> Accents, TyposTypes Types, TimeDistribution Delay, TyposDeletion Deletion);
 
 /// <summary>
 /// Route <c>/api/typos</c> : précision jour par jour, paires confondues, caractères accentués, types de fautes,
