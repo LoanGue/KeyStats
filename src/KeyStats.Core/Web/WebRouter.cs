@@ -34,12 +34,15 @@ public sealed class WebRouter
     public const int MaxBody = 16 * 1024;
 
     private readonly string _root;
-    private readonly Dictionary<string, Func<WebResponse>> _get = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<WebQuery, WebResponse>> _get = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<byte[], Task<WebResponse>>> _post = new(StringComparer.Ordinal);
 
     public WebRouter(string root) => _root = Path.GetFullPath(root);
 
-    public void Get(string path, Func<WebResponse> handler) => _get[path] = handler;
+    public void Get(string path, Func<WebResponse> handler) => _get[path] = _ => handler();
+
+    /// <summary>Route GET qui lit les paramètres de l'adresse (<c>?period=week&amp;app=3</c>).</summary>
+    public void Get(string path, Func<WebQuery, WebResponse> handler) => _get[path] = handler;
 
     /// <summary>Route POST : le corps reçu est effacé une fois la réponse rendue.</summary>
     public void Post(string path, Func<byte[], Task<WebResponse>> handler) => _post[path] = handler;
@@ -52,7 +55,7 @@ public sealed class WebRouter
     {
         try
         {
-            return LocalPath(uri) is { } path ? Route(method, path) : WebResponse.NotFound();
+            return Local(uri) is { } local ? Route(method, Uri.UnescapeDataString(local.AbsolutePath), local.Query) : WebResponse.NotFound();
         }
         catch (Exception)
         {
@@ -86,19 +89,21 @@ public sealed class WebRouter
     /// <summary>Adresse servie par ce routeur (même schéma, hôte et port que <see cref="Origin"/>).</summary>
     public static bool IsOwn(string uri) => LocalPath(uri) is not null;
 
-    private WebResponse Route(string method, string path)
+    private WebResponse Route(string method, string path, string query)
     {
         bool get = string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase);
         if (!path.StartsWith("/api/", StringComparison.Ordinal))
             return get ? StaticFiles.Serve(_root, path) : WebResponse.MethodNotAllowed();
         if (!_get.TryGetValue(path, out var handler))
             return _post.ContainsKey(path) ? WebResponse.MethodNotAllowed() : WebResponse.NotFound();
-        return get ? handler() : WebResponse.MethodNotAllowed();
+        return get ? handler(WebQuery.Parse(query)) : WebResponse.MethodNotAllowed();
     }
 
-    private static string? LocalPath(string uri) =>
+    private static string? LocalPath(string uri) => Local(uri) is { } local ? Uri.UnescapeDataString(local.AbsolutePath) : null;
+
+    private static Uri? Local(string uri) =>
         Uri.TryCreate(uri, UriKind.Absolute, out var parsed)
         && string.Equals(parsed.GetLeftPart(UriPartial.Authority), Origin, StringComparison.OrdinalIgnoreCase)
-            ? Uri.UnescapeDataString(parsed.AbsolutePath)
+            ? parsed
             : null;
 }

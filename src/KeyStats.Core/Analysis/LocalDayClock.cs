@@ -33,7 +33,7 @@ public sealed class LocalDayClock
         if (ms >= _start && ms < _end) return _key;
         DateTime local = TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(ms), _zone).DateTime;
         DateTime date = local.Date;
-        int key = date.Year * 10000 + date.Month * 100 + date.Day;
+        int key = KeyOf(date);
         long start = MidnightUtcMs(date), end = MidnightUtcMs(date.AddDays(1));
         if (ms >= start && ms < end)
         {
@@ -57,6 +57,9 @@ public sealed class LocalDayClock
     public static long MinuteOf(long ms) => Math.DivRem(ms, 60_000, out long r) - (r < 0 ? 1 : 0);
 
     public static long HourOf(long ms) => Math.DivRem(ms, 3_600_000, out long r) - (r < 0 ? 1 : 0);
+
+    /// <summary>Clé aaaammjj d'une date (l'heure est ignorée).</summary>
+    public static int KeyOf(DateTime date) => date.Year * 10000 + date.Month * 100 + date.Day;
 
     public static DateTime DateOf(int dayKey) => new(dayKey / 10000, dayKey / 100 % 100, dayKey % 100);
 }
