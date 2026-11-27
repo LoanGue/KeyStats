@@ -16,11 +16,11 @@ const letters = (labels, firstCode) =>
   labels.split(" ").map((l, i) => key(l, firstCode + i));
 
 const functionRow = [
-  key("Échap", 0x01),
+  { ...key("Échap", 0x01), name: "Échappement" },
   ...Array.from({ length: 10 }, (_, i) => key(`F${i + 1}`, 0x3b + i)),
   key("F11", 0x57),
   key("F12", 0x58),
-  key("Suppr", 0x153, 2),
+  { ...key("Suppr", 0x153, 2), name: "Supprimer" },
 ];
 
 const digitRow = [
@@ -69,7 +69,7 @@ export const rows = [
     keys: [
       { ...key("Ctrl", 0x1d, 1.25), name: "Ctrl gauche" },
       key("Fn", null),
-      key("Win", 0x15b),
+      { ...key("Win", 0x15b), name: "Windows" },
       key("Alt", 0x38),
       key("Espace", 0x39, 5.75),
       key("AltGr", 0x138),
@@ -106,6 +106,7 @@ export const numpad = [
   cols,
   span,
   pad: true,
+  ...(label === "Num" && { name: "Verrouillage numérique" }),
 }));
 
 /** Nom complet d'une touche, pour les lecteurs d'écran et le détail. */
