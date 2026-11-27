@@ -199,6 +199,13 @@ All notable changes to this project are documented here. The format follows
   active window and its title through `SetWinEventHook`, without polling, and
   never reads the title of an excluded app.
 
+### Changed
+
+- `KeyStats.Core`: schema version 2. `day_wordlen` gains a session kind, so
+  word lengths can be read for prose and code apart. Rows recorded earlier
+  have no kind: they stay in the totals under kind 0 until a recalculation
+  from the raw data.
+
 ### Removed
 
 - `KeyStats.Dashboard`: the unlock block from before the design, below the
