@@ -3,7 +3,8 @@
 //
 // render(view, ctx) remplit view, où l'état de chargement est déjà affiché. ctx porte filters,
 // query (à ajouter aux routes de l'API), status, key, setFilters(next), retry() et unlock(), qui
-// ouvre le dialogue de déverrouillage. Après chaque await, la vue vérifie ctx.isCurrent() avant d'écrire, car une autre page a pu être ouverte entre-temps.
+// ouvre le dialogue de déverrouillage. Après chaque await, la vue vérifie ctx.isCurrent() avant
+// d'écrire, car une autre page a pu être ouverte entre-temps.
 // Une exception levée par render affiche l'état d'erreur avec « Réessayer ».
 
 export const pages = {

@@ -24,7 +24,16 @@ const steps = {
   phrase: { title: "Phrase de secours", main: "Déverrouiller" },
 };
 
-/** Branche les boutons de l'en-tête ; open(key) ouvre le dialogue, onChange suit chaque changement de clé. */
+const wrongPhrase =
+  "Phrase incorrecte. Vérifiez Verr. Maj et la disposition du clavier.";
+
+/** Message affiché quand la demande elle-même échoue, sans le détail technique du serveur. */
+const failure = (error) =>
+  error.status
+    ? `La demande a échoué (erreur ${error.status}). Réessayez.`
+    : "Le tableau de bord n'a pas répondu. Réessayez.";
+
+/** Branche les boutons de l'en-tête ; renvoie open(), onChange suit chaque changement de clé. */
 export function initUnlock(getKey, onChange) {
   const dialog = $("unlock-dialog");
   const input = $("unlock-input");
@@ -32,6 +41,10 @@ export function initUnlock(getKey, onChange) {
   let step = "invite";
   // Une réponse arrivée après Annuler ne doit pas redessiner un dialogue rouvert depuis.
   let request = 0;
+  // L'invite de Windows reste ouverte après Annuler : pas de seconde invite tant que la
+  // première n'a pas répondu, et le dialogue rouvert attend sa réponse.
+  let hello = null;
+  let passphraseBusy = false;
 
   function show(next, alert) {
     step = next;
@@ -42,7 +55,7 @@ export function initUnlock(getKey, onChange) {
     $("unlock-icon").hidden = next !== "invite" && next !== "waiting";
     $("unlock-lock").hidden = next !== "invite";
     $("unlock-spin").hidden = next !== "waiting";
-    $("unlock-status").setAttribute("aria-busy", String(next === "waiting"));
+    dialog.setAttribute("aria-busy", String(next === "waiting"));
     const message = alert || s.alert;
     $("unlock-alert").hidden = !message;
     $("unlock-alert-text").textContent = message || "";
@@ -56,51 +69,66 @@ export function initUnlock(getKey, onChange) {
       next === "phrase"
         ? "Revenir à Windows Hello"
         : "Utiliser la phrase de secours";
-    phraseError(false);
+    phraseError(null);
     if (next === "phrase") input.focus();
     else $(s.main ? "unlock-main" : "unlock-cancel").focus();
   }
 
-  function phraseError(on) {
-    $("unlock-error").hidden = !on;
-    input.setAttribute("aria-invalid", String(on));
+  function phraseError(message) {
+    $("unlock-error").hidden = !message;
+    $("unlock-error-text").textContent = message || "";
+    input.setAttribute("aria-invalid", String(Boolean(message)));
   }
 
-  async function send(body) {
-    const id = ++request;
+  /** Donne le focus au bouton de l'en-tête resté visible après le changement de clé. */
+  function focusHeader() {
+    for (const id of ["key-lock", "unlock-open"])
+      if (!$(id).hidden) return $(id).focus();
+  }
+
+  async function send(body, id) {
     try {
       const state = await postJson("/api/key/unlock", body);
-      if (id !== request) return onChange();
+      if (id !== request) {
+        if (state.unlocked) await onChange();
+        return;
+      }
       if (state.unlocked) {
         dialog.close();
-        return onChange();
+        await onChange();
+        return focusHeader();
       }
       if (body.method === "hello") show("failed");
       else {
         show("phrase");
-        phraseError(true);
+        phraseError(wrongPhrase);
       }
     } catch (error) {
       if (id === request)
-        show(
-          body.method === "hello" ? "failed" : "phrase",
-          `La demande a échoué : ${error.message}`,
-        );
+        show(body.method === "hello" ? "failed" : "phrase", failure(error));
     }
   }
 
-  function hello() {
+  function startHello() {
     show("waiting");
-    send({ method: "hello" });
+    if (hello) return;
+    const id = ++request;
+    hello = { id, done: send({ method: "hello" }, id) };
+    hello.done.finally(() => {
+      hello = null;
+    });
   }
 
   function submitPhrase(event) {
     event.preventDefault();
+    if (passphraseBusy) return;
     const passphrase = input.value;
     input.value = "";
-    if (!passphrase) return phraseError(true);
+    if (!passphrase) return phraseError("Saisissez la phrase de secours.");
+    passphraseBusy = true;
     $("unlock-main").disabled = true;
-    send({ method: "passphrase", passphrase }).finally(() => {
+    send({ method: "passphrase", passphrase }, ++request).finally(() => {
+      passphraseBusy = false;
       $("unlock-main").disabled = false;
     });
   }
@@ -109,12 +137,16 @@ export function initUnlock(getKey, onChange) {
     key = getKey();
     if (!key || key.unlocked || !(key.hello || key.passphrase)) return;
     dialog.showModal();
-    show(key.hello ? "invite" : "phrase");
+    if (hello) {
+      // La réponse de l'invite encore ouverte s'affiche dans ce dialogue.
+      request = hello.id;
+      show("waiting");
+    } else show(key.hello ? "invite" : "phrase");
   }
 
   $("unlock-main").addEventListener("click", (event) => {
     if (step === "phrase") submitPhrase(event);
-    else hello();
+    else startHello();
   });
   $("unlock-phrase").addEventListener("submit", submitPhrase);
   $("unlock-switch").addEventListener("click", () =>
@@ -143,7 +175,8 @@ export function initUnlock(getKey, onChange) {
       // L'état relu ensuite montre si les données sont restées déverrouillées.
     } finally {
       $("key-lock").disabled = false;
-      onChange();
+      await onChange();
+      focusHeader();
     }
   });
   return open;
