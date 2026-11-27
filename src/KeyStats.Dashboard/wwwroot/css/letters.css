@@ -1,0 +1,39 @@
+/* Page Lettres et mots : grille à trois colonnes, interrupteur de l'anglais. */
+
+.letters-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.letters-grid .letters-frequency {
+  grid-column: span 3;
+}
+@media (max-width: 860px) {
+  .letters-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .letters-grid .letters-frequency {
+    grid-column: auto;
+  }
+}
+
+.letters-legend {
+  align-items: center;
+  gap: 8px 18px;
+}
+.letters-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.letters-toggle input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+}
