@@ -3,7 +3,16 @@
 import { legend } from "./chart-card.js";
 import { baseOption, token, valueAxis } from "./charts.js";
 import { appName } from "./filters.js";
-import { duration, escapeHtml, nf, nf1, sessionCount, wpm } from "./format.js";
+import {
+  dayLong,
+  dayTick,
+  duration,
+  escapeHtml,
+  nf,
+  pct,
+  sessionCount,
+  wpm,
+} from "./format.js";
 import { el } from "./states.js";
 
 const WINDOW = 10; // sessions de la médiane glissante
@@ -18,20 +27,10 @@ const when = new Intl.DateTimeFormat("fr-FR", {
   hour: "2-digit",
   minute: "2-digit",
 });
-const dayTick = new Intl.DateTimeFormat("fr-FR", {
-  day: "numeric",
-  month: "short",
-});
 const hourTick = new Intl.DateTimeFormat("fr-FR", {
   hour: "2-digit",
   minute: "2-digit",
 });
-const dayLong = new Intl.DateTimeFormat("fr-FR", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
-
 export function median(values) {
   const s = [...values].sort((a, b) => a - b);
   const mid = s.length >> 1;
@@ -39,7 +38,6 @@ export function median(values) {
 }
 
 const round1 = (v) => Math.round(v * 10) / 10;
-const pct = (v) => `${nf1.format(v * 100)}\u202f%`;
 
 /** Infobulle d'une session : « date · application », puis le détail. */
 export const sessionTip = (s, detail) =>
