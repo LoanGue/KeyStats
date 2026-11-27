@@ -70,6 +70,12 @@ export async function loadOptions() {
   return options;
 }
 
+/** Nom d'une application d'après /api/filters, ou son numéro quand elle n'y figure pas. */
+export function appName(id) {
+  const app = options ? options.apps.find((a) => a.id === id) : null;
+  return app ? app.name : `Application ${id}`;
+}
+
 /** Dessine les filtres ; onChange reçoit les nouveaux filtres. */
 export function renderFilters(root, filters, onChange) {
   const set = (key, value) => {
