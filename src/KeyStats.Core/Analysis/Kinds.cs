@@ -112,6 +112,11 @@ public enum DayMetric
     BackspaceRepeats = 44,
     /// <summary>Caractères effacés par Ctrl+Retour arrière ; minorant, un appui sur un tampon inconnu compte pour un.</summary>
     WordBackspaceChars = 45,
+
+    /// <summary>Chiffre 0 tapé sur la rangée du haut ; les chiffres 1 à 9 suivent (51 à 59).</summary>
+    TopRowDigit0 = 50,
+    /// <summary>Chiffre 0 tapé sur le pavé numérique ; les chiffres 1 à 9 suivent (61 à 69).</summary>
+    NumpadDigit0 = 60,
 }
 
 /// <summary>Histogrammes journaliers (table <c>day_hist</c>). Valeurs enregistrées en base.</summary>
