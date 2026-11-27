@@ -271,7 +271,7 @@ export function distributionCard(sessions) {
     option: {
       ...baseOption(),
       xAxis: valueAxis({
-        min: lo,
+        min: peak == null ? lo : Math.min(lo, Math.floor(peak / BIN) * BIN),
         max: hi,
         minInterval: BIN,
         splitLine: { show: false },
@@ -285,7 +285,7 @@ export function distributionCard(sessions) {
           itemStyle: { color: token("--chart"), borderRadius: [4, 4, 0, 0] },
           tooltip: {
             formatter: ({ dataIndex }) =>
-              `<b>${range(dataIndex)}</b><br>${sessionCount(bins[dataIndex])}`,
+              `<b>${range(dataIndex)}</b><br>${sessionCount(bins[dataIndex] ?? 0)}`,
           },
           markLine: {
             symbol: "none",
