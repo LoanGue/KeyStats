@@ -90,13 +90,11 @@ internal sealed class AgentControl(string dbPath) : IAgentControl
 
     private bool Start(string exe)
     {
-        var info = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
-        // La base par défaut est celle de l'agent installé : pas d'argument, comme au démarrage de session.
-        if (!string.Equals(Path.GetFullPath(dbPath), Path.GetFullPath(DashboardDb.DefaultPath), StringComparison.OrdinalIgnoreCase))
+        var info = new ProcessStartInfo(exe, ControlProtocol.StartArguments(dbPath, DashboardDb.DefaultPath))
         {
-            info.ArgumentList.Add("--db");
-            info.ArgumentList.Add(dbPath);
-        }
+            UseShellExecute = false,
+            WorkingDirectory = Path.GetDirectoryName(exe)!,
+        };
         try
         {
             using var process = Process.Start(info);
