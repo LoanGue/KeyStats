@@ -73,7 +73,7 @@ public static class SettingsStore
     internal static bool IsValid(KeyStatsSettings s) =>
         s.Version is >= 1 and <= KeyStatsSettings.CurrentVersion
         && s.Analysis is { } a && IsValid(a)
-        && s.LiveCounter is not null
+        && s.LiveCounter is { } live && live.IsValid()
         && (s.ExcludedApps is null || s.ExcludedApps.All(e => !string.IsNullOrWhiteSpace(e)))
         && (s.BackupFolder is null || Path.IsPathFullyQualified(s.BackupFolder));
 

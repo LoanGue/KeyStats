@@ -32,7 +32,7 @@ public sealed class SettingsApiTests : IDisposable
         }
     }
 
-    private static SettingsPatch Patch(int? active = null, int? session = null, string[]? apps = null, bool? live = null) =>
+    private static SettingsPatch Patch(int? active = null, int? session = null, string[]? apps = null, LiveCounterPatch? live = null) =>
         new(active, session, apps, live);
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class SettingsApiTests : IDisposable
         Assert.True(view.Readable);
         Assert.Equal(view.Defaults, view.Thresholds);
         Assert.Equal(Focus.ExclusionList.Defaults, view.ExcludedApps);
-        Assert.True(view.LiveCounter);
+        Assert.Equal(new LiveCounterView(true, LiveCorner.BottomRight, 100), view.LiveCounter);
     }
 
     [Fact]
@@ -106,6 +106,28 @@ public sealed class SettingsApiTests : IDisposable
     }
 
     [Fact]
+    public void Compteur_coin_et_opacite_enregistres_sans_redemarrage()
+    {
+        var (outcome, restart, view) = SettingsApi.Save(Path_, Patch(live: new(null, LiveCorner.TopLeft, 60)));
+        Assert.Equal("saved", outcome);
+        Assert.False(restart);
+        Assert.Equal(new LiveCounterView(true, LiveCorner.TopLeft, 60), view.LiveCounter);
+        var live = SettingsStore.Load(Path_).Settings.LiveCounter;
+        Assert.Equal((true, "topLeft", 60), (live.Enabled, live.Position, live.Opacity));
+    }
+
+    [Theory]
+    [InlineData("milieu", 80)]
+    [InlineData("TopLeft", 80)]
+    [InlineData("topLeft", 19)]
+    [InlineData("topLeft", 101)]
+    public void Compteur_coin_inconnu_ou_opacite_hors_bornes_refuse(string corner, int opacity)
+    {
+        Assert.Equal("invalid", SettingsApi.Save(Path_, Patch(live: new(null, corner, opacity))).Outcome);
+        Assert.False(File.Exists(Path_));
+    }
+
+    [Fact]
     public void Liste_trop_longue_refusee()
     {
         var apps = Enumerable.Range(0, SettingsApi.MaxExcludedApps + 1).Select(i => $"app{i}.exe").ToArray();
@@ -117,7 +139,7 @@ public sealed class SettingsApiTests : IDisposable
     {
         const string text = """{ "analysis": { "sessionGapMs": -1 } }""";
         File.WriteAllText(Path_, text);
-        var (outcome, _, view) = SettingsApi.Save(Path_, Patch(live: false));
+        var (outcome, _, view) = SettingsApi.Save(Path_, Patch(live: new(false, null, null)));
         Assert.Equal("unreadable", outcome);
         Assert.False(view.Readable);
         Assert.Equal(text, File.ReadAllText(Path_));
@@ -161,7 +183,7 @@ public sealed class SettingsApiTests : IDisposable
             return JsonDocument.Parse(response.Body).RootElement;
         }
 
-        var saved = await Post("""{ "liveCounter": false }""");
+        var saved = await Post("""{ "liveCounter": { "enabled": false } }""");
         Assert.Equal("saved", saved.GetProperty("outcome").GetString());
         Assert.True(saved.GetProperty("agentApplied").GetBoolean());
         Assert.False(saved.GetProperty("restarted").GetBoolean());
@@ -179,6 +201,6 @@ public sealed class SettingsApiTests : IDisposable
         Assert.Equal(400, bad.Status);
         Assert.Equal(400, (await router.HandleAsync("POST", WebRouter.Origin + SettingsApi.Path, "null"u8.ToArray())).Status);
         var get = router.Handle("GET", WebRouter.Origin + SettingsApi.Path);
-        Assert.False(JsonDocument.Parse(get.Body).RootElement.GetProperty("liveCounter").GetBoolean());
+        Assert.False(JsonDocument.Parse(get.Body).RootElement.GetProperty("liveCounter").GetProperty("enabled").GetBoolean());
     }
 }

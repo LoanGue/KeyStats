@@ -32,5 +32,23 @@ public sealed class KeyStatsSettings
 
 public sealed class LiveCounterSettings
 {
+    public const int MinOpacity = 20, MaxOpacity = 100;
+
     public bool Enabled { get; set; } = true;
+
+    /// <summary>Coin de la zone de travail : une valeur de <see cref="LiveCorner.All"/>.</summary>
+    public string Position { get; set; } = LiveCorner.BottomRight;
+
+    /// <summary>Opacité en pour cent, de <see cref="MinOpacity"/> à <see cref="MaxOpacity"/>.</summary>
+    public int Opacity { get; set; } = MaxOpacity;
+
+    internal bool IsValid() => LiveCorner.All.Contains(Position) && Opacity is >= MinOpacity and <= MaxOpacity;
+}
+
+/// <summary>Valeurs de <c>liveCounter.position</c>, telles qu'écrites dans <c>settings.json</c>.</summary>
+public static class LiveCorner
+{
+    public const string TopLeft = "topLeft", TopRight = "topRight", BottomLeft = "bottomLeft", BottomRight = "bottomRight";
+
+    public static readonly IReadOnlyList<string> All = [TopLeft, TopRight, BottomLeft, BottomRight];
 }

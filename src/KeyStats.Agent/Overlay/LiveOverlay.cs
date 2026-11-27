@@ -2,11 +2,12 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using KeyStats.Agent.Interop;
 using KeyStats.Core.Analysis;
+using KeyStats.Core.Settings;
 
 namespace KeyStats.Agent.Overlay;
 
 /// <summary>
-/// Compteur en direct, en bas à droite de l'écran où l'on tape : fenêtre calque au premier plan, qui
+/// Compteur en direct, dans un coin de l'écran où l'on tape : fenêtre calque au premier plan, qui
 /// laisse passer les clics, ne prend jamais le focus, absente d'Alt+Tab et des captures d'écran.
 /// Vit sur le thread de la fenêtre de session ; sa minuterie ne tourne que pendant l'affichage.
 /// </summary>
@@ -26,22 +27,38 @@ internal sealed unsafe class LiveOverlay : IDisposable
     private bool _visible, _ticking, _noting;
     private int _x, _y, _width, _height, _dpi;
 
-    public LiveOverlay(LiveMeter meter, Func<long> now, bool enabled)
+    private string _corner = LiveCorner.BottomRight;
+    private byte _alpha = 255;
+
+    public LiveOverlay(LiveMeter meter, Func<long> now, LiveCounterSettings settings)
     {
         _meter = meter;
         _now = now;
-        Enabled = enabled;
+        Apply(settings);
     }
 
     /// <summary><c>liveCounter.enabled</c> ; désactivé, le compteur disparaît tout de suite.</summary>
     public bool Enabled
     {
         get;
-        set
+        private set
         {
             field = value;
             if (!value) Hide();
         }
+    }
+
+    /// <summary>
+    /// Réglages de <c>liveCounter</c>, sur le thread de la fenêtre : coin et opacité valent dès la prochaine image,
+    /// et le compteur affiché est caché pour réapparaître à sa nouvelle place à la prochaine rafale.
+    /// </summary>
+    public void Apply(LiveCounterSettings settings)
+    {
+        bool moved = settings.Position != _corner || LiveDisplay.Alpha(settings.Opacity) != _alpha;
+        _corner = settings.Position;
+        _alpha = LiveDisplay.Alpha(settings.Opacity);
+        Enabled = settings.Enabled;
+        if (moved) Hide();
     }
 
     /// <summary>Crée la fenêtre, cachée, sur le thread appelant (celui de la boucle de messages).</summary>
@@ -88,7 +105,7 @@ internal sealed unsafe class LiveOverlay : IDisposable
     {
         if (_hwnd == 0 || !Enabled) return;
         Hide();
-        if (!Place() || !OverlayPainter.Paint(_hwnd, _x, _y, _width, _height, _dpi, text)) return;
+        if (!Place() || !OverlayPainter.Paint(_hwnd, _x, _y, _width, _height, _dpi, _alpha, text)) return;
         _ = OverlayApi.ShowWindow(_hwnd, OverlayApi.SW_SHOWNOACTIVATE);
         _visible = true;
         _noting = Timers.SetTimer(_hwnd, NoteId, NoteMs, 0) != 0;
@@ -151,12 +168,12 @@ internal sealed unsafe class LiveOverlay : IDisposable
             return;
         }
         var text = LiveDisplay.Frame(reading, _smoother, _now());
-        if (!OverlayPainter.Paint(_hwnd, _x, _y, _width, _height, _dpi, text) || _visible) return;
+        if (!OverlayPainter.Paint(_hwnd, _x, _y, _width, _height, _dpi, _alpha, text) || _visible) return;
         _ = OverlayApi.ShowWindow(_hwnd, OverlayApi.SW_SHOWNOACTIVATE);
         _visible = true;
     }
 
-    /// <summary>Écran de la fenêtre active, au-dessus de sa barre des tâches, à son échelle.</summary>
+    /// <summary>Écran de la fenêtre active, dans le coin choisi de sa zone de travail, à son échelle.</summary>
     /// <returns>Faux si l'écran est introuvable : le compteur ne s'affiche pas.</returns>
     private bool Place()
     {
@@ -169,7 +186,7 @@ internal sealed unsafe class LiveOverlay : IDisposable
         _width = LiveDisplay.Scale(LiveDisplay.Width, _dpi);
         _height = LiveDisplay.Scale(LiveDisplay.Height, _dpi);
         var work = new ScreenRect(info.rcWork.Left, info.rcWork.Top, info.rcWork.Right, info.rcWork.Bottom);
-        (_x, _y) = LiveDisplay.BottomRight(work, _width, _height, LiveDisplay.Scale(LiveDisplay.Margin, _dpi));
+        (_x, _y) = LiveDisplay.Corner(work, _width, _height, LiveDisplay.Scale(LiveDisplay.Margin, _dpi), _corner);
         return true;
     }
 

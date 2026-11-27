@@ -54,7 +54,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         _storage = AgentStorage.Open(dbPath);
         _live = new LiveMeter(settings.Analysis);
         var recorder = new Recorder(_storage.Db, _storage.Archive, new LocalDayClock(_zone), _capture.Clock.PeekMs(), settings.Analysis, _live);
-        _overlay = new LiveOverlay(_live, Now, settings.LiveCounter.Enabled);
+        _overlay = new LiveOverlay(_live, Now, settings.LiveCounter);
         _live.Shown = _overlay.PostShown;
         _pauses = new PauseSources(_commands);
         _tray = new TrayController(_pauses, Now, () => _zone, t => Apply(t), ms => _overlay.ShowNote(LiveDisplay.Snooze(ms)));
@@ -178,7 +178,7 @@ internal sealed class AgentHost : ISessionEvents, IDisposable
         if (load.Status == SettingsStatus.Invalid) return false;
         if (!_capture.SetExclusions(load.Settings.Exclusions())) return false;
         _backup.SetFolder(load.Settings.BackupFolder);
-        _overlay.Enabled = load.Settings.LiveCounter.Enabled;
+        _overlay.Apply(load.Settings.LiveCounter);
         return true;
     }
 

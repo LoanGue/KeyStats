@@ -20,10 +20,17 @@ public sealed record Thresholds(int ActiveGapMs, int SessionGapMs);
 /// <param name="Readable">Faux quand <c>settings.json</c> est refusé : la page ne l'écrase pas.</param>
 /// <param name="ExcludedApps">Liste en vigueur, la liste intégrée tant que le fichier n'en donne pas.</param>
 public sealed record SettingsView(bool Readable, Thresholds Thresholds, Thresholds Defaults,
-    IReadOnlyList<string> ExcludedApps, bool LiveCounter);
+    IReadOnlyList<string> ExcludedApps, LiveCounterView LiveCounter);
+
+/// <param name="Position">Une valeur de <see cref="LiveCorner.All"/>.</param>
+/// <param name="Opacity">En pour cent.</param>
+public sealed record LiveCounterView(bool Enabled, string Position, int Opacity);
 
 /// <summary>Modification partielle : une valeur absente (null) reste telle quelle.</summary>
-public sealed record SettingsPatch(int? ActiveGapMs, int? SessionGapMs, IReadOnlyList<string>? ExcludedApps, bool? LiveCounter);
+public sealed record SettingsPatch(int? ActiveGapMs, int? SessionGapMs, IReadOnlyList<string>? ExcludedApps,
+    LiveCounterPatch? LiveCounter);
+
+public sealed record LiveCounterPatch(bool? Enabled, string? Position, int? Opacity);
 
 /// <param name="Outcome">
 /// <c>saved</c>, <c>invalid</c> (valeur hors bornes, rien d'écrit), <c>unreadable</c> (fichier refusé,
@@ -79,7 +86,8 @@ public static class SettingsApi
         var d = AnalysisSettings.Default;
         return new SettingsView(load.Status != SettingsStatus.Invalid,
             new Thresholds(s.Analysis.ActiveGapMs, s.Analysis.SessionGapMs), new Thresholds(d.ActiveGapMs, d.SessionGapMs),
-            s.ExcludedApps ?? Focus.ExclusionList.Defaults, s.LiveCounter.Enabled);
+            s.ExcludedApps ?? Focus.ExclusionList.Defaults,
+            new LiveCounterView(s.LiveCounter.Enabled, s.LiveCounter.Position, s.LiveCounter.Opacity));
     }
 
     /// <summary>
@@ -100,7 +108,12 @@ public static class SettingsApi
             | (patch.SessionGapMs is { } session && session != a.SessionGapMs);
         a.ActiveGapMs = patch.ActiveGapMs ?? a.ActiveGapMs;
         a.SessionGapMs = patch.SessionGapMs ?? a.SessionGapMs;
-        if (patch.LiveCounter is { } live) s.LiveCounter.Enabled = live;
+        if (patch.LiveCounter is { } live)
+        {
+            s.LiveCounter.Enabled = live.Enabled ?? s.LiveCounter.Enabled;
+            s.LiveCounter.Position = live.Position ?? s.LiveCounter.Position;
+            s.LiveCounter.Opacity = live.Opacity ?? s.LiveCounter.Opacity;
+        }
         if (apps is not null) s.ExcludedApps = apps;
         if (!SettingsStore.IsValid(s)) return (SettingsOutcome.Invalid, false, View(SettingsStore.Load(settingsPath)));
         try
