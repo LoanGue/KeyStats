@@ -17,7 +17,9 @@ All notable changes to this project are documented here. The format follows
 ### Added
 
 - `KeyStats.Dashboard`: the Lettres et mots page shows the share of each letter
-  typed against French reference ticks, with an optional English comparison.
+  typed against French reference ticks, with an optional English comparison,
+  the average word length overall, in prose and in code, the median, and the
+  share of words by length next to French.
 
 - `KeyStats.Core`: GET `/api/letters` gives the frequency of each letter a–z
   (accents folded), next to French and English reference shares, word counts
