@@ -6,9 +6,10 @@ namespace KeyStats.Core.Analysis;
 /// Durée des chevauchements entre deux touches de caractère : une touche enfoncée avant le relâchement de la
 /// précédente. Le chevauchement court de ce second appui au premier des deux relâchements. Il est rangé dans
 /// l'histogramme <see cref="HistogramKind.OverlapMs"/> du jour du second appui, sous-clé = la paire de touches
-/// (<see cref="Sub"/>). Tableaux fixes : aucune allocation par frappe.
+/// (<see cref="Sub"/>). Un chevauchement plus long que <paramref name="capMs"/> (une touche tenue exprès pendant
+/// qu'on en tape d'autres) n'est pas un roulement et n'est pas mesuré. Tableaux fixes : aucune allocation par frappe.
 /// </summary>
-internal sealed class OverlapTracker(StatsAccumulator stats)
+internal sealed class OverlapTracker(StatsAccumulator stats, int capMs)
 {
     /// <summary>Chevauchements suivis en même temps ; au-delà, les suivants ne sont pas mesurés.</summary>
     public const int MaxPending = 8;
@@ -38,9 +39,9 @@ internal sealed class OverlapTracker(StatsAccumulator stats)
         for (int i = _count - 1; i >= 0; i--)
         {
             if (_first[i] != key && _second[i] != key) continue;
-            long start = _startMs[i];
-            int bucket = LogScale.Overlap.Bucket(Math.Max(0, ms - start));
-            stats.AddHistogram(stats.DayKey(start), HistogramKind.OverlapMs, Sub(_first[i], _second[i]), bucket);
+            long start = _startMs[i], duration = Math.Max(0, ms - start);
+            if (duration <= capMs)
+                stats.AddHistogram(stats.DayKey(start), HistogramKind.OverlapMs, Sub(_first[i], _second[i]), LogScale.Overlap.Bucket(duration));
             RemoveAt(i);
         }
     }

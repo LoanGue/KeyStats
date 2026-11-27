@@ -55,7 +55,7 @@ public sealed class Analyzer
         _live = live;
         _session = new SessionBuilder(stats, _s, live);
         _corrections = new CorrectionAnalyzer(_session, _s);
-        _overlaps = new OverlapTracker(stats);
+        _overlaps = new OverlapTracker(stats, _s.HoldCapMs);
     }
 
     public StatsAccumulator Stats => _stats;
@@ -353,6 +353,8 @@ public sealed class Analyzer
             {
                 overlap = true;
                 _stats.AddMetric(day, DayMetric.Overlaps, 1);
+                // Durée mesurée seulement contre la dernière touche de caractère, si elle est encore tenue : la somme
+                // des histogrammes OverlapMs peut rester sous la métrique Overlaps, qui compte tous les appuis.
                 if (_textDown[_lastTextKey]) _overlaps.Start(_lastTextKey, k, ms);
             }
             else if (_lastTextUpMs != long.MinValue)

@@ -18,7 +18,8 @@ All notable changes to this project are documented here. The format follows
 
 - `KeyStats.Core`: the analysis measures how long two character keys stay
   pressed together, from the second press to the first release, per pair of
-  keys, in a new `day_hist` kind (`OverlapMs`). Days analysed before this
+  keys, in a new `day_hist` kind (`OverlapMs`). An overlap longer than the
+  hold cap (2 s) is not measured. Days analysed before this
   change have no overlap durations until history is recalculated.
 
 - `KeyStats.Dashboard`: the Lettres et mots page shows the share of each letter
