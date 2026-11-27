@@ -33,6 +33,8 @@ All notable changes to this project are documented here. The format follows
   the opposite hand, with the Shift on the same side, or under Caps Lock, hands
   taken from the standard AZERTY fingering. Days recorded earlier have no Shift
   side until the recalculation from the raw data is available.
+- `KeyStats.Core`: GET `/api/keyboard/minutes?key=` gives the presses of one key
+  minute by minute on the latest day of the period it was used.
 - `KeyStats.Core`: GET `/api/typos` gives the accuracy of each day of the
   period, the most confused pairs with an AZERTY neighbour flag, the error rate
   of accented characters, error types, the detection delay (median and
