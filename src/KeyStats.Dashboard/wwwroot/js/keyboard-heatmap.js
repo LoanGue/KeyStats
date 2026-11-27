@@ -1,4 +1,4 @@
-// Carte de chaleur de la page Clavier : niveaux de couleur, touches et légende.
+// Carte de chaleur de la page Clavier : niveaux de couleur, touches à choisir et légende.
 
 import { keyName, numpad, rows } from "./keyboard-layout.js";
 import { measures } from "./keyboard-measures.js";
@@ -39,9 +39,9 @@ function valuesOf(data, m) {
 const heat = (level, warm) =>
   `var(--heat-${level && warm ? "warm-" : ""}${level})`;
 
-/** Touche colorée selon son niveau, décrite aux lecteurs d'écran par sa valeur. */
-function keyNode(k, value, level, m) {
-  const node = el("span", "key");
+/** Touche colorée selon son niveau : un bouton qui la choisit, décrit par sa valeur. */
+function keyNode(k, value, level, m, onPick) {
+  const node = el(k.code == null || k.twin ? "span" : "button", "key");
   node.style.background = heat(level, m.warm);
   if (level === 0) node.classList.add("empty");
   if (level >= 4) node.classList.add("strong");
@@ -50,25 +50,31 @@ function keyNode(k, value, level, m) {
   else node.style.width = `${k.width * 48 - 4}px`;
   if (k.shifted) node.append(el("span", "key-shift", k.shifted));
   node.append(el("span", null, k.shown));
+  if (k.code != null) {
+    node.dataset.code = k.code;
+    node.addEventListener("click", () => onPick(k.code));
+  }
   if (k.code == null || k.twin) {
+    // La moitié basse d'Entrée se clique aussi, mais un seul bouton la représente.
     node.setAttribute("aria-hidden", "true");
     return node;
   }
-  node.setAttribute("role", "img");
+  node.type = "button";
+  node.setAttribute("aria-pressed", "false");
   const name = k.shifted ? `${keyName(k)} ${k.shifted}` : keyName(k);
   const text = value == null ? "pas de mesure" : m.text(value);
   node.setAttribute("aria-label", `Touche ${name} : ${text}`);
   return node;
 }
 
-/** Portable et pavé, colorés selon la mesure nommée measure. */
-export function heatmap(data, measure) {
+/** Portable et pavé, colorés selon la mesure nommée measure ; onPick(code) au clic d'une touche. */
+export function heatmap(data, measure, onPick) {
   const m = measures[measure];
   const values = valuesOf(data, m);
   const level = leveller([...values.values()], m.root);
   const keyOf = (k) => {
     const v = k.code == null ? null : values.get(k.code);
-    return keyNode(k, v, level(v), m);
+    return keyNode(k, v, level(v), m, onPick);
   };
   const main = el("div", "keys-main");
   for (const r of rows) {
