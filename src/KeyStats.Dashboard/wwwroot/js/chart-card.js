@@ -63,7 +63,8 @@ export function legend(items) {
 /**
  * Carte d'un graphique. spec : title, note (texte ou nœuds), aside (nœud en haut à droite), wide,
  * className, footnote, et soit empty (message à la place du graphique), soit body (contenu HTML
- * déjà lisible), label, headers, rows (tableau masqué) et option, l'un ou l'autre ou les deux.
+ * déjà lisible), label, headers, rows (tableau masqué) et option, l'un ou l'autre ou les deux ;
+ * after : contenu lisible placé sous le graphique.
  */
 export function chartCard(spec) {
   const section = el(
@@ -90,6 +91,7 @@ export function chartCard(spec) {
     fillTable(table, spec.headers, spec.rows);
     section.append(node, hidden);
   }
+  if (spec.after) section.append(spec.after);
   if (spec.footnote) section.append(el("p", "chart-footnote", spec.footnote));
   return { section, node, option: node ? spec.option : null };
 }
