@@ -17,8 +17,11 @@ export function trimBins(bins) {
 }
 
 /** Barres d'un histogramme : count(n) décrit une case dans l'infobulle, axis légende l'axe horizontal,
- * color est le jeton CSS des barres. */
-export function binsOption(bins, { count, axis, color = "--chart-typing" }) {
+ * color est le jeton CSS des barres, tick(ms) écrit les graduations. */
+export function binsOption(
+  bins,
+  { count, axis, color = "--chart-typing", tick = ms },
+) {
   return {
     ...baseOption(),
     grid: { left: 8, right: 8, top: 8, bottom: 28, containLabel: true },
@@ -31,7 +34,7 @@ export function binsOption(bins, { count, axis, color = "--chart-typing" }) {
     },
     xAxis: {
       type: "category",
-      data: bins.map((b) => ms(b.fromMs)),
+      data: bins.map((b) => tick(b.fromMs)),
       axisLine: { lineStyle: { color: token("--border-strong") } },
       axisTick: { show: false },
       axisLabel: { color: token("--muted"), fontSize: 11, hideOverlap: true },
