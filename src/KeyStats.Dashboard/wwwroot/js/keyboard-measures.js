@@ -33,7 +33,7 @@ export const measures = {
   faute: {
     label: "Taux de faute",
     legend: "Taux de faute",
-    help: "Part des caractères de prose tapés sur cette touche qui sont des fautes.",
+    help: "Part des caractères de prose tapés sur cette touche à la place d'un autre, ou en trop.",
     value: (k) => k.errorRate ?? null,
     text: pct,
     warm: true,
