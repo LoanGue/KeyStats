@@ -3,6 +3,8 @@
 import { getJson } from "./api.js";
 import { chartCard, drawCharts } from "./chart-card.js";
 import { bigramsCard } from "./rhythm-bigrams.js";
+import { fingersCard, flowSection } from "./rhythm-hands.js";
+import { holdCard } from "./rhythm-hold.js";
 import { el, showEmptyPeriod } from "./states.js";
 import { unfilteredKeys } from "./typos.js";
 
@@ -19,11 +21,16 @@ export async function renderRhythm(view, ctx) {
   }
   // Toute la page vient des tables par jour, qui ignorent l'application, la nature et le clavier.
   const footnote = data.dayTablesUnfiltered ? unfilteredKeys : undefined;
-  const cards = [bigramsCard(data.bigrams)].map((c) =>
-    chartCard({ ...c, footnote }),
-  );
+  const cards = [
+    bigramsCard(data.bigrams),
+    holdCard(data.hold, data.charPresses, data.overlaps),
+    fingersCard(data.fingers),
+  ].map((c) => chartCard({ ...c, footnote }));
   const grid = el("div", "chart-grid");
-  grid.append(...cards.map((c) => c.section));
+  grid.append(
+    ...cards.map((c) => c.section),
+    flowSection(data.flow, data.capitals, footnote),
+  );
   view.replaceChildren(grid);
   await drawCharts(cards, ctx.isCurrent);
 }
