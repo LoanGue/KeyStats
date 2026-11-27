@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/activity` gives the active writing time per local
+  day over the last 53 weeks, per weekday and local hour over the period (a
+  session spanning several hours is split pro rata, by quarter hour so that
+  zones offset by 30 or 45 minutes stay right), and per application. Every
+  figure comes from the writing sessions and follows all the header filters.
+
 - `KeyStats.Dashboard`: the Lettres et mots page shows the share of each letter
   typed against French reference ticks, with an optional English comparison,
   the average word length overall, in prose and in code, the median, and the
