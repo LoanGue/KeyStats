@@ -16,6 +16,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/typos` gives the accuracy of each day of the
+  period, the most confused pairs with an AZERTY neighbour flag, the error rate
+  of accented characters, error types, the detection delay (median and
+  distribution), the correction cost (collateral deletions, KSPC, keys lost)
+  and the characters deleted by single, held and Ctrl+Backspace. Two new day
+  metrics count backspace repeats and characters erased by Ctrl+Backspace;
+  days recorded earlier need a recalculation from the raw data.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
