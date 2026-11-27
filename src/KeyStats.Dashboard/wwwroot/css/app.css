@@ -22,6 +22,13 @@
   --chart-green: #00b894;
   --chart-amber: #f2a600;
   --key-typed-bg: #fff6f0;
+  /* Rampe de la carte de chaleur du clavier : 0 sans mesure, puis de faible à élevé. */
+  --heat-0: #f1f3f6;
+  --heat-1: #cce3fd;
+  --heat-2: #9dc8f7;
+  --heat-3: #519ced;
+  --heat-4: #2370cd;
+  --heat-5: #0f4a96;
   --warn-bg: #fdf0e6;
   --warn-text: #8a3c08;
   --nav-bg: #121823;
