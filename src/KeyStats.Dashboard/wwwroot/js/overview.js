@@ -56,13 +56,12 @@ const figures = [
     label: "Vitesse réelle",
     value: (t) => (t.realWpm == null ? "—" : nf.format(Math.round(t.realWpm))),
     note: () => "mots/min nets",
-    delta: (t, p) =>
-      t.realWpm == null || p.realWpm == null
-        ? null
-        : signed(
-            t.realWpm - p.realWpm,
-            `${nf.format(Math.abs(Math.round(t.realWpm - p.realWpm)))}\u00a0mots/min`,
-          ),
+    delta: (t, p) => {
+      if (t.realWpm == null || p.realWpm == null) return null;
+      // \u00c9cart des valeurs affich\u00e9es : le signe suit l'arrondi (+0,4 donne \u00b10).
+      const gap = Math.round(t.realWpm) - Math.round(p.realWpm);
+      return signed(gap, `${nf.format(Math.abs(gap))}\u00a0mots/min`);
+    },
   },
   {
     label: "Précision",
