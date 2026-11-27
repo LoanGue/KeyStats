@@ -1,0 +1,117 @@
+/* Page Raccourcis : raccourcis, chevauchement, touches enfoncées ensemble (maquette Raccourcis). */
+
+.shortcuts-key {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+.shortcuts-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.shortcuts-plus {
+  color: var(--muted);
+}
+.shortcuts-bar {
+  display: block;
+  min-width: 2px;
+  height: 12px;
+  border-radius: 0 4px 4px 0;
+  background: var(--chart);
+}
+.shortcuts-bar.light {
+  height: 10px;
+  background: var(--chart-key);
+}
+
+/* Raccourcis les plus utilisés. */
+.shortcuts-top {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.shortcuts-top th {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+}
+.shortcuts-top td {
+  height: 40px;
+  border-bottom: 1px solid var(--chip);
+}
+.shortcuts-top th:first-child {
+  width: 196px;
+}
+.shortcuts-top th:nth-child(2),
+.shortcuts-top td:nth-child(2) {
+  padding: 0 12px;
+}
+.shortcuts-top th:last-child,
+.shortcuts-top td:last-child {
+  width: 64px;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chevauchement : nature, durées, paires. */
+.shortcuts-overlap .chart-head {
+  flex-wrap: nowrap;
+}
+.shortcuts-overlap .chart {
+  height: 150px;
+}
+.shortcuts-split {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shortcuts-pairs h3,
+.shortcuts-chords h3 {
+  margin: 4px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.shortcuts-pairs ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.shortcuts-pair {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 60px;
+  gap: 10px;
+  align-items: center;
+}
+.shortcuts-pair-median {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.shortcuts-none,
+.shortcuts-help {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
