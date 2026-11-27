@@ -1,7 +1,7 @@
 // Carte « Types de fautes » de la page Fautes, avec le délai de détection ; barres empilées partagées.
 
+import { binsOption, span, trimBins } from "./bins.js";
 import { swatch } from "./chart-card.js";
-import { baseOption, token, valueAxis } from "./charts.js";
 import { nf, pct, shortDelay as ms } from "./format.js";
 import { el } from "./states.js";
 
@@ -22,12 +22,6 @@ export function stack(parts, className) {
   return bar;
 }
 
-/** « 120 ms à 160 ms », ou « 3 s et plus » pour la dernière case. */
-const span = (b) =>
-  b.toMs == null
-    ? `${ms(b.fromMs)} et plus`
-    : `${ms(b.fromMs)} à ${ms(b.toMs)}`;
-
 const faults = (n) => `${nf.format(n)} faute${n > 1 ? "s" : ""}`;
 
 const TYPES = [
@@ -36,51 +30,6 @@ const TYPES = [
   ["insertions", "Ajout", "lettre en trop", "--chart-green"],
   ["transpositions", "Inversion", "deux lettres permutées", "--chart-amber"],
 ];
-
-function delayOption(bins) {
-  return {
-    ...baseOption(),
-    grid: { left: 8, right: 8, top: 8, bottom: 28, containLabel: true },
-    tooltip: {
-      ...baseOption().tooltip,
-      formatter: (p) => {
-        const b = bins[p.dataIndex];
-        return `${span(b)}<br><b>${faults(b.count)}</b>`;
-      },
-    },
-    xAxis: {
-      type: "category",
-      data: bins.map((b) => ms(b.fromMs)),
-      axisLine: { lineStyle: { color: token("--border-strong") } },
-      axisTick: { show: false },
-      axisLabel: { color: token("--muted"), fontSize: 11, hideOverlap: true },
-    },
-    yAxis: valueAxis({ axisLabel: { show: false }, axisLine: { show: false } }),
-    graphic: [
-      {
-        type: "text",
-        right: 0,
-        bottom: 0,
-        style: {
-          text: "temps entre la faute et le retour arrière →",
-          fill: token("--muted"),
-          fontSize: 12,
-        },
-      },
-    ],
-    series: [
-      {
-        type: "bar",
-        data: bins.map((b) => b.count),
-        barCategoryGap: "8%",
-        itemStyle: {
-          color: token("--chart-typing"),
-          borderRadius: [4, 4, 0, 0],
-        },
-      },
-    ],
-  };
-}
 
 export function typesCard(types, delay) {
   const card = {
@@ -119,16 +68,17 @@ export function typesCard(types, delay) {
     el("div", "typos-rule"),
     head,
   );
-  const first = delay.bins.findIndex((b) => b.count);
-  if (first < 0) return { ...card, body };
-  const last = delay.bins.findLastIndex((b) => b.count);
-  const bins = delay.bins.slice(first, last + 1);
+  const bins = trimBins(delay.bins);
+  if (!bins.length) return { ...card, body };
   return {
     ...card,
     body,
     label: `Répartition du délai entre la faute et le premier retour arrière, médiane ${ms(delay.medianMs)}`,
     headers: ["Délai", "Fautes"],
     rows: bins.map((b) => [span(b), nf.format(b.count)]),
-    option: delayOption(bins),
+    option: binsOption(bins, {
+      count: faults,
+      axis: "temps entre la faute et le retour arrière →",
+    }),
   };
 }
