@@ -195,6 +195,119 @@ h1 {
   font-size: 13px;
   color: var(--muted);
 }
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pill svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: currentColor;
+}
+.pill-ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+.pill-ok .dot {
+  background: var(--ok-dot);
+}
+.pill-bad {
+  background: var(--bad-bg);
+  color: var(--bad-text);
+}
+.pill-bad .dot {
+  background: var(--bad-dot);
+}
+.pill-muted {
+  background: var(--chip);
+  color: #3b424d;
+}
+.pill-info {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+.pill-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* Filtres */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  align-items: flex-end;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--chip);
+}
+.seg button {
+  height: 30px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted-strong);
+}
+.seg button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(20, 26, 35, 0.14);
+}
+select {
+  height: 36px;
+  min-width: 190px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+}
+
 @media (max-width: 860px) {
   .app {
     flex-direction: column;
