@@ -27,6 +27,8 @@ All notable changes to this project are documented here. The format follows
   period, with the period figure and the best day of at least 200 characters.
 - `KeyStats.Dashboard`: Fautes page, confused pairs (filter on AZERTY
   neighbours) and the error rate of each accented character.
+- `KeyStats.Dashboard`: Fautes page, share of each error type and distribution
+  of the detection delay.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
