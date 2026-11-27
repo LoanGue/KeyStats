@@ -22,6 +22,14 @@ export function stack(parts, className) {
   return bar;
 }
 
+/** « 120 ms à 160 ms », ou « 3 s et plus » pour la dernière case. */
+const span = (b) =>
+  b.toMs == null
+    ? `${ms(b.fromMs)} et plus`
+    : `${ms(b.fromMs)} à ${ms(b.toMs)}`;
+
+const faults = (n) => `${nf.format(n)} faute${n > 1 ? "s" : ""}`;
+
 const TYPES = [
   ["substitutions", "Substitution", "une touche pour une autre", "--chart"],
   ["omissions", "Oubli", "lettre manquante", "--chart-typing"],
@@ -37,7 +45,7 @@ function delayOption(bins) {
       ...baseOption().tooltip,
       formatter: (p) => {
         const b = bins[p.dataIndex];
-        return `${ms(b.fromMs)} à ${b.toMs == null ? "plus" : ms(b.toMs)}<br><b>${nf.format(b.count)}</b> fautes`;
+        return `${span(b)}<br><b>${faults(b.count)}</b>`;
       },
     },
     xAxis: {
@@ -118,12 +126,9 @@ export function typesCard(types, delay) {
   return {
     ...card,
     body,
-    label: `Répartition du délai entre la faute et le retour arrière, médiane ${ms(delay.medianMs)}`,
+    label: `Répartition du délai entre la faute et le premier retour arrière, médiane ${ms(delay.medianMs)}`,
     headers: ["Délai", "Fautes"],
-    rows: bins.map((b) => [
-      `${ms(b.fromMs)} à ${b.toMs == null ? "plus" : ms(b.toMs)}`,
-      nf.format(b.count),
-    ]),
+    rows: bins.map((b) => [span(b), nf.format(b.count)]),
     option: delayOption(bins),
   };
 }
