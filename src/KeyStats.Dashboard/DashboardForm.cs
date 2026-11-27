@@ -29,6 +29,15 @@ internal sealed class DashboardForm : Form
         Load += async (_, _) => await StartOrCloseAsync();
     }
 
+    private const int WmTimeChange = 0x001E;
+
+    /// <summary>Changement de fuseau : .NET garde l'ancien en cache tant qu'on ne le vide pas.</summary>
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WmTimeChange) TimeZoneInfo.ClearCachedData();
+        base.WndProc(ref m);
+    }
+
     private async Task StartOrCloseAsync()
     {
         try
