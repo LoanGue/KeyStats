@@ -56,13 +56,13 @@ export function lengthsCard(lengths) {
     title: "Longueurs de mots",
     note: "Part des mots selon leur nombre de lettres.",
     className: "letters-lengths",
-    aside: legend([
-      ["Vous", null, "--chart"],
-      ...(hasFrench ? [["Français", "line", "--text"]] : []),
-    ]),
   };
   const total = lengths.reduce((s, l) => s + l.count, 0);
   if (!total) return { ...card, empty: "Aucun mot complet sur cette période." };
+  card.aside = legend([
+    ["Vous", null, "--chart"],
+    ...(hasFrench ? [["Français", "line", "--text"]] : []),
+  ]);
   const last = lengths.at(-1).length;
   const categories = lengths.map((l) => lengthLabel(l, last));
   const mine = lengths.map((l) => l.count / total);

@@ -106,17 +106,28 @@ export function frequencyCard(letters) {
     color: token("--chart-english"),
     dashed: true,
   };
-  const option = (withEnglish) =>
-    comparisonOption(
+  const option = (withEnglish) => {
+    const o = comparisonOption(
       categories,
       mine,
       withEnglish ? [french, english] : [french],
     );
+    // Lettres de l'axe en chasse fixe, comme dans la maquette.
+    Object.assign(o.xAxis.axisLabel, {
+      fontFamily: token("--mono"),
+      fontSize: 13,
+    });
+    return o;
+  };
   const label = (withEnglish) =>
     `Part de chaque lettre de a à z dans votre frappe, comparée au français${withEnglish ? " et à l'anglais" : ""}`;
 
+  // Trait pointillé : la couleur passe par currentColor, swatch() poserait un fond plein.
+  const dashed = el("span", "swatch line dashed");
+  dashed.setAttribute("aria-hidden", "true");
+  dashed.style.color = "var(--chart-english)";
   const englishKey = el("span");
-  englishKey.append(swatch("--chart-english", "line dashed"), "Anglais");
+  englishKey.append(dashed, "Anglais");
   englishKey.hidden = true;
   const you = el("span");
   you.append(swatch("--chart"), "Vous");
@@ -138,15 +149,18 @@ export function frequencyCard(letters) {
       pct(l.english),
     ]),
     option: option(false),
+    // Appelé une fois le graphique tracé : un choix fait pendant le chargement est appliqué tout de suite.
     bind: (node) => {
       if (!node) return;
-      box.addEventListener("change", () => {
+      const apply = () => {
         englishKey.hidden = !box.checked;
         node.setAttribute("aria-label", label(box.checked));
         window.echarts
           ?.getInstanceByDom(node)
           ?.setOption(option(box.checked), { replaceMerge: ["series"] });
-      });
+      };
+      box.addEventListener("change", apply);
+      if (box.checked) apply();
     },
   };
 }

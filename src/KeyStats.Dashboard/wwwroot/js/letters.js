@@ -20,16 +20,28 @@ export async function renderLetters(view, ctx) {
     showEmptyPeriod(view, ctx);
     return;
   }
-  const footnote = data.dayTablesUnfiltered ? unfiltered : undefined;
+  const [frenchLetters, englishLetters, frenchWords] = data.sources;
+  const notes = [
+    `Références : ${frenchLetters} ; ${englishLetters}.`,
+    `Référence française : ${frenchWords}. Comptée ponctuation comprise, elle est un peu plus longue qu'une mesure en lettres seules.`,
+    null,
+  ];
   const frequency = frequencyCard(data.letters);
   const cards = [
     frequency,
     wordsCard(data.words),
     lengthsCard(data.wordLengths),
-  ].map((spec) => chartCard({ ...spec, footnote }));
-  frequency.bind(cards[0].node);
+  ].map((spec, i) =>
+    chartCard({
+      ...spec,
+      footnote: [notes[i], data.dayTablesUnfiltered && unfiltered]
+        .filter(Boolean)
+        .join(" "),
+    }),
+  );
   const grid = el("div", "chart-grid letters-grid");
   grid.append(...cards.map((c) => c.section));
   view.replaceChildren(grid);
   await drawCharts(cards, ctx.isCurrent);
+  if (ctx.isCurrent()) frequency.bind(cards[0].node);
 }

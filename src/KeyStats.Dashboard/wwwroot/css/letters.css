@@ -23,11 +23,6 @@
   align-items: center;
   gap: 8px 18px;
 }
-.swatch.line.dashed {
-  height: 0;
-  border-top: 3px dashed var(--chart-english);
-  background: none !important;
-}
 .letters-toggle {
   display: inline-flex;
   align-items: center;
