@@ -1,4 +1,4 @@
-/* Vue d'ensemble : indicateurs, repris de la maquette (Main). */
+/* Vue d'ensemble : indicateurs et courbe de progression, repris de la maquette (Main). */
 
 .kpis {
   display: grid;
@@ -26,4 +26,53 @@
 .kpi-note {
   font-size: 12px;
   color: var(--muted);
+}
+
+.progress {
+  padding: 18px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.progress-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.progress h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.progress p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.progress-chart {
+  height: 300px;
+}
+
+.measure {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.measure-btn {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--pill-muted-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.measure-btn[aria-pressed="true"] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--on-primary);
+  font-weight: 600;
 }
