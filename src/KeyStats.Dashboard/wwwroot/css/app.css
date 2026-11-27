@@ -36,6 +36,12 @@
   --heat-warm-3: #f8a272;
   --heat-warm-4: #c24e14;
   --heat-warm-5: #8f3a10;
+  /* Rampe du calendrier et de la grille horaire (maquette Activite). */
+  --activity-0: var(--heat-0);
+  --activity-1: var(--heat-1);
+  --activity-2: var(--chart-session);
+  --activity-3: #338ced;
+  --activity-4: var(--chart-median);
   --warn-bg: #fdf0e6;
   --warn-text: #8a3c08;
   --nav-bg: #121823;

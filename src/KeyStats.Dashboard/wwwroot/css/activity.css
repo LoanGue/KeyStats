@@ -1,0 +1,98 @@
+/* Page Activité et origine : calendrier et heure × jour (maquette Activite). */
+
+/* Rampe commune au calendrier et à la grille horaire */
+.activity-cell {
+  display: block;
+  height: 14px;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+.activity-cell.level-0 {
+  background: var(--activity-0);
+  border: 1px solid var(--border);
+}
+.activity-cell.level-1 {
+  background: var(--activity-1);
+}
+.activity-cell.level-2 {
+  background: var(--activity-2);
+}
+.activity-cell.level-3 {
+  background: var(--activity-3);
+}
+.activity-cell.level-4 {
+  background: var(--activity-4);
+}
+.activity-cell.today {
+  box-shadow: 0 0 0 2px var(--text);
+}
+.activity-ramp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.activity-ramp .activity-cell {
+  width: 14px;
+}
+
+/* Calendrier */
+.activity-scroll {
+  overflow-x: auto;
+  /* Laisse la place au contour du jour courant. */
+  padding: 2px;
+}
+.activity-calendar {
+  display: flex;
+  gap: 6px;
+  width: max-content;
+  font-size: 11px;
+  color: var(--muted);
+}
+.activity-days {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 28px;
+  padding-top: 20px;
+}
+.activity-days span {
+  height: 14px;
+  line-height: 14px;
+}
+.activity-weeks {
+  display: flex;
+  gap: 3px;
+}
+.activity-week {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 14px;
+}
+.activity-month {
+  height: 17px;
+  white-space: nowrap;
+}
+
+/* Heure × jour de la semaine */
+.activity-hours {
+  display: grid;
+  grid-template-columns: 34px repeat(24, minmax(0, 1fr));
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.activity-hour {
+  height: 16px;
+  white-space: nowrap;
+}
+.activity-weekday {
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+.activity-hours .activity-cell {
+  height: 24px;
+}
