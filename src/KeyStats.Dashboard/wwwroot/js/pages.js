@@ -9,6 +9,7 @@
 
 import { renderOverview } from "./overview.js";
 import { renderSpeed } from "./speed.js";
+import { renderTypos } from "./typos.js";
 
 export const pages = {
   ensemble: {
@@ -29,6 +30,7 @@ export const pages = {
     description:
       "Où, comment et à quel prix vous vous trompez, et comment vous corrigez.",
     filters: true,
+    render: renderTypos,
   },
   clavier: {
     title: "Clavier",
