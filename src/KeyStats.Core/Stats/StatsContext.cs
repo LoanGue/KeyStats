@@ -18,7 +18,10 @@ public sealed class StatsContext(KeyStatsDb db, Func<long> nowMs, TimeZoneInfo? 
     /// Fuseau relu à chaque requête : un changement d'heure ou de fuseau est pris sans redémarrer, pourvu que
     /// l'hôte vide le cache de <see cref="TimeZoneInfo"/> sur <c>WM_TIMECHANGE</c> (le tableau de bord le fait).
     /// </summary>
-    public int Today => new LocalDayClock(zone ?? TimeZoneInfo.Local).DayKey(nowMs());
+    public LocalDayClock Clock => new(zone ?? TimeZoneInfo.Local);
+
+    /// <summary>Jour local en cours, au fuseau de <see cref="Clock"/>.</summary>
+    public int Today => Clock.DayKey(nowMs());
 
     /// <summary>Premier jour qui a des statistiques ; null pour une base vide.</summary>
     public int? FirstDay => db.Scalar("SELECT MIN(day) FROM day_metric") is long day ? (int)day : null;
@@ -80,4 +83,5 @@ public static class FiltersApi
 [JsonSerializable(typeof(Overview))]
 [JsonSerializable(typeof(Speed))]
 [JsonSerializable(typeof(Typos))]
+[JsonSerializable(typeof(Keyboard))]
 public sealed partial class StatsJson : JsonSerializerContext;
