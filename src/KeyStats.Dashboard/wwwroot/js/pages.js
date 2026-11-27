@@ -8,6 +8,7 @@
 // Une exception levée par render affiche l'état d'erreur avec « Réessayer ».
 
 import { renderOverview } from "./overview.js";
+import { renderSpeed } from "./speed.js";
 
 export const pages = {
   ensemble: {
@@ -21,6 +22,7 @@ export const pages = {
     description:
       "Vos sessions, leur dispersion et ce qui fait varier votre vitesse.",
     filters: true,
+    render: renderSpeed,
   },
   fautes: {
     title: "Fautes",
