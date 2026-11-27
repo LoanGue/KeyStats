@@ -53,4 +53,22 @@ public sealed class CapitalShiftTests
         var stats = new Typist().Down(KeyCode.LeftShift).HoldKey(KeyOf('p'), repeats: 3).Analyze();
         Assert.Equal(1, Metric(stats, DayMetric.ShiftOppositeCapitals));
     }
+
+    [Fact]
+    public void Verr_Maj_pressee_dans_une_appli_exclue_reste_suivie()
+    {
+        var t = new Typist().Key(KeyCode.CapsLock);
+        var stats = new StatsAccumulator(new LocalDayClock(TimeZoneInfo.Utc));
+        var analyzer = new Analyzer(stats);
+        analyzer.SetFocus(new FocusInfo(Typist.Start - 1000, 1, 0, null, FocusState.NewWindow | FocusState.Excluded));
+        foreach (var e in t.Events) analyzer.Process(e);
+
+        int from = t.Events.Count;
+        analyzer.SetFocus(new FocusInfo(t.Ms, 2, 0, null, FocusState.NewWindow));
+        t.Key(KeyOf('o')).Key(KeyOf('k'));
+        for (int i = from; i < t.Events.Count; i++) analyzer.Process(t.Events[i]);
+        analyzer.EndAll();
+
+        Assert.Equal(2, Metric(stats, DayMetric.CapsLockCapitals));
+    }
 }
