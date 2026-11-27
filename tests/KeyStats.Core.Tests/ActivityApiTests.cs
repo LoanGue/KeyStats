@@ -177,6 +177,8 @@ public sealed class ActivityApiTests : IDisposable
         var locked = router.Handle("GET", url);
         Assert.Equal(403, locked.Status);
         Assert.DoesNotContain("Lettre", System.Text.Encoding.UTF8.GetString(locked.Body), StringComparison.Ordinal);
+        // A bad request is reported as such even while the key is locked.
+        Assert.Equal(400, router.Handle("GET", url.Replace("period=day", "period=decade", StringComparison.Ordinal)).Status);
 
         session.Adopt(MasterKey.FromPkcs8(master.ExportPkcs8()));
         Assert.Equal(400, router.Handle("GET", WebRouter.Origin + ActivityTitles.Path + "?period=day").Status);
