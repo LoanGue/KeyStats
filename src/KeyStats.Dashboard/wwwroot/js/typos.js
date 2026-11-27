@@ -3,13 +3,12 @@
 import { getJson } from "./api.js";
 import { chartCard, drawCharts } from "./chart-card.js";
 import { el, showEmptyPeriod } from "./states.js";
+import { total, typesCard } from "./typos-correction.js";
 import { accentsCard, accuracyCard, pairsCard } from "./typos-text.js";
 
 // Les tables par jour ignorent l'application, la nature et le clavier choisis.
 const unfiltered =
   "Le filtre d'application, de nature ou de clavier ne s'applique pas à cette carte : elle couvre toute la prose de la période.";
-
-const total = (counts) => Object.values(counts).reduce((a, b) => a + b, 0);
 
 /** Rien à montrer : ni prose dans les sessions retenues, ni faute, ni effacement. */
 const isEmpty = (data) =>
@@ -30,6 +29,7 @@ export async function renderTypos(view, ctx) {
     accuracyCard(data),
     { ...pairsCard(data.pairs), footnote },
     { ...accentsCard(data.accents), footnote },
+    { ...typesCard(data.types, data.delay), footnote },
   ].map(chartCard);
   const grid = el("div", "chart-grid");
   grid.append(...cards.map((c) => c.section));

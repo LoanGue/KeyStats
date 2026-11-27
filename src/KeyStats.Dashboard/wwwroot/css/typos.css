@@ -1,4 +1,4 @@
-/* Page Fautes : chiffres en tête de carte, paires confondues et caractères accentués (maquette Fautes). */
+/* Page Fautes : chiffres en tête de carte, paires confondues, caractères accentués et types de fautes (maquette Fautes). */
 
 .typos-figures {
   display: flex;
@@ -146,4 +146,77 @@
   height: 4px;
   border-radius: 2px;
   background: var(--chart-typing);
+}
+
+/* Types de fautes : barres empilées, légende, délai de détection. */
+.typos-muted {
+  color: var(--muted);
+}
+.typos-stack {
+  display: flex;
+  gap: 2px;
+}
+.typos-stack.thin {
+  height: 14px;
+}
+.typos-stack.thick {
+  height: 18px;
+}
+.typos-stack > span:first-child {
+  border-radius: 4px 0 0 4px;
+}
+.typos-stack > span:last-child {
+  border-radius: 0 4px 4px 0;
+}
+.typos-stack > span:only-child {
+  border-radius: 4px;
+}
+.typos-types {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.typos-types-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  font-size: 13px;
+}
+.typos-legend-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.typos-legend-item .swatch {
+  flex: none;
+}
+.typos-legend-text {
+  flex: 1;
+}
+.typos-rule {
+  height: 1px;
+  background: var(--chip);
+}
+.typos-delay-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+}
+.typos-delay-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.typos-delay-head strong {
+  color: var(--muted-strong);
+}
+.typos-delay .chart {
+  height: 140px;
+}
+@media (max-width: 640px) {
+  .typos-types-legend {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
