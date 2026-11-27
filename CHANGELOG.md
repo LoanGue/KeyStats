@@ -71,6 +71,9 @@ All notable changes to this project are documented here. The format follows
 - `KeyStats.Dashboard`: Rythme page, hold durations with the overlap rate, load
   per finger and per hand, same-finger bigrams, hand alternation and capitals
   made with the opposite Shift, from the standard AZERTY fingering.
+- `KeyStats.Dashboard`: Clavier page key detail. A click on a key shows its
+  total, share, error rate, hold time and slowness, and its presses minute by
+  minute on the latest day of the period it was used.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
