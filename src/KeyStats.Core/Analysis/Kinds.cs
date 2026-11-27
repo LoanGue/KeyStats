@@ -110,7 +110,7 @@ public enum DayMetric
     DetectionDelayCount = 43,
     /// <summary>Retours arrière répétés par l'appui maintenu (un caractère chacun).</summary>
     BackspaceRepeats = 44,
-    /// <summary>Caractères effacés par Ctrl+Retour arrière.</summary>
+    /// <summary>Caractères effacés par Ctrl+Retour arrière ; minorant, un appui sur un tampon inconnu compte pour un.</summary>
     WordBackspaceChars = 45,
 }
 

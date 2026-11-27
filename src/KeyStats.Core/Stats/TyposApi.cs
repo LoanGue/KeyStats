@@ -21,7 +21,7 @@ public sealed record TyposCost(long Typos, long Collateral, double? Kspc, long K
 public sealed record TyposPair(string Typed, string Wanted, bool Neighbors, long Count);
 
 /// <param name="Typed">Fois où le caractère a été tapé en prose.</param>
-/// <param name="Errors">Fautes sur ce caractère : tapé à tort à sa place, oublié ou inversé.</param>
+/// <param name="Errors">Fautes sur ce caractère : tapé à tort à sa place, oublié, ou l'un des deux d'une inversion.</param>
 public sealed record TyposChar(string Character, long Typed, long Errors);
 
 /// <param name="Omissions">Lettre manquante.</param>
@@ -38,13 +38,13 @@ public sealed record TyposDelay(double? MedianMs, IReadOnlyList<TyposDelayBin> B
 /// <summary>Caractères effacés selon la méthode.</summary>
 /// <param name="Presses">Un retour arrière par caractère, premier appui d'une rafale compris.</param>
 /// <param name="Held">Répétitions automatiques d'un retour arrière maintenu.</param>
-/// <param name="Word">Caractères effacés par Ctrl+Retour arrière.</param>
+/// <param name="Word">Caractères effacés par Ctrl+Retour arrière ; minorant, un appui sur un tampon inconnu compte pour un.</param>
 /// <param name="WordPresses">Appuis sur Ctrl+Retour arrière.</param>
 public sealed record TyposDeletion(long Presses, long Held, long Word, long WordPresses);
 
 /// <param name="DayTablesUnfiltered">
-/// Vrai avec un filtre d'appli, de nature ou de clavier : <c>Pairs</c>, <c>Accents</c>, <c>Types</c>, <c>Delay</c> et
-/// <c>Deletion</c> viennent des tables par jour, qui ne connaissent pas ces filtres, et couvrent toute la frappe de la période.
+/// Vrai avec un filtre d'appli, de nature ou de clavier, que les tables par jour ignorent : <c>Pairs</c>, <c>Accents</c>,
+/// <c>Types</c> et <c>Delay</c> couvrent toute la prose de la période, <c>Deletion</c> toute la frappe, code compris.
 /// </param>
 /// <param name="Accuracy">Précision de la période, sessions de prose ; null sans prose.</param>
 /// <param name="Days">Chaque jour de la période, du plus ancien au plus récent.</param>
