@@ -16,6 +16,7 @@
   --nav-text: #b9c1cd;
   --nav-group: #8a94a5;
   --nav-strong: #e8ebf0;
+  --nav-on: #ffffff;
   --nav-hover: #1b2432;
   --nav-rule: #273142;
   --ok-bg: #e8f5eb;
@@ -82,6 +83,11 @@ a:hover {
   gap: 20px;
   flex: 1;
 }
+/* Ancien bloc de déverrouillage, retiré avec l'arrivée du dialogue. */
+.legacy-key {
+  flex: none;
+  border-top: 1px solid var(--border);
+}
 
 /* Navigation */
 .nav {
@@ -125,11 +131,11 @@ a:hover {
 }
 .nav a:hover {
   background: var(--nav-hover);
-  color: #fff;
+  color: var(--nav-on);
 }
 .nav a[aria-current="page"] {
   background: var(--nav-active);
-  color: #fff;
+  color: var(--nav-on);
   font-weight: 600;
 }
 .nav svg {
@@ -155,10 +161,8 @@ a:hover {
 .nav .brand-tile {
   fill: var(--primary);
 }
-/* Ancien bloc de déverrouillage, retiré avec l'arrivée du dialogue. */
-.legacy-key {
-  flex: none;
-  border-top: 1px solid var(--border);
+.nav .brand-keys {
+  stroke: var(--nav-on);
 }
 .nav-rule {
   height: 1px;
