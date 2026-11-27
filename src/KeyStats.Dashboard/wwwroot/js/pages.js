@@ -7,6 +7,7 @@
 // d'écrire, car une autre page a pu être ouverte entre-temps.
 // Une exception levée par render affiche l'état d'erreur avec « Réessayer ».
 
+import { renderKeyboard } from "./keyboard.js";
 import { renderOverview } from "./overview.js";
 import { renderSpeed } from "./speed.js";
 import { renderTypos } from "./typos.js";
@@ -34,9 +35,9 @@ export const pages = {
   },
   clavier: {
     title: "Clavier",
-    description:
-      "Chaque touche du portable, pavé numérique compris. Cliquez une touche pour son détail.",
+    description: "Chaque touche du portable, pavé numérique compris.",
     filters: true,
+    render: renderKeyboard,
   },
   rythme: {
     title: "Rythme",
