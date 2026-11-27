@@ -1,6 +1,6 @@
 // Carte « Heure × jour de la semaine » de la page Activité (maquette Activite).
 
-import { cell, levels } from "./activity-calendar.js";
+import { cell, levels } from "./activity-ramp.js";
 import { describedBy, fillTable } from "./chart-card.js";
 import { duration } from "./format.js";
 import { el } from "./states.js";
