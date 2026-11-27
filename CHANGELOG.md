@@ -59,6 +59,9 @@ All notable changes to this project are documented here. The format follows
 - `KeyStats.Dashboard`: Clavier heatmap measure selector (presses, share of the
   total, error rate, hold time, slowness against the mean of the keys), with a
   legend and a warm ramp for the measures where a high value is a defect.
+- `KeyStats.Dashboard`: Clavier page key detail. A click on a key shows its
+  total, share, error rate, hold time and slowness, and its presses minute by
+  minute on the latest day of the period it was used.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
