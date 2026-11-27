@@ -16,6 +16,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/letters` gives the frequency of each letter a–z
+  (accents folded), next to French and English reference shares, word counts
+  by length from 1 to 15 and over, the overall median word length, and the
+  average word length overall, in prose and in code, next to French. The
+  French word lengths come from Lexique 4.15 (CC BY-SA 4.0), weighted by film
+  subtitle frequencies and split at non-letters like the typed words: 3.95
+  letters per word. `LanguageReference` loses its unused `AverageWordLength`.
+
 - `KeyStats.Core`: GET `/api/keyboard` gives, for each key, its presses, its
   prose error rate, its median hold time and the median delay before it, and
   for each digit how many were typed on the top row and on the numeric keypad.
