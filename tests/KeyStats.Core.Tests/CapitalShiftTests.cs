@@ -74,7 +74,9 @@ public sealed class CapitalShiftTests
         foreach (var e in t.Events) analyzer.Process(e);
         analyzer.EndAll();
 
-        Assert.Equal(0, stats.Metrics.Where(kv => kv.Key.Metric is >= DayMetric.ShiftOppositeCapitals and <= DayMetric.CapsLockCapitals).Sum(kv => kv.Value));
+        long capitals = Metric(stats, DayMetric.ShiftOppositeCapitals) + Metric(stats, DayMetric.ShiftSameSideCapitals)
+            + Metric(stats, DayMetric.CapsLockCapitals);
+        Assert.Equal(0, capitals);
     }
 
     [Fact]
