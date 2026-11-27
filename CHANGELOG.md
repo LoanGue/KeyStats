@@ -16,6 +16,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the page frame from the design: navigation between the
+  dashboard pages, routed by the address fragment, and the page header.
 - `KeyStats.Dashboard`: ECharts 6.1.0 (Apache-2.0) is vendored under
   `wwwroot/vendor/echarts/` for the charts, served locally like the rest of
   the page.
