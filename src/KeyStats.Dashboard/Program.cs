@@ -31,6 +31,7 @@ internal static class Program
         SpeedApi.Register(router, stats);
         TyposApi.Register(router, stats);
         KeyboardApi.Register(router, stats);
+        LettersApi.Register(router, stats);
         using var form = new DashboardForm(router, Path.Combine(dataDir, "webview"));
         // La clé privée ne survit pas à la fenêtre.
         form.FormClosed += (_, _) => session.Lock();
