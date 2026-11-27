@@ -121,7 +121,7 @@ public sealed class TyposApiTests : IDisposable
         Assert.Equal(13, delay.Bins.Count);
         Assert.Equal(3, delay.Bins[10].Count);
         Assert.Equal((LogScale.DetectionDelay.LowerBound(12), LogScale.DetectionDelay.UpperBound(12)), (delay.Bins[12].FromMs, delay.Bins[12].ToMs!.Value));
-        Assert.Equal(LogScale.DetectionDelay.Median(counts), delay.MedianMs);
+        Assert.Equal(50 * Math.Pow(600, 10.5 / LogScale.Buckets), delay.MedianMs!.Value, 6); // milieu géométrique de la case 10
     }
 
     [Fact]
