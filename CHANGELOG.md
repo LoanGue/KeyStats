@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/activity/titles?target=` gives the writing time
+  of one application per window title, the ten most used decrypted, the rest
+  and the untitled time summed. It answers 403 while the key is locked; titles
+  are decrypted in the dashboard memory only and are never logged.
+
 - `KeyStats.Core`: GET `/api/activity` gives the active writing time per local
   day over the last 53 weeks, per weekday and local hour over the period (a
   session spanning several hours is split pro rata, by quarter hour so that
