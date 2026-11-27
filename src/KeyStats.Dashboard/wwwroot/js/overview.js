@@ -1,6 +1,8 @@
-// Vue d'ensemble : chiffres clés de la période, comparés à la période précédente (/api/overview).
+// Vue d'ensemble : chiffres clés de la période et progression semaine par semaine (/api/overview).
 
 import { getJson } from "./api.js";
+import { loadCharts } from "./charts.js";
+import { renderProgress } from "./progress.js";
 import { el, showEmpty } from "./states.js";
 
 const nf = new Intl.NumberFormat("fr-FR");
@@ -95,9 +97,12 @@ function renderFigures(current, previous) {
 }
 
 export async function renderOverview(view, ctx) {
-  const data = await getJson(`/api/overview${ctx.query}`);
+  const [data, echarts] = await Promise.all([
+    getJson(`/api/overview${ctx.query}`),
+    loadCharts(),
+  ]);
   if (!ctx.isCurrent()) return;
-  const { current, previous } = data;
+  const { current, previous, weeks } = data;
   if (!current.keys && !current.sessions) {
     const all = ctx.filters.period === "all";
     showEmpty(
@@ -107,5 +112,7 @@ export async function renderOverview(view, ctx) {
     );
     return;
   }
-  view.replaceChildren(renderFigures(current, previous));
+  const progress = renderProgress(weeks, echarts);
+  view.replaceChildren(renderFigures(current, previous), progress.section);
+  progress.attach();
 }
