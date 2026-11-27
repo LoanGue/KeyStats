@@ -61,6 +61,16 @@
   height: 3px;
 }
 
+/* Avertissement en tête de page, au-dessus des cartes. */
+.page-note {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--info-bg);
+  color: var(--info-text);
+  font-size: 13px;
+}
+
 /* Graphique impossible à tracer, ou sans données : un message à sa place. */
 .card .chart-missing {
   display: grid;
