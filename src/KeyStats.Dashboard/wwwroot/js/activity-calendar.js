@@ -1,7 +1,8 @@
 // Carte « Calendrier » de la page Activité : temps d'écriture par jour sur 53 semaines (maquette Activite).
 
 import { describedBy, fillTable } from "./chart-card.js";
-import { duration } from "./format.js";
+import { cell, rampLegend } from "./activity-ramp.js";
+import { duration, nf } from "./format.js";
 import { el } from "./states.js";
 
 const months = [
@@ -18,6 +19,7 @@ const months = [
   "nov.",
   "déc.",
 ];
+// Jours aaaa-mm-jj lus en minuit UTC : les formateurs partagés suivent le fuseau local, qui décalerait la date.
 const monthLong = new Intl.DateTimeFormat("fr-FR", {
   month: "long",
   year: "numeric",
@@ -38,22 +40,6 @@ export function addDays(iso, n) {
   return d.toISOString().slice(0, 10);
 }
 
-/** Niveau 0 à 4 d'une valeur : 0 sans écriture, puis par quartile des valeurs non nulles. */
-export function levels(values) {
-  const sorted = values.filter((v) => v > 0).sort((a, b) => a - b);
-  const cut = [0.25, 0.5, 0.75].map(
-    (q) => sorted[Math.floor(q * (sorted.length - 1))],
-  );
-  return (v) => (v > 0 ? 1 + cut.filter((c) => v > c).length : 0);
-}
-
-/** Case décorative d'une rampe ; titre lisible au survol. */
-export function cell(level, title) {
-  const node = el("span", `activity-cell level-${level}`);
-  if (title) node.title = title;
-  return node;
-}
-
 /** Une ligne par mois couvert : mois, temps d'écriture, jours écrits. */
 function monthRows(calendar) {
   const byMonth = new Map();
@@ -67,7 +53,7 @@ function monthRows(calendar) {
   return [...byMonth].map(([key, m]) => [
     monthLong.format(new Date(`${key}-01T00:00:00Z`)),
     duration(m.ms),
-    String(m.days),
+    nf.format(m.days),
   ]);
 }
 
@@ -125,17 +111,4 @@ export function calendarCard(data) {
     wide: true,
     body,
   };
-}
-
-/** Légende « moins … plus » de la rampe. */
-export function rampLegend() {
-  const box = el("div", "activity-ramp");
-  box.append(el("span", null, "moins"));
-  for (let l = 0; l < 5; l++) {
-    const swatch = cell(l);
-    swatch.setAttribute("aria-hidden", "true");
-    box.append(swatch);
-  }
-  box.append(el("span", null, "plus"));
-  return box;
 }
