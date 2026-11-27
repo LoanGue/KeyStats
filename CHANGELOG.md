@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: GET `/api/rhythm` gives the bigrams that cost the most
+  (frequency × delay over the median inter-key delay) with their error rate,
+  the distribution and median of hold durations, the overlap rate, and the
+  indicative standard AZERTY fingering: presses per finger, same-finger bigrams,
+  hand alternation and the Shift side of capitals.
 - `KeyStats.Core`: three new day metrics count capitals typed with the Shift of
   the opposite hand, with the Shift on the same side, or under Caps Lock, hands
   taken from the standard AZERTY fingering. Days recorded earlier need a
