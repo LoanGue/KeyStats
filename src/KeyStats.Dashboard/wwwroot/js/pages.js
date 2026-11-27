@@ -7,11 +7,14 @@
 // d'écrire, car une autre page a pu être ouverte entre-temps.
 // Une exception levée par render affiche l'état d'erreur avec « Réessayer ».
 
+import { renderOverview } from "./overview.js";
+
 export const pages = {
   ensemble: {
     title: "Vue d'ensemble",
     description: "L'essentiel de votre frappe sur la période choisie.",
     filters: true,
+    render: renderOverview,
   },
   vitesse: {
     title: "Vitesse",
