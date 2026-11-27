@@ -41,6 +41,7 @@ public sealed class ShortcutsApiTests : IDisposable
         AddOverlap(20261125, 'e', 's', 90, 1);
         AddOverlap(20261126, 'o', 'u', 40, 6);
         AddOverlap(20261126, 'a', 'z', 20, 2);
+        AddOverlap(20261126, 'i', 'n', 25, 5);
     }
 
     private static ushort KeyOf(char c) =>
@@ -88,10 +89,10 @@ public sealed class ShortcutsApiTests : IDisposable
     public void Paires_qui_se_chevauchent_le_plus_avec_leur_mediane()
     {
         var s = Read("period=week");
-        // « az » (2 fois) est sous le seuil.
-        Assert.Equal([("E", "S", 9L), ("O", "U", 6L)], s.Pairs.Select(p => (p.First, p.Second, p.Count)));
+        // « in » (5 fois) atteint juste le seuil, « az » (2 fois) reste dessous.
+        Assert.Equal([("E", "S", 9L), ("O", "U", 6L), ("I", "N", 5L)], s.Pairs.Select(p => (p.First, p.Second, p.Count)));
         Assert.Equal(LogScale.Overlap.Middle(LogScale.Overlap.Bucket(30)), s.Pairs[0].MedianMs, 6);
-        Assert.Equal(17, s.Durations.Bins.Sum(b => b.Count));
+        Assert.Equal(22, s.Durations.Bins.Sum(b => b.Count));
         Assert.Equal(LogScale.Overlap.Middle(LogScale.Overlap.Bucket(30)), s.Durations.MedianMs!.Value, 6);
     }
 
@@ -111,6 +112,8 @@ public sealed class ShortcutsApiTests : IDisposable
         Assert.Equal(new ComboCell(12, "2026-11-26"), Cell("Alt", "Tab"));
         Assert.Equal(new ComboCell(1, "2026-11-25"), Cell("Ctrl + Alt", "Suppr"));
         Assert.Equal(new ComboCell(0, null), Cell("Ctrl", "Suppr"));
+        // Ctrl+Alt+Suppr n'est ni dans Ctrl ni dans Alt.
+        Assert.Equal(new ComboCell(0, null), Cell("Alt", "Suppr"));
         // Win seul n'entre dans aucun groupe ; Win+Maj+S est une lettre.
         Assert.Equal(new ComboCell(4, "2026-11-26"), Cell("Win", "Lettres"));
         Assert.Equal(4, s.Combos.Single(r => r.Modifier == "Win").Cells.Sum(c => c.Count));
