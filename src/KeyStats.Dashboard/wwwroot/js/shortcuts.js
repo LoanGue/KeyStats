@@ -3,6 +3,7 @@
 import { getJson } from "./api.js";
 import { chartCard, drawCharts } from "./chart-card.js";
 import { nf } from "./format.js";
+import { combosCard } from "./shortcuts-combos.js";
 import { keycap, overlapCard } from "./shortcuts-overlap.js";
 import { el, showEmptyPeriod } from "./states.js";
 import { unfilteredKeys } from "./typos.js";
@@ -77,6 +78,7 @@ export async function renderShortcuts(view, ctx) {
   const cards = [
     topCard(data.top),
     overlapCard(data.overlap, data.durations, data.pairs),
+    combosCard(data.groups, data.combos, data.chords),
   ].map((c) => chartCard({ ...c, footnote }));
   const grid = el("div", "chart-grid");
   grid.append(...cards.map((c) => c.section));
