@@ -36,10 +36,12 @@
 .typos-pairs th:nth-child(2),
 .typos-pairs td:nth-child(2) {
   width: 104px;
+  padding-left: 12px;
 }
 .typos-pairs th:last-child,
 .typos-pairs td:last-child {
   width: 64px;
+  padding-left: 12px;
   text-align: right;
 }
 .typos-fault {
