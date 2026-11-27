@@ -1,0 +1,98 @@
+/* Page Rythme : bigrammes coûteux (maquette Rythme). */
+
+.rhythm-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rhythm-sort-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.rhythm-scroll {
+  overflow-x: auto;
+}
+.rhythm-bigrams {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.rhythm-bigrams th {
+  padding: 0 0 8px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: right;
+}
+.rhythm-bigrams th.sorted {
+  color: var(--text);
+}
+.rhythm-bigrams td {
+  height: 44px;
+  padding-left: 16px;
+  border-bottom: 1px solid var(--chip);
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.rhythm-bigrams th:first-child,
+.rhythm-bigrams td:first-child {
+  width: 140px;
+  padding-left: 0;
+  text-align: left;
+}
+.rhythm-bigrams th:nth-child(2),
+.rhythm-bigrams th:nth-child(3),
+.rhythm-bigrams th:last-child {
+  width: 120px;
+}
+.rhythm-bigrams th:nth-child(4) {
+  text-align: left;
+}
+.rhythm-pair {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.rhythm-pair-text {
+  margin-left: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre;
+}
+.rhythm-cost,
+.rhythm-rate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.rhythm-cost-bar {
+  height: 12px;
+  border-radius: 0 4px 4px 0;
+  background: var(--chart);
+}
+.rhythm-rate {
+  justify-content: flex-end;
+  gap: 8px;
+}
+.rhythm-rate-track {
+  width: 40px;
+  height: 6px;
+  flex: none;
+  border-radius: 3px;
+  background: var(--chart-track);
+}
+.rhythm-rate-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--chart-typing);
+}
+.rhythm-bigrams .rhythm-none {
+  text-align: left;
+}
