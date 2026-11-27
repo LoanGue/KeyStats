@@ -55,7 +55,11 @@ function matrix(groups, combos) {
   const table = el("table", "shortcuts-matrix");
   table.setAttribute("aria-label", "Combinaisons de touches");
   table.append(thead, body);
+  // Zone défilante sur fenêtre étroite : atteignable au clavier pour la faire défiler.
   const scroll = el("div", "shortcuts-scroll");
+  scroll.tabIndex = 0;
+  scroll.setAttribute("role", "region");
+  scroll.setAttribute("aria-label", "Combinaisons de touches");
   scroll.append(table);
   return scroll;
 }
