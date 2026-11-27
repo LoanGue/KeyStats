@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using KeyStats.Core.Analysis;
 using KeyStats.Core.Settings;
 using KeyStats.Core.Web;
 
@@ -123,6 +124,29 @@ public sealed class SettingsApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Ecriture_impossible_echec_sans_appel_a_l_agent()
+    {
+        File.WriteAllText(Path_, "{}");
+        File.SetAttributes(Path_, FileAttributes.ReadOnly);
+        try
+        {
+            var router = new WebRouter(_dir);
+            var agent = new FakeAgent();
+            SettingsApi.Register(router, Path_, agent);
+            var response = await router.HandleAsync("POST", WebRouter.Origin + SettingsApi.Path, """{ "activeGapMs": 1500 }"""u8.ToArray());
+            var root = JsonDocument.Parse(response.Body).RootElement;
+            Assert.Equal(SettingsOutcome.Failed, root.GetProperty("outcome").GetString());
+            Assert.Equal(AnalysisSettings.Default.ActiveGapMs, root.GetProperty("settings").GetProperty("thresholds").GetProperty("activeGapMs").GetInt32());
+            Assert.Equal((0, 0), (agent.Reloads, agent.Restarts));
+            Assert.Equal("{}", File.ReadAllText(Path_));
+        }
+        finally
+        {
+            File.SetAttributes(Path_, FileAttributes.Normal);
+        }
+    }
+
+    [Fact]
     public async Task Route_post_relance_ou_relit_l_agent_selon_le_changement()
     {
         var router = new WebRouter(_dir);
@@ -152,6 +176,7 @@ public sealed class SettingsApiTests : IDisposable
 
         var bad = await router.HandleAsync("POST", WebRouter.Origin + SettingsApi.Path, "{ pas du json"u8.ToArray());
         Assert.Equal(400, bad.Status);
+        Assert.Equal(400, (await router.HandleAsync("POST", WebRouter.Origin + SettingsApi.Path, "null"u8.ToArray())).Status);
         var get = router.Handle("GET", WebRouter.Origin + SettingsApi.Path);
         Assert.False(JsonDocument.Parse(get.Body).RootElement.GetProperty("liveCounter").GetBoolean());
     }
