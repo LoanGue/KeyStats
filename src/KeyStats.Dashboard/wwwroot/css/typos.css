@@ -1,4 +1,4 @@
-/* Page Fautes : chiffres en tête de carte (maquette Fautes). */
+/* Page Fautes : chiffres en tête de carte, paires confondues et caractères accentués (maquette Fautes). */
 
 .typos-figures {
   display: flex;
@@ -12,4 +12,136 @@
   font-size: 18px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.typos-pairs {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.typos-pairs th {
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+}
+.typos-pairs td {
+  height: 44px;
+  border-bottom: 1px solid var(--chip);
+}
+.typos-pairs th:nth-child(2),
+.typos-pairs td:nth-child(2) {
+  width: 104px;
+}
+.typos-pairs th:last-child,
+.typos-pairs td:last-child {
+  width: 64px;
+  text-align: right;
+}
+.typos-fault {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.typos-instead,
+.typos-count,
+.typos-none {
+  color: var(--muted);
+}
+.typos-count {
+  font-variant-numeric: tabular-nums;
+}
+.typos-key {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 14px;
+  background: var(--surface);
+}
+.typos-key.typed {
+  background: var(--key-typed-bg);
+}
+.typos-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.typos-badge.near {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+.typos-badge.far {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.typos-accents {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.typos-section {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.typos-accent-grid + .typos-section {
+  margin-top: 4px;
+}
+.typos-accent-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.typos-accent {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 6px 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.typos-accent-char {
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.typos-accent-rate {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.typos-accent-track {
+  align-self: stretch;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--chart-track);
+}
+.typos-accent-bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--chart-typing);
 }
