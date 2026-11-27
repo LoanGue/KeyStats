@@ -41,40 +41,49 @@ export function chartFailed(node, text = chartsMissing) {
   node.textContent = text;
 }
 
+/** Pastille de couleur décorative ; forme : dot, line, square ou rien. */
+export function swatch(color, shape) {
+  const node = el("span", shape ? `swatch ${shape}` : "swatch");
+  node.setAttribute("aria-hidden", "true");
+  node.style.background = `var(${color})`;
+  return node;
+}
+
 /** Légende : [libellé, forme (dot, line, square), jeton CSS de la couleur]. */
 export function legend(items) {
   const box = el("div", "chart-legend");
   for (const [label, shape, color] of items) {
     const item = el("span");
-    const swatch = el("span", `swatch ${shape}`);
-    swatch.setAttribute("aria-hidden", "true");
-    swatch.style.background = `var(${color})`;
-    item.append(swatch, label);
+    item.append(swatch(color, shape), label);
     box.append(item);
   }
   return box;
 }
 
 /**
- * Carte d'un graphique. spec : title, note, aside (nœud en haut à droite), wide, footnote, et
- * soit empty (message à la place du graphique), soit body (contenu HTML déjà lisible), soit
- * label, headers, rows (tableau masqué) et option.
+ * Carte d'un graphique. spec : title, note (texte ou nœuds), aside (nœud en haut à droite), wide,
+ * className, footnote, et soit empty (message à la place du graphique), soit body (contenu HTML
+ * déjà lisible), label, headers, rows (tableau masqué) et option, l'un ou l'autre ou les deux.
  */
 export function chartCard(spec) {
   const section = el(
     "section",
-    spec.wide ? "card chart-card wide" : "card chart-card",
+    ["card chart-card", spec.wide && "wide", spec.className]
+      .filter(Boolean)
+      .join(" "),
   );
   const head = el("div", "chart-head");
   const text = el("div");
-  text.append(el("h2", null, spec.title), el("p", null, spec.note));
+  const note = el("p");
+  note.append(...[spec.note ?? []].flat());
+  text.append(el("h2", null, spec.title), note);
   head.append(text);
   if (spec.aside) head.append(spec.aside);
   section.append(head);
   let node = null;
   if (spec.empty) section.append(el("p", "chart chart-missing", spec.empty));
   else if (spec.body) section.append(spec.body);
-  else {
+  if (!spec.empty && spec.option) {
     node = el("div", "chart");
     const { hidden, table } = describedBy(node);
     node.setAttribute("aria-label", spec.label);
