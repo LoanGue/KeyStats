@@ -180,13 +180,18 @@ public sealed class StorageTests
     public void Migration_2_garde_les_longueurs_de_mots_sans_nature()
     {
         using var tmp = new TempDb();
-        tmp.Db.Exec("DROP TABLE day_wordlen");
-        tmp.Db.Exec("CREATE TABLE day_wordlen (day INTEGER NOT NULL, len INTEGER NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, len)) WITHOUT ROWID");
-        tmp.Db.Exec("INSERT INTO day_wordlen VALUES (20261102, 4, 7)");
-        tmp.Db.Exec("PRAGMA user_version = 1");
+        string path = Path.Combine(Path.GetDirectoryName(tmp.DbPath)!, "v1.db");
+        using (var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = Schema.Migrations[0] + "INSERT INTO day_wordlen VALUES (20261102, 4, 7); PRAGMA user_version = 1;";
+            cmd.ExecuteNonQuery();
+        }
 
-        Assert.Equal(Schema.CurrentVersion, tmp.Reopen().UserVersion);
-        Assert.Equal(7, tmp.Count("SELECT n FROM day_wordlen WHERE day = 20261102 AND kind = 0 AND len = 4"));
+        using var db = KeyStatsDb.Open(path);
+        Assert.Equal(Schema.CurrentVersion, db.UserVersion);
+        Assert.Equal(7L, db.Scalar("SELECT n FROM day_wordlen WHERE day = 20261102 AND kind = 0 AND len = 4"));
     }
 
     [Fact]
