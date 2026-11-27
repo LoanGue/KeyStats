@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the page header shows whether the agent runs and whether
+  the detailed data is unlocked, and carries the global filters (period,
+  application, content, keyboard), kept in the address across pages.
 - `KeyStats.Dashboard`: the page frame from the design: navigation between the
   dashboard pages, routed by the address fragment, and the page header.
 - `KeyStats.Dashboard`: ECharts 6.1.0 (Apache-2.0) is vendored under
