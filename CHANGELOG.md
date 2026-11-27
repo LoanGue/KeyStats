@@ -168,3 +168,8 @@ All notable changes to this project are documented here. The format follows
   which keeps each window change in keystroke order; the agent follows the
   active window and its title through `SetWinEventHook`, without polling, and
   never reads the title of an excluded app.
+
+### Removed
+
+- `KeyStats.Dashboard`: the unlock block from before the design, below the
+  page; the header buttons and the unlock dialog replace it.
