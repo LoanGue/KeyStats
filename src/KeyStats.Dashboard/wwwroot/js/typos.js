@@ -22,7 +22,7 @@ export async function renderTypos(view, ctx) {
     return;
   }
   const cards = [accuracyCard(data)].map(chartCard);
-  const grid = el("div", "typos-grid");
+  const grid = el("div", "chart-grid");
   grid.append(...cards.map((c) => c.section));
   const notes = ["code", "mixed"].includes(ctx.filters.kind)
     ? [

@@ -1,21 +1,4 @@
-/* Page Fautes : grille de cartes et chiffres en tête de carte (maquette Fautes). */
-
-.typos-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-}
-.typos-grid .wide {
-  grid-column: span 2;
-}
-@media (max-width: 860px) {
-  .typos-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .typos-grid .wide {
-    grid-column: auto;
-  }
-}
+/* Page Fautes : chiffres en tête de carte (maquette Fautes). */
 
 .typos-figures {
   display: flex;
