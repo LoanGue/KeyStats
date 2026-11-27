@@ -5,10 +5,10 @@ import { dayLong, nf, pct, shortDelay } from "./format.js";
 import { gap, measures } from "./keyboard-measures.js";
 import { el } from "./states.js";
 
-const appuis = (n) => `${nf.format(n)} appui${n > 1 ? "s" : ""}`;
-const hour = (minute) => `${Math.floor(minute / 60)} h`;
+const appuis = measures.appuis.text;
+const hour = (minute) => `${Math.floor(minute / 60)} h`;
 const clock = (minute) =>
-  `${Math.floor(minute / 60)} h ${String(minute % 60).padStart(2, "0")}`;
+  `${hour(minute)} ${String(minute % 60).padStart(2, "0")}`;
 
 function tile(label, value, caption) {
   const box = el("div", "key-tile");
@@ -97,11 +97,14 @@ function hourRows(minutes) {
     const h = Math.floor(m.minute / 60);
     hours.set(h, (hours.get(h) ?? 0) + m.presses);
   }
-  return [...hours].map(([h, n]) => [`${h} h – ${h + 1} h`, nf.format(n)]);
+  return [...hours].map(([h, n]) => [
+    `${hour(h * 60)} – ${hour(h * 60 + 60)}`,
+    nf.format(n),
+  ]);
 }
 
 /** Spécification de chartCard pour la touche k (de keyboard-layout) et ses minutes. */
-export function detailCard(k, name, data, minutes) {
+export function detailCard(k, name, data, minutes, footnote) {
   const info = data.byCode.get(k.code) ?? { presses: 0 };
   const cap = el("kbd", "key-cap", k.shown);
   cap.setAttribute("aria-hidden", "true");
@@ -119,6 +122,7 @@ export function detailCard(k, name, data, minutes) {
     aside: cap,
     body,
     className: "key-detail-card",
+    footnote,
   };
   if (!minutes.day) {
     body.append(

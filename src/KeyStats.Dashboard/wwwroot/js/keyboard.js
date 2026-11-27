@@ -33,16 +33,23 @@ function measurePicker(current, onPick) {
   return { group, press };
 }
 
-/** Marque la touche choisie parmi les boutons de root. */
+/** Marque la touche choisie dans root, moitié basse d'Entrée comprise. */
 function markSelected(root, code) {
-  for (const b of root.querySelectorAll("button.key"))
-    b.setAttribute("aria-pressed", String(Number(b.dataset.code) === code));
+  for (const node of root.querySelectorAll(".key[data-code]")) {
+    const on = Number(node.dataset.code) === code;
+    node.classList.toggle("selected", on);
+    if (node.tagName === "BUTTON")
+      node.setAttribute("aria-pressed", String(on));
+  }
 }
 
-/** Touche choisie par défaut : la plus utilisée. */
+/** Touche choisie par défaut : la plus utilisée parmi celles de la carte, ou null. */
 const busiest = (data) =>
-  data.keys.reduce((best, k) => (k.presses > (best?.presses ?? 0) ? k : best))
-    .code;
+  data.keys.reduce(
+    (best, k) =>
+      keyOfCode(k.code) && k.presses > (best?.presses ?? 0) ? k : best,
+    null,
+  )?.code ?? null;
 
 /** Carte de chaleur, redessinée à chaque mesure choisie ; state.selected est la touche choisie. */
 function heatCard(data, state, onPick) {
@@ -77,21 +84,29 @@ async function showDetail(state, data, ctx, code) {
   const serial = ++state.serial;
   const query = `${ctx.query ? `${ctx.query}&` : "?"}key=${code}`;
   const k = keyOfCode(code);
+  const name = keyName(k);
+  const footnote = data.dayTablesUnfiltered ? unfiltered : undefined;
   let spec;
   try {
     const minutes = await getJson(`/api/keyboard/minutes${query}`);
-    spec = detailCard(k, keyName(k), data, minutes);
+    spec = detailCard(k, name, data, minutes, footnote);
   } catch {
     spec = {
-      title: `Touche ${keyName(k)}`,
+      title: `Touche ${name}`,
       empty: "Le détail de cette touche n'a pas pu être lu.",
     };
   }
   if (!ctx.isCurrent() || serial !== state.serial) return;
-  const card = chartCard(spec);
+  replaceDetail(state, spec);
+  state.live.textContent = `Détail de la touche ${name} affiché.`;
+}
+
+/** Remplace la carte de détail par celle de spec et trace son graphique. */
+function replaceDetail(state, spec) {
+  const card = chartCard({ ...spec, className: "key-detail-card" });
   state.detail.replaceWith(card.section);
   state.detail = card.section;
-  drawCharts([card], ctx.isCurrent);
+  drawCharts([card], state.isCurrent);
 }
 
 export async function renderKeyboard(view, ctx) {
@@ -102,8 +117,19 @@ export async function renderKeyboard(view, ctx) {
     return;
   }
   const data = prepare(raw);
-  const state = { selected: busiest(data), serial: 0 };
-  state.detail = el("section", "card chart-card");
+  const state = {
+    selected: busiest(data),
+    serial: 0,
+    isCurrent: ctx.isCurrent,
+    live: el("p", "sr-only"),
+  };
+  state.live.setAttribute("aria-live", "polite");
+  const k = state.selected == null ? null : keyOfCode(state.selected);
+  state.detail = chartCard({
+    title: k ? `Touche ${keyName(k)}` : "Détail d'une touche",
+    empty: k ? "Lecture du détail…" : "Cliquez une touche pour son détail.",
+    className: "key-detail-card",
+  }).section;
   const grid = el("div", "chart-grid");
   const pick = (code) => {
     state.selected = code;
@@ -111,6 +137,7 @@ export async function renderKeyboard(view, ctx) {
     showDetail(state, data, ctx, code);
   };
   grid.append(heatCard(data, state, pick), state.detail);
-  view.replaceChildren(grid);
-  await showDetail(state, data, ctx, state.selected);
+  view.replaceChildren(grid, state.live);
+  if (state.selected != null)
+    await showDetail(state, data, ctx, state.selected);
 }

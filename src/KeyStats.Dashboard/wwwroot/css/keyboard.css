@@ -66,7 +66,7 @@
 .key[data-code] {
   cursor: pointer;
 }
-.key[aria-pressed="true"] {
+.key.selected {
   box-shadow:
     0 0 0 2px var(--surface),
     0 0 0 4px var(--text);
