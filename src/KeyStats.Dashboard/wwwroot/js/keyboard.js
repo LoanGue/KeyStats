@@ -80,6 +80,15 @@ function heatCard(data, state, onPick) {
   }).section;
 }
 
+/** Carte de détail sans données : en lecture pour la touche name, ou en attente d'un choix sans name. */
+const waiting = (name) => ({
+  title: name ? `Touche ${name}` : "Détail d'une touche",
+  empty: name
+    ? "Lecture du détail…"
+    : "Cliquez sur une touche pour voir son détail.",
+  className: "key-detail-card",
+});
+
 /** Remplace la carte de détail par celle de la touche code, une fois ses minutes lues ; announce : l'annoncer, après un clic. */
 async function showDetail(state, data, ctx, code, announce) {
   const serial = ++state.serial;
@@ -87,6 +96,7 @@ async function showDetail(state, data, ctx, code, announce) {
   const k = keyOfCode(code);
   const name = keyName(k);
   const footnote = data.dayTablesUnfiltered ? unfiltered : undefined;
+  replaceDetail(state, waiting(name));
   let spec;
   try {
     const minutes = await getJson(`/api/keyboard/minutes${query}`);
@@ -126,14 +136,7 @@ export async function renderKeyboard(view, ctx) {
     live: el("p", "sr-only"),
   };
   state.live.setAttribute("aria-live", "polite");
-  const k = state.selected == null ? null : keyOfCode(state.selected);
-  state.detail = chartCard({
-    title: k ? `Touche ${keyName(k)}` : "Détail d'une touche",
-    empty: k
-      ? "Lecture du détail…"
-      : "Cliquez sur une touche pour voir son détail.",
-    className: "key-detail-card",
-  }).section;
+  state.detail = chartCard(waiting(null)).section;
   const grid = el("div", "chart-grid");
   const pick = (code) => {
     state.selected = code;
