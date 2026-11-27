@@ -102,4 +102,13 @@ public sealed class ControlProtocolTests
         Assert.NotEqual(ControlProtocol.MutexName(db), ControlProtocol.MutexName(db + "2"));
         Assert.Matches("^Local\\\\KeyStats\\.Agent\\.[0-9a-f]{16}$", ControlProtocol.MutexName(db));
     }
+
+    [Fact]
+    public void Relance_sans_argument_sur_la_base_par_defaut_sinon_avec_db()
+    {
+        string defaultDb = Path.Combine(Path.GetTempPath(), "KeyStats", "keystats.db");
+        Assert.Empty(ControlProtocol.StartArguments(defaultDb.ToUpperInvariant(), defaultDb));
+        string other = Path.Combine(Path.GetTempPath(), "dev", "keystats.db");
+        Assert.Equal(["--db", other], ControlProtocol.StartArguments(other, defaultDb));
+    }
 }

@@ -54,6 +54,15 @@ public static class ControlProtocol
 
     public static string PipeName(int sessionId, string dbPath) => $"KeyStats.Agent.{sessionId}.{InstanceKey(dbPath)}";
 
+    /// <summary>
+    /// Arguments pour relancer l'agent sur cette base : aucun pour la base par défaut, comme au démarrage
+    /// de session, sinon <c>--db</c> et le chemin.
+    /// </summary>
+    public static string[] StartArguments(string dbPath, string defaultDbPath) =>
+        string.Equals(Path.GetFullPath(dbPath), Path.GetFullPath(defaultDbPath), StringComparison.OrdinalIgnoreCase)
+            ? []
+            : ["--db", dbPath];
+
     public static byte[] Encode(AgentCommand command) => Line(Commands, (int)command);
 
     public static byte[] Encode(AgentReply reply) => Line(Replies, (int)reply);
