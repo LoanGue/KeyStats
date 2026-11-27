@@ -21,6 +21,11 @@ All notable changes to this project are documented here. The format follows
   key is unlocked; while it is locked, the row offers Windows Hello or the
   passphrase instead.
 
+- `KeyStats.Dashboard`: Raccourcis et combinaisons page, first cards. The
+  most used shortcuts with a bar per use count, and the overlap card: the split
+  between letter rolls, Maj held and shortcuts, the distribution of overlap
+  durations with its median, and the letter pairs that overlap most.
+
 - `KeyStats.Dashboard`: the Activité et origine page shows the writing time
   per day over the last twelve months as a calendar, and per hour and weekday
   over the period as a heatmap, both on a five-step ramp with a hidden table
