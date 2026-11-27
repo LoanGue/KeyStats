@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: unlock dialog from the design (Windows Hello, waiting,
+  failure, passphrase with show and hide), opened from a header button; a
+  second header button locks the data again.
 - `KeyStats.Dashboard`: shared view states from the design: loading, period
   without typing, agent stopped, read error with retry, and page not yet
   available. A slow view no longer overwrites the page opened after it.
