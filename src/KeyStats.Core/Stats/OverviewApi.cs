@@ -58,23 +58,21 @@ public static class OverviewApi
 
     private static List<OverviewWeek> WeeksOf(KeyStatsDb db, StatsFilter filter)
     {
-        DateTime today = LocalDayClock.DateOf(filter.Range.ToDay);
-        DateTime first = today.AddDays(-(((int)today.DayOfWeek + 6) % 7) - 7 * (WeekCount - 1));
+        var calendar = new CalendarWeeks(filter.Range.ToDay, WeekCount);
         var weeks = new Sums[WeekCount];
-        var (where, values) = filter.SessionWhere(new DayRange(LocalDayClock.KeyOf(first), filter.Range.ToDay));
+        var (where, values) = filter.SessionWhere(calendar.Range);
         using (var cmd = db.Command("SELECT day, " + SessionSums + " FROM session WHERE " + where + " GROUP BY day", values))
         using (var r = cmd.ExecuteReader())
         {
             while (r.Read())
             {
-                int index = (int)(LocalDayClock.DateOf(r.GetInt32(0)) - first).TotalDays / 7;
+                int index = calendar.IndexOf(r.GetInt32(0));
                 weeks[index] = weeks[index].Add(Sums.Read(r, 1));
             }
         }
         var list = new List<OverviewWeek>(WeekCount);
         for (int i = 0; i < WeekCount; i++)
-            list.Add(new OverviewWeek(StatsFilter.Iso(LocalDayClock.KeyOf(first.AddDays(7 * i))), i == WeekCount - 1 && today.DayOfWeek != DayOfWeek.Sunday,
-                weeks[i].ActiveMs, weeks[i].RealWpm, weeks[i].Accuracy));
+            list.Add(new OverviewWeek(calendar.Monday(i), calendar.Partial(i), weeks[i].ActiveMs, weeks[i].RealWpm, weeks[i].Accuracy));
         return list;
     }
 
