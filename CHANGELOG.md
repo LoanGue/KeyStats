@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Core`: the dashboard header filters (period, application, text
+  kind, keyboard) are read from the request query by `StatsFilter`, with the
+  previous period of the same length for comparisons. GET `/api/filters` lists
+  the applications and keyboards to choose from and the first recorded day.
+  Application, kind and keyboard only filter writing sessions; per-day tables
+  ignore them.
 - `KeyStats.Core`: `KeySetup` creates the master key on first run, writes its
   public part and its passphrase envelope (plus a Windows Hello one, through
   `IHelloEnroller`) in one transaction, and never replaces an existing key.
