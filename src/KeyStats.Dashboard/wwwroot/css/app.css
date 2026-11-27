@@ -3,6 +3,7 @@
 :root {
   --bg: #f4f5f8;
   --surface: #ffffff;
+  --surface-soft: #f7f8fa;
   --text: #151a22;
   --muted: #5f6673;
   --muted-strong: #4a525e;
@@ -10,6 +11,7 @@
   --border-strong: #d5d9e0;
   --primary: #1b64be;
   --primary-hover: #0f4a96;
+  --on-primary: #ffffff;
   --chart: #257de0;
   --nav-bg: #121823;
   --nav-active: #243044;

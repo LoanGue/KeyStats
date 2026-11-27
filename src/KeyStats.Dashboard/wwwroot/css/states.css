@@ -1,0 +1,151 @@
+/* États communs des vues : boutons, cartes, chargement, vide, erreur. */
+
+/* Boutons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Cartes */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* États d'une vue */
+.state {
+  flex: 1;
+  min-height: 320px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+.state h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.state p {
+  margin: 0;
+  max-width: 400px;
+  line-height: 1.5;
+  color: var(--muted-strong);
+}
+.state-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--info-bg);
+  color: var(--primary);
+}
+.state-icon.bad {
+  background: var(--bad-bg);
+  color: var(--bad-text);
+}
+.state-icon svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.state code {
+  max-width: 440px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  font: 12px var(--mono);
+  color: var(--muted-strong);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.state .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+.skeleton .card {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bar {
+  display: block;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--border);
+}
+.bar.tall {
+  height: 22px;
+  border-radius: 6px;
+  background: var(--chip);
+}
+.loading {
+  flex: 1;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted-strong);
+}
+.spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--primary);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

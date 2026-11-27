@@ -8,11 +8,13 @@ import {
   renderFilters,
 } from "./filters.js";
 import { defaultPage, pages } from "./pages.js";
+import { showError, showLoading, showPending } from "./states.js";
 
 const $ = (id) => document.getElementById(id);
 const view = $("view");
 let status = { setup: false, agentRunning: false };
 let key = null;
+let renderId = 0;
 
 function parseHash() {
   const [path, query = ""] = location.hash.replace(/^#\/?/, "").split("?");
@@ -50,6 +52,7 @@ function renderNav(id, filters) {
 }
 
 async function render() {
+  const current = ++renderId;
   const { id, filters } = parseHash();
   const page = pages[id];
   // Une valeur ignorée disparaît aussi de l'adresse, sans entrée d'historique.
@@ -62,22 +65,38 @@ async function render() {
   $("filters").hidden = !page.filters;
   if (page.filters)
     renderFilters($("filters"), filters, (next) => go(id, next));
-  view.replaceChildren();
-  if (page.render)
-    await page.render(view, {
-      filters,
-      query: filterQuery(filters),
-      status,
-      key,
-      setFilters: (next) => go(id, next),
-    });
+  if (!page.render) {
+    showPending(view);
+    return;
+  }
+  showLoading(view);
+  const ctx = {
+    filters,
+    query: filterQuery(filters),
+    status,
+    key,
+    setFilters: (next) => go(id, next),
+    retry: render,
+    // Une vue plus récente a pu être demandée pendant le chargement.
+    isCurrent: () => current === renderId,
+  };
+  try {
+    await page.render(view, ctx);
+  } catch (error) {
+    if (ctx.isCurrent()) showError(view, error, render);
+  }
 }
 
 async function start() {
   await Promise.allSettled([refreshStatus(), loadOptions()]);
   window.addEventListener("hashchange", render);
   // L'agent peut être arrêté ou relancé pendant que la fenêtre est ouverte.
-  window.addEventListener("focus", refreshStatus);
+  // La vue affichée a reçu l'ancien état : elle est redessinée s'il a changé.
+  window.addEventListener("focus", async () => {
+    const before = status.agentRunning;
+    await refreshStatus();
+    if (status.agentRunning !== before) render();
+  });
   render();
 }
 
