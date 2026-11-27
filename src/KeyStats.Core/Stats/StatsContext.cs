@@ -78,4 +78,5 @@ public static class FiltersApi
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(FilterOptions))]
 [JsonSerializable(typeof(Overview))]
+[JsonSerializable(typeof(Speed))]
 public sealed partial class StatsJson : JsonSerializerContext;

@@ -28,6 +28,7 @@ internal static class Program
         var stats = new StatsContext(db, () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         FiltersApi.Register(router, stats);
         OverviewApi.Register(router, stats);
+        SpeedApi.Register(router, stats);
         using var form = new DashboardForm(router, Path.Combine(dataDir, "webview"));
         // La clé privée ne survit pas à la fenêtre.
         form.FormClosed += (_, _) => session.Lock();
