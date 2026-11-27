@@ -56,6 +56,9 @@ All notable changes to this project are documented here. The format follows
   Ctrl+Backspace.
 - `KeyStats.Dashboard`: Clavier page, heatmap of the presses of each key on the
   laptop AZERTY layout and the numeric keypad.
+- `KeyStats.Dashboard`: Clavier heatmap measure selector (presses, share of the
+  total, error rate, hold time, slowness against the mean of the keys), with a
+  legend and a warm ramp for the measures where a high value is a defect.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
