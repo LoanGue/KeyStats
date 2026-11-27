@@ -16,6 +16,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: GET and POST `/api/settings` read and edit the
+  detection thresholds, the excluded applications and the live counter switch
+  in `settings.json`. Values are checked against the agent's own bounds before
+  anything is written, and a refused file is never rewritten. A changed
+  threshold restarts a running agent with the same executable; any other
+  change sends `reload`.
+
 - `KeyStats.Dashboard`: the Activité et origine page breaks the writing time
   down by application. Opening an application lists its window titles once the
   key is unlocked; while it is locked, the row offers Windows Hello or the
