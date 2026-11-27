@@ -219,3 +219,9 @@ All notable changes to this project are documented here. The format follows
 
 - `KeyStats.Dashboard`: the unlock block from before the design, below the
   page; the header buttons and the unlock dialog replace it.
+
+### Fixed
+
+- `KeyStats.Core`: Caps Lock and Num Lock pressed in an excluded app now toggle
+  the tracked lock state, so the next characters typed elsewhere keep the right
+  case and numpad meaning.
