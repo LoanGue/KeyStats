@@ -16,6 +16,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: GET and POST `/api/settings` read and edit the
+  detection thresholds, the excluded applications and the live counter switch
+  in `settings.json`. Values are checked against the agent's own bounds before
+  anything is written, and a refused file is never rewritten. A changed
+  threshold restarts a running agent with the same executable; any other
+  change sends `reload`.
+
 - `KeyStats.Core`: GET `/api/activity/titles?target=` gives the writing time
   of one application per window title, the ten most used decrypted, the rest
   and the untitled time summed. It answers 403 while the key is locked; titles
