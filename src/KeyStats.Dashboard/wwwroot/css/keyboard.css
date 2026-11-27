@@ -1,0 +1,65 @@
+/* Page Clavier : carte de chaleur du portable et du pavé numérique. */
+
+.keyboard-card {
+  gap: 16px;
+}
+
+.keys-scroll {
+  overflow-x: auto;
+}
+.keys {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  margin: 0 auto;
+}
+.keys-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.keys-row {
+  display: flex;
+  gap: 4px;
+}
+.keys-pad {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: repeat(4, 44px);
+  grid-template-rows: repeat(5, 44px);
+  gap: 4px;
+}
+
+.key {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 16px;
+  text-align: left;
+  color: var(--text);
+}
+.key.long {
+  justify-content: flex-end;
+  font-size: 11px;
+}
+.key:has(.key-shift) {
+  justify-content: space-between;
+}
+.key-shift {
+  font-size: 10px;
+  line-height: 12px;
+}
+/* Fond posé par la carte selon le niveau ; texte clair sur les niveaux foncés. */
+.key.empty {
+  color: var(--muted);
+}
+.key.strong {
+  color: var(--on-primary);
+}
