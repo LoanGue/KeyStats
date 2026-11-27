@@ -81,7 +81,8 @@ export function overlapCard(overlap, durations, pairList) {
     title: "Chevauchement",
     note: "Temps pendant lequel deux touches sont enfoncées en même temps.",
     className: "shortcuts-overlap",
-    aside: figure("Médiane", median),
+    // Les durées ne couvrent que les roulements entre deux lettres, pas Maj ni les raccourcis.
+    aside: figure("Médiane entre lettres", median),
   };
   if (!total)
     return {
