@@ -183,3 +183,46 @@
   font-size: 13px;
   color: var(--muted-strong);
 }
+
+/* Chiffres : une ligne par chiffre, la barre partagée entre rangée du haut et pavé. */
+.digits {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.digit-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.digit-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 96px;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+.digit-name {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.digit-bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.digit-share {
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.digit-total {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-strong);
+}
