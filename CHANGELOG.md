@@ -37,6 +37,8 @@ All notable changes to this project are documented here. The format follows
 - `KeyStats.Dashboard`: Fautes page, cost of corrections (collateral deletions,
   KSPC, keys lost) and the share of characters deleted by single, held and
   Ctrl+Backspace.
+- `KeyStats.Dashboard`: Clavier page, heatmap of the presses of each key on the
+  laptop AZERTY layout and the numeric keypad.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
