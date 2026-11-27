@@ -25,7 +25,9 @@ internal static class Program
         router.Get(StatusApi.Path, () => StatusApi.Respond(db, AgentRunning(dbPath)));
         using var session = new KeySession();
         KeyApi.Register(router, db, session, new HelloSigner());
-        FiltersApi.Register(router, new StatsContext(db, () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+        var stats = new StatsContext(db, () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        FiltersApi.Register(router, stats);
+        OverviewApi.Register(router, stats);
         using var form = new DashboardForm(router, Path.Combine(dataDir, "webview"));
         // La clé privée ne survit pas à la fenêtre.
         form.FormClosed += (_, _) => session.Lock();
