@@ -21,6 +21,7 @@
   --chart-track: #f3f4f7;
   --chart-green: #00b894;
   --chart-amber: #f2a600;
+  --chart-english: #c24e14;
   --key-typed-bg: #fff6f0;
   /* Rampe de la carte de chaleur du clavier : 0 sans appui, puis de faible à élevé. */
   --heat-0: #f1f3f6;

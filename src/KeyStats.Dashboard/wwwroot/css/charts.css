@@ -60,6 +60,11 @@
   width: 16px;
   height: 3px;
 }
+/* Trait pointillé : couleur portée par color (currentColor), sans fond. */
+.swatch.line.dashed {
+  height: 0;
+  border-top: 3px dashed currentColor;
+}
 
 /* Grille des cartes d'une page : deux colonnes, une seule sous 860 px. */
 .chart-grid {
