@@ -28,16 +28,34 @@ public sealed record KeyboardDigit(int Digit, long TopRow, long Numpad);
 public sealed record Keyboard(string From, string To, bool DayTablesUnfiltered, long Presses, IReadOnlyList<KeyboardKey> Keys,
     IReadOnlyList<KeyboardDigit> Digits);
 
-/// <summary>Route <c>/api/keyboard</c> de la page Clavier : mesures par touche et origine des chiffres.</summary>
+/// <param name="Minute">Minute depuis minuit local (0 à 1439, jusqu'à 1499 un jour de changement d'heure).</param>
+public sealed record KeyMinute(int Minute, long Presses);
+
+/// <summary>
+/// Appuis d'une touche minute par minute. Comme les appuis de <see cref="Keyboard"/>, ils viennent de <c>key_minute</c>,
+/// qui ne suit que le filtre de clavier : les filtres d'application et de nature ne s'y appliquent pas.
+/// </summary>
+/// <param name="Day">Dernier jour de la période où la touche a servi (aaaa-mm-jj) ; null si elle n'a pas servi.</param>
+/// <param name="Minutes">Minutes de ce jour qui ont des appuis, dans l'ordre.</param>
+public sealed record KeyboardMinutes(int Code, string? Day, IReadOnlyList<KeyMinute> Minutes);
+
+/// <summary>
+/// Routes de la page Clavier : <c>/api/keyboard</c> (mesures par touche et origine des chiffres) et
+/// <c>/api/keyboard/minutes?key=</c> (appuis minute par minute d'une touche).
+/// </summary>
 public static class KeyboardApi
 {
     public const string Path = "/api/keyboard";
+    public const string MinutesPath = "/api/keyboard/minutes";
 
     public static void Register(WebRouter router, StatsContext stats)
     {
         ArgumentNullException.ThrowIfNull(router);
         ArgumentNullException.ThrowIfNull(stats);
         router.Get(Path, q => stats.Respond(q, f => Read(stats.Db, stats.Clock, f), StatsJson.Default.Keyboard));
+        router.Get(MinutesPath, q => q.TryGetId("key", out int? key) && key < KeyCode.Count
+            ? stats.Respond(q, f => Minutes(stats.Db, stats.Clock, f, key.Value), StatsJson.Default.KeyboardMinutes)
+            : WebResponse.BadRequest());
     }
 
     public static Keyboard Read(KeyStatsDb db, LocalDayClock clock, StatsFilter filter)
@@ -59,6 +77,31 @@ public static class KeyboardApi
             delays.TryGetValue(c, out double d) ? d : null)).ToList();
         return new Keyboard(StatsFilter.Iso(range.FromDay), StatsFilter.Iso(range.ToDay), filter.HasSessionFilter,
             presses.Values.Sum(), keys, KeyboardTables.Digits(db, range));
+    }
+
+    public static KeyboardMinutes Minutes(KeyStatsDb db, LocalDayClock clock, StatsFilter filter, int key)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(filter);
+        // Une ligne peut ne compter que des répétitions (presses = 0) : elle ne désigne pas le dernier jour, ni une minute.
+        string where = KeyMinuteWhere(clock, filter, filter.Range, out var values) + " AND key = $key AND presses > 0";
+        object? last;
+        using (var cmd = db.Command("SELECT MAX(ts_min) FROM key_minute WHERE " + where, [.. values, key]))
+            last = cmd.ExecuteScalar();
+        if (last is not long lastMinute) return new KeyboardMinutes(key, null, []);
+        int day = clock.DayKey(lastMinute * 60_000);
+        var dayRange = new DayRange(day, day);
+        where = KeyMinuteWhere(clock, filter, dayRange, out values) + " AND key = $key";
+        long midnight = LocalDayClock.MinuteOf(clock.MidnightUtcMs(LocalDayClock.DateOf(day)));
+        var minutes = new List<KeyMinute>();
+        using (var cmd = db.Command($"SELECT ts_min, SUM(presses) FROM key_minute WHERE {where} GROUP BY ts_min HAVING SUM(presses) > 0 ORDER BY ts_min",
+            [.. values, key]))
+        using (var r = cmd.ExecuteReader())
+        {
+            while (r.Read()) minutes.Add(new KeyMinute((int)(r.GetInt64(0) - midnight), r.GetInt64(1)));
+        }
+        return new KeyboardMinutes(key, StatsFilter.Iso(day), minutes);
     }
 
     /// <summary>Condition sur <c>key_minute</c> : minutes UTC des jours locaux de <paramref name="range"/>, et clavier choisi.</summary>
