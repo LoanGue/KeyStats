@@ -68,6 +68,9 @@ All notable changes to this project are documented here. The format follows
   legend and a warm ramp for the measures where a high value is a defect.
 - `KeyStats.Dashboard`: Rythme page, first card: the bigrams that cost the most
   (frequency × delay over the median), sortable by cost or by error rate.
+- `KeyStats.Dashboard`: Clavier page key detail. A click on a key shows its
+  total, share, error rate, hold time and slowness, and its presses minute by
+  minute on the latest day of the period it was used.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
