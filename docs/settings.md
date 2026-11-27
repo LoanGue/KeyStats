@@ -2,6 +2,8 @@
 
 Settings of the agent, written by the dashboard and read by the agent at start and on the `reload` pipe command. On `reload`, `excludedApps`, `backupFolder` and `liveCounter.enabled` apply at once (the active window is read again, a new backup folder gets a full mirror at the next check, a counter switched back on shows from the next burst); `analysis` applies at the next start, since running analyzers keep their thresholds. A refused file, or a capture thread that cannot take the new list, leaves the current settings in place and `reload` answers `failed`. `ok` means the new list is handed to the capture thread, which applies it to the next events; keys already queued keep the previous state. The file sits next to the database: `%LOCALAPPDATA%\KeyStats\settings.json` for an installed agent, or the folder of the `--db` database otherwise. It holds executable names and thresholds only, never typed text or window titles.
 
+The Réglages page of the dashboard edits `analysis.activeGapMs`, `analysis.sessionGapMs` and `excludedApps` through `POST /api/settings`. It keeps every other key as written, refuses a value outside the bounds below before writing, and never rewrites a refused file. A changed threshold restarts a running agent, since `analysis` applies only at start; any other change sends `reload`.
+
 ## Format
 
 UTF-8 JSON, keys in camelCase. Comments (`//`, `/* */`) and trailing commas are accepted, so the file can be edited by hand.
