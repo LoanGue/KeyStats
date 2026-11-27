@@ -11,8 +11,9 @@ namespace KeyStats.Agent.Overlay;
 /// </summary>
 internal static unsafe class OverlayPainter
 {
+    /// <param name="alpha">Opacité de toute la fenêtre, de 0 à 255.</param>
     /// <returns>Faux si GDI a refusé une étape ; la fenêtre garde alors l'image précédente.</returns>
-    public static bool Paint(nint hwnd, int x, int y, int width, int height, int dpi, LiveText text)
+    public static bool Paint(nint hwnd, int x, int y, int width, int height, int dpi, byte alpha, LiveText text)
     {
         nint dc = OverlayApi.CreateCompatibleDC(0);
         if (dc == 0) return false;
@@ -39,7 +40,7 @@ internal static unsafe class OverlayPainter
             var dst = new POINT { X = x, Y = y };
             var src = new POINT();
             var size = new SIZE { Cx = width, Cy = height };
-            var blend = new BLENDFUNCTION { BlendOp = OverlayApi.AC_SRC_OVER, SourceConstantAlpha = 255, AlphaFormat = OverlayApi.AC_SRC_ALPHA };
+            var blend = new BLENDFUNCTION { BlendOp = OverlayApi.AC_SRC_OVER, SourceConstantAlpha = alpha, AlphaFormat = OverlayApi.AC_SRC_ALPHA };
             return OverlayApi.UpdateLayeredWindow(hwnd, 0, &dst, &size, dc, &src, 0, &blend, OverlayApi.ULW_ALPHA) != 0;
         }
         finally

@@ -1,6 +1,6 @@
 # `settings.json`
 
-Settings of the agent, written by the dashboard and read by the agent at start and on the `reload` pipe command. On `reload`, `excludedApps`, `backupFolder` and `liveCounter.enabled` apply at once (the active window is read again, a new backup folder gets a full mirror at the next check, a counter switched back on shows from the next burst); `analysis` applies at the next start, since running analyzers keep their thresholds. A refused file, or a capture thread that cannot take the new list, leaves the current settings in place and `reload` answers `failed`. `ok` means the new list is handed to the capture thread, which applies it to the next events; keys already queued keep the previous state. The file sits next to the database: `%LOCALAPPDATA%\KeyStats\settings.json` for an installed agent, or the folder of the `--db` database otherwise. It holds executable names and thresholds only, never typed text or window titles.
+Settings of the agent, written by the dashboard and read by the agent at start and on the `reload` pipe command. On `reload`, `excludedApps`, `backupFolder` and `liveCounter` apply at once (the active window is read again, a new backup folder gets a full mirror at the next check, a counter switched back on shows from the next burst); `analysis` applies at the next start, since running analyzers keep their thresholds. A refused file, or a capture thread that cannot take the new list, leaves the current settings in place and `reload` answers `failed`. `ok` means the new list is handed to the capture thread, which applies it to the next events; keys already queued keep the previous state. The file sits next to the database: `%LOCALAPPDATA%\KeyStats\settings.json` for an installed agent, or the folder of the `--db` database otherwise. It holds executable names and thresholds only, never typed text or window titles.
 
 The Réglages page of the dashboard edits `analysis.activeGapMs`, `analysis.sessionGapMs` and `excludedApps` through `POST /api/settings`. It refuses a value outside the bounds below before writing and never rewrites a refused file. A save rewrites the whole file from the keys described here: their values are kept, while unknown keys and comments are dropped. A changed threshold restarts a running agent, since `analysis` applies only at start; any other change sends `reload`.
 
@@ -17,7 +17,7 @@ UTF-8 JSON, keys in camelCase. Comments (`//`, `/* */`) and trailing commas are 
     "activeGapMs": 2000,
     "minNetChars": 30
   },
-  "liveCounter": { "enabled": true },
+  "liveCounter": { "enabled": true, "position": "bottomRight", "opacity": 100 },
   "backupFolder": null
 }
 ```
@@ -28,6 +28,8 @@ UTF-8 JSON, keys in camelCase. Comments (`//`, `/* */`) and trailing commas are 
 | `excludedApps` | array of strings, `null` or absent | built-in list | Executables for which only the key count is kept: no raw data, no title, no text analysis. Matched on the file name, case-insensitive. An array replaces the built-in list, and an empty array excludes nothing; `null`, as the dashboard writes it, is the same as an absent key. |
 | `analysis` | object | see below | Analysis thresholds. |
 | `liveCounter.enabled` | boolean | `true` | Shows the live counter. |
+| `liveCounter.position` | `"topLeft"`, `"topRight"`, `"bottomLeft"` or `"bottomRight"` | `"bottomRight"` | Corner of the work area of the screen being typed on, so the counter stays clear of the taskbar. |
+| `liveCounter.opacity` | integer, 20 to 100 | `100` | Opacity of the counter, in percent. |
 | `backupFolder` | absolute path, or `null` | `null` | Folder of the nightly mirror; `null` means `backup\` next to the database. |
 
 `analysis` takes the properties of `AnalysisSettings` (`src/KeyStats.Core/Analysis/AnalysisSettings.cs`), whose comments give their meaning. Bounds are inclusive.
@@ -59,5 +61,5 @@ UTF-8 JSON, keys in camelCase. Comments (`//`, `/* */`) and trailing commas are 
 
 - A missing file gives the defaults, at start and on `reload`.
 - An absent key keeps its default; an unknown key is ignored, so later additions within version 1 stay readable by an older agent.
-- The whole file is refused when it is not valid JSON, is larger than 1 MiB, has a value of the wrong type (numbers are never read from strings), or a value out of bounds: an `analysis` value outside the table above, a blank or `null` name in `excludedApps`, a relative `backupFolder`, a `null` `analysis` or `liveCounter`. At start, a refused file gives the defaults; on `reload`, the current settings stay in place. A refused file is never rewritten by the agent.
+- The whole file is refused when it is not valid JSON, is larger than 1 MiB, has a value of the wrong type (numbers are never read from strings), or a value out of bounds: an `analysis` value outside the table above, a blank or `null` name in `excludedApps`, a relative `backupFolder`, a `null` `analysis` or `liveCounter`, an unknown `liveCounter.position` or a `liveCounter.opacity` outside 20 to 100. At start, a refused file gives the defaults; on `reload`, the current settings stay in place. A refused file is never rewritten by the agent.
 - The dashboard writes the file to `settings.json.tmp` first, then moves it over `settings.json`: a reader sees either the old file or the new one.

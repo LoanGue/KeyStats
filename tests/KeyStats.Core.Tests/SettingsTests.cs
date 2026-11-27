@@ -59,6 +59,9 @@ public sealed class SettingsTests : IDisposable
     [InlineData("""{ "version": 0 }""")]
     [InlineData("""{ "analysis": null }""")]
     [InlineData("""{ "liveCounter": null }""")]
+    [InlineData("""{ "liveCounter": { "position": "centre" } }""")]
+    [InlineData("""{ "liveCounter": { "position": null } }""")]
+    [InlineData("""{ "liveCounter": { "opacity": 10 } }""")]
     [InlineData("""{ "analysis": { "sessionGapMs": 0 } }""")]
     [InlineData("""{ "analysis": { "activeGapMs": 6000 } }""")]
     [InlineData("""{ "analysis": { "minNetChars": -1 } }""")]
@@ -170,7 +173,7 @@ public sealed class SettingsTests : IDisposable
         // Contrat lu par le tableau de bord : noms en camelCase.
         SettingsStore.Save(Path_, new KeyStatsSettings { ExcludedApps = [] });
         string json = File.ReadAllText(Path_);
-        foreach (string key in new[] { "\"version\": 1", "\"excludedApps\": []", "\"analysis\"", "\"sessionGapMs\": 5000", "\"liveCounter\"", "\"enabled\": true", "\"backupFolder\": null" })
+        foreach (string key in new[] { "\"version\": 1", "\"excludedApps\": []", "\"analysis\"", "\"sessionGapMs\": 5000", "\"liveCounter\"", "\"enabled\": true", "\"position\": \"bottomRight\"", "\"opacity\": 100", "\"backupFolder\": null" })
             Assert.Contains(key, json);
     }
 

@@ -187,13 +187,32 @@ public sealed class LiveDisplayTests
         Assert.Equal((uint)(0x1C * 0.86f + 0.5f), (bg >> 16) & 0xFF);
     }
 
-    [Fact]
-    public void Coin_bas_droit_de_la_zone_de_travail()
+    [Theory]
+    [InlineData("bottomRight", 1920 - 150 - 12, 1032 - 52 - 12)]
+    [InlineData("bottomLeft", 12, 1032 - 52 - 12)]
+    [InlineData("topRight", 1920 - 150 - 12, 12)]
+    [InlineData("topLeft", 12, 12)]
+    [InlineData("ailleurs", 1920 - 150 - 12, 1032 - 52 - 12)]
+    public void Coin_de_la_zone_de_travail(string corner, int x, int y)
     {
         // Barre des tâches de 48 px en bas d'un écran 1920 × 1080.
         var work = new ScreenRect(0, 0, 1920, 1032);
-        Assert.Equal((1920 - 150 - 12, 1032 - 52 - 12), LiveDisplay.BottomRight(work, 150, 52, 12));
+        Assert.Equal((x, y), LiveDisplay.Corner(work, 150, 52, 12, corner));
     }
+
+    [Fact]
+    public void Coin_haut_gauche_sous_une_barre_des_taches_en_haut()
+    {
+        var work = new ScreenRect(1920, 48, 3840, 1080);
+        Assert.Equal((1920 + 12, 48 + 12), LiveDisplay.Corner(work, 150, 52, 12, "topLeft"));
+    }
+
+    [Theory]
+    [InlineData(100, 255)]
+    [InlineData(20, 51)]
+    [InlineData(55, 140)]
+    [InlineData(150, 255)]
+    public void Opacite_en_alpha(int percent, int alpha) => Assert.Equal(alpha, LiveDisplay.Alpha(percent));
 
     [Theory]
     [InlineData(150, 96, 150)]
