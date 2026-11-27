@@ -90,11 +90,6 @@ a:hover {
   gap: 20px;
   flex: 1;
 }
-/* Ancien bloc de déverrouillage, retiré avec l'arrivée du dialogue. */
-.legacy-key {
-  flex: none;
-  border-top: 1px solid var(--border);
-}
 
 /* Navigation */
 .nav {
