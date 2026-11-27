@@ -72,24 +72,6 @@ internal static class TypoDayTables
         return map;
     }
 
-    public static TyposDelay Delay(KeyStatsDb db, DayRange range)
-    {
-        var counts = new int[LogScale.Buckets];
-        using (var cmd = db.Command($"SELECT data FROM day_hist WHERE {InRange} AND hist = {(int)HistogramKind.DetectionDelayMs} AND sub = 0",
-            range.FromDay, range.ToDay))
-        using (var r = cmd.ExecuteReader())
-        {
-            while (r.Read()) HistogramCodec.AddTo(KeyStatsDb.Blob(r, 0), counts);
-        }
-        var scale = LogScale.DetectionDelay;
-        int last = Array.FindLastIndex(counts, c => c > 0);
-        var bins = new List<TyposDelayBin>(last + 1);
-        for (int i = 0; i <= last; i++)
-        {
-            double upper = scale.UpperBound(i);
-            bins.Add(new TyposDelayBin(scale.LowerBound(i), double.IsPositiveInfinity(upper) ? null : upper, counts[i]));
-        }
-        double median = scale.Median(counts);
-        return new TyposDelay(double.IsNaN(median) ? null : median, bins);
-    }
+    public static TimeDistribution Delay(KeyStatsDb db, DayRange range) =>
+        TimeDistribution.Of(LogScale.DetectionDelay, DayHistograms.Sum(db, range, HistogramKind.DetectionDelayMs));
 }
