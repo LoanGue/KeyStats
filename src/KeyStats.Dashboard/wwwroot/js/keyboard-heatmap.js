@@ -111,9 +111,6 @@ export function heatLegend(measure) {
     el("span", "muted", "élevé"),
   );
   const foot = el("div", "heat-legend");
-  foot.append(
-    scale,
-    el("span", "muted", "Le filtre Clavier choisit les appuis comptés."),
-  );
+  foot.append(scale);
   return foot;
 }

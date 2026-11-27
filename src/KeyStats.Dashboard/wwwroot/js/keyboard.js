@@ -34,6 +34,7 @@ function measurePicker(current, onPick) {
 function heatCard(data) {
   let measure = "appuis";
   const note = el("span");
+  note.setAttribute("aria-live", "polite");
   const body = el("div", "keyboard-body");
   const draw = () => {
     note.textContent = measures[measure].help;
