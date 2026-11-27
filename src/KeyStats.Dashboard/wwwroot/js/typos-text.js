@@ -1,22 +1,12 @@
 // Cartes de la page Fautes sur le texte tapé : précision par jour.
 
 import { baseOption, token, valueAxis } from "./charts.js";
-import { nf, nf1 } from "./format.js";
+import { dayLong, dayTick, nf, pct } from "./format.js";
 import { el } from "./states.js";
 
 const MIN_DAY = 200; // caractères de texte qu'il faut à un jour pour être « meilleur jour »
 
-const dayTick = new Intl.DateTimeFormat("fr-FR", {
-  day: "numeric",
-  month: "short",
-});
-const dayLong = new Intl.DateTimeFormat("fr-FR", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-});
 const dateOf = (iso) => new Date(`${iso}T12:00:00`);
-const pct = (v) => `${nf1.format(v * 100)} %`;
 
 function figure(label, value) {
   const box = el("div");
@@ -61,7 +51,15 @@ export function accuracyCard(data) {
     ]),
     option: {
       ...baseOption(),
-      tooltip: { ...baseOption().tooltip, trigger: "axis" },
+      tooltip: {
+        ...baseOption().tooltip,
+        trigger: "axis",
+        formatter: ([p]) => {
+          const d = data.days[p.dataIndex];
+          const value = d.accuracy == null ? "pas de texte" : pct(d.accuracy);
+          return `<b>${dayLong.format(dateOf(d.day))}</b><br>${value}`;
+        },
+      },
       xAxis: {
         type: "category",
         boundaryGap: false,
@@ -89,9 +87,6 @@ export function accuracyCard(data) {
           lineStyle: { color: token("--chart"), width: 2 },
           itemStyle: { color: token("--chart") },
           areaStyle: { color: token("--chart-area"), opacity: 0.6 },
-          tooltip: {
-            valueFormatter: (v) => (v == null ? "—" : `${nf1.format(v)} %`),
-          },
         },
       ],
     },
