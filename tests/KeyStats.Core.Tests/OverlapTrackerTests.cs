@@ -76,6 +76,77 @@ public sealed class OverlapTrackerTests
     }
 
     [Fact]
+    public void Trois_touches_tenues_ensemble_mesurent_chaque_derniere_paire()
+    {
+        // a, z, e enfoncées à 40 ms d'écart et toutes tenues 120 ms : a–z puis z–e.
+        var stats = new Typist { Step = 40, HoldMs = 120 }.Type("aze").Analyze();
+        Assert.Equal([(KeyOf('a'), KeyOf('z')), (KeyOf('z'), KeyOf('e'))], Pairs(stats).Keys.Order());
+    }
+
+    [Fact]
+    public void Touche_anterieure_deja_relachee_ne_fait_pas_de_paire()
+    {
+        // a tenue ; z tapée puis relâchée ; e enfoncée alors que a est encore tenue : seule a–z est mesurée.
+        var t = new Typist { Step = 40, HoldMs = 20 };
+        t.Down(KeyOf('a')).Key(KeyOf('z')).Key(KeyOf('e')).Up(KeyOf('a'));
+        var stats = t.Analyze();
+        Assert.Equal([(KeyOf('a'), KeyOf('z'))], Pairs(stats).Keys);
+        Assert.Equal(2, stats.Metrics.Where(kv => kv.Key.Metric == DayMetric.Overlaps).Sum(kv => kv.Value));
+    }
+
+    [Fact]
+    public void Chevauchement_plus_long_que_le_plafond_ignore()
+    {
+        // z enfoncée pendant que a est tenue, et tenue elle-même 3 s : au-delà du plafond de 1 s.
+        var t = new Typist { Step = 40, HoldMs = 3000 };
+        t.Down(KeyOf('a')).Key(KeyOf('z')).Wait(4000).Up(KeyOf('a'));
+        Assert.Empty(Pairs(t.Analyze(new AnalysisSettings { HoldCapMs = 1000 })));
+    }
+
+    [Theory]
+    [InlineData(FocusState.Excluded)]
+    [InlineData(FocusState.Secret)]
+    public void Touche_tenue_en_entrant_dans_une_appli_exclue_n_est_pas_mesuree(FocusState mode)
+    {
+        long t = Typist.Start;
+        var stats = Run(a =>
+        {
+            a.Process(new InputEvent(t, EventKind.KeyDown, KeyOf('a'), 1));
+            a.SetFocus(new FocusInfo(t + 20, 7, 0, null, FocusState.NewWindow | mode));
+            a.Process(new InputEvent(t + 40, EventKind.KeyDown, KeyOf('z'), 1));
+            a.Process(new InputEvent(t + 80, EventKind.KeyUp, KeyOf('z'), 1));
+            a.Process(new InputEvent(t + 100, EventKind.KeyUp, KeyOf('a'), 1));
+        });
+        Assert.Empty(Pairs(stats));
+    }
+
+    [Fact]
+    public void Touche_tenue_en_sortant_d_une_appli_exclue_n_est_pas_mesuree()
+    {
+        long t = Typist.Start;
+        var stats = Run(a =>
+        {
+            a.SetFocus(new FocusInfo(t - 100, 7, 0, null, FocusState.NewWindow | FocusState.Excluded));
+            a.Process(new InputEvent(t, EventKind.KeyDown, KeyOf('a'), 1));
+            a.SetFocus(new FocusInfo(t + 20, 1, 0, null, FocusState.NewWindow));
+            a.Process(new InputEvent(t + 40, EventKind.KeyDown, KeyOf('z'), 1));
+            a.Process(new InputEvent(t + 80, EventKind.KeyUp, KeyOf('z'), 1));
+            a.Process(new InputEvent(t + 100, EventKind.KeyUp, KeyOf('a'), 1));
+        });
+        Assert.Empty(Pairs(stats));
+    }
+
+    private static StatsAccumulator Run(Action<Analyzer> script)
+    {
+        var stats = new StatsAccumulator(new LocalDayClock(TimeZoneInfo.Utc));
+        var analyzer = new Analyzer(stats);
+        analyzer.SetFocus(new FocusInfo(Typist.Start - 1000, 1, 0, null, FocusState.NewWindow));
+        script(analyzer);
+        analyzer.EndAll();
+        return stats;
+    }
+
+    [Fact]
     public void Paire_retrouvee_depuis_la_sous_cle()
     {
         int sub = OverlapTracker.Sub(KeyCode.LeftShift, KeyCode.Delete);
