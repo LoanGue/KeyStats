@@ -6,6 +6,22 @@ export const nf1 = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 1,
 });
 
+/** Part en pourcentage à une décimale : « 96,1 % ». */
+export const pct = (v) => `${nf1.format(v * 100)}\u202f%`;
+
+/** Jour court pour les graduations : « 21 nov. ». */
+export const dayTick = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "short",
+});
+
+/** Jour en toutes lettres : « vendredi 27 novembre ». */
+export const dayLong = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
 /** Vitesse arrondie au mot près : « 58 mots/min ». */
 export const wpm = (v) => `${nf.format(Math.round(v))}\u00a0mots/min`;
 
