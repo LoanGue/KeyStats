@@ -82,14 +82,18 @@ public sealed partial class KeyStatsDb : IDisposable
 
     private void Migrate()
     {
-        int version = UserVersion;
-        if (version > Schema.CurrentVersion)
-            throw new InvalidOperationException("Base créée par une version plus récente de KeyStats.");
-        for (int v = version; v < Schema.CurrentVersion; v++)
+        if (UserVersion == Schema.CurrentVersion) return; // cas courant, sans prendre le verrou d'écriture
+        while (true)
         {
             using var tx = BeginTransaction();
-            Exec(Schema.Migrations[v]);
-            Exec($"PRAGMA user_version = {v + 1}");
+            // Lue sous le verrou d'écriture : l'agent et le tableau de bord peuvent ouvrir la base en même
+            // temps, et une migration rejouée sur une base déjà migrée n'échoue pas forcément.
+            int version = UserVersion;
+            if (version > Schema.CurrentVersion)
+                throw new InvalidOperationException("Base créée par une version plus récente de KeyStats.");
+            if (version == Schema.CurrentVersion) return;
+            Exec(Schema.Migrations[version]);
+            Exec($"PRAGMA user_version = {version + 1}");
             tx.Commit();
         }
     }
