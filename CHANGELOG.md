@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Réglages page edits the detection thresholds. A
+  change restarts a running agent, which reads them only at start. A refused
+  `settings.json` is shown, never rewritten.
 - `KeyStats.Dashboard`: the Lettres et mots page shows the share of each letter
   typed against French reference ticks, with an optional English comparison,
   the average word length overall, in prose and in code, the median, and the
