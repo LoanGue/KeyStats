@@ -85,4 +85,5 @@ public static class FiltersApi
 [JsonSerializable(typeof(Typos))]
 [JsonSerializable(typeof(Keyboard))]
 [JsonSerializable(typeof(LettersStats))]
+[JsonSerializable(typeof(Rhythm))]
 public sealed partial class StatsJson : JsonSerializerContext;
