@@ -29,6 +29,9 @@ All notable changes to this project are documented here. The format follows
   neighbours) and the error rate of each accented character.
 - `KeyStats.Dashboard`: Fautes page, share of each error type and distribution
   of the detection delay.
+- `KeyStats.Dashboard`: Fautes page, cost of corrections (collateral deletions,
+  KSPC, keys lost) and the share of characters deleted by single, held and
+  Ctrl+Backspace.
 - `KeyStats.Dashboard`: speed page from the design: each session of the period
   with the rolling median of the last 10, speed against accuracy for text
   sessions, and the distribution of speeds with the median and the peak.
