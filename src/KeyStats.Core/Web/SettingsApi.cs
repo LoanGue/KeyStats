@@ -30,7 +30,8 @@ public sealed record SettingsPatch(int? ActiveGapMs, int? SessionGapMs, IReadOnl
 /// laissé tel quel) ou <c>failed</c> (écriture impossible).
 /// </param>
 /// <param name="AgentApplied">Un agent a pris les nouveaux réglages (relecture, ou redémarrage pour les seuils).</param>
-public sealed record SettingsSaved(string Outcome, bool AgentApplied, SettingsView Settings);
+/// <param name="Restarted">L'agent a été arrêté et relancé, parce qu'un seuil a changé.</param>
+public sealed record SettingsSaved(string Outcome, bool AgentApplied, bool Restarted, SettingsView Settings);
 
 /// <summary>
 /// <c>GET /api/settings</c> et <c>POST /api/settings</c> : lecture et modification de <c>settings.json</c>.
@@ -40,8 +41,11 @@ public static class SettingsApi
 {
     public const string Path = "/api/settings";
 
-    /// <summary>Plus d'applications exclues que n'en tient une liste écrite à la main.</summary>
-    public const int MaxExcludedApps = 256;
+    /// <summary>
+    /// Plus d'applications exclues que n'en tient une liste écrite à la main ; une liste pleine de noms
+    /// courants tient dans le corps de requête accepté (<see cref="WebRouter.MaxBody"/>).
+    /// </summary>
+    public const int MaxExcludedApps = 64;
 
     public static void Register(WebRouter router, string settingsPath, IAgentControl agent)
     {
@@ -56,7 +60,7 @@ public static class SettingsApi
             bool applied = outcome == "saved"
                 // Reprise sur le thread de l'interface, qui pose la réponse.
                 && await (restart ? agent.RestartAsync() : agent.ReloadAsync()).ConfigureAwait(true);
-            return WebResponse.Json(new SettingsSaved(outcome, applied, view), WebJson.Default.SettingsSaved);
+            return WebResponse.Json(new SettingsSaved(outcome, applied, applied && restart, view), WebJson.Default.SettingsSaved);
         });
     }
 
@@ -70,8 +74,9 @@ public static class SettingsApi
     }
 
     /// <summary>
-    /// Applique <paramref name="patch"/> au fichier tel qu'il est sur le disque : les clés que la page ne
-    /// connaît pas gardent leur valeur. <c>Restart</c> : les seuils ont changé, l'agent ne les lit qu'au démarrage.
+    /// Applique <paramref name="patch"/> au fichier tel qu'il est sur le disque, puis le réécrit depuis le
+    /// modèle : les clés connues gardent leur valeur, les clés inconnues et les commentaires disparaissent.
+    /// <c>Restart</c> : les seuils ont changé, l'agent ne les lit qu'au démarrage.
     /// </summary>
     public static (string Outcome, bool Restart, SettingsView View) Save(string settingsPath, SettingsPatch patch)
     {

@@ -45,7 +45,7 @@ public sealed class SettingsApiTests : IDisposable
     }
 
     [Fact]
-    public void Seuils_enregistres_demandent_un_redemarrage_et_gardent_les_cles_inconnues()
+    public void Seuils_enregistres_demandent_un_redemarrage_et_gardent_les_autres_cles()
     {
         File.WriteAllText(Path_, """{ "backupFolder": "D:\\Sauvegardes", "analysis": { "minSpaces": 5 } }""");
         var (outcome, restart, view) = SettingsApi.Save(Path_, Patch(active: 1500, session: 9000));
@@ -56,6 +56,16 @@ public sealed class SettingsApiTests : IDisposable
         Assert.Equal(@"D:\Sauvegardes", load.Settings.BackupFolder);
         Assert.Equal(5, load.Settings.Analysis.MinSpaces);
         Assert.Equal(9000, load.Settings.Analysis.SessionGapMs);
+    }
+
+    [Fact]
+    public void Cles_inconnues_et_commentaires_disparaissent_a_l_enregistrement()
+    {
+        File.WriteAllText(Path_, "{ // note\n \"optionFuture\": true }");
+        Assert.Equal("saved", SettingsApi.Save(Path_, Patch(active: 1500)).Outcome);
+        string text = File.ReadAllText(Path_);
+        Assert.DoesNotContain("optionFuture", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("note", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -129,9 +139,10 @@ public sealed class SettingsApiTests : IDisposable
         var saved = await Post("""{ "liveCounter": false }""");
         Assert.Equal("saved", saved.GetProperty("outcome").GetString());
         Assert.True(saved.GetProperty("agentApplied").GetBoolean());
+        Assert.False(saved.GetProperty("restarted").GetBoolean());
         Assert.Equal((1, 0), (agent.Reloads, agent.Restarts));
 
-        await Post("""{ "activeGapMs": 1234 }""");
+        Assert.True((await Post("""{ "activeGapMs": 1234 }""")).GetProperty("restarted").GetBoolean());
         Assert.Equal((1, 1), (agent.Reloads, agent.Restarts));
 
         var refused = await Post("""{ "excludedApps": ["C:\\x.exe"] }""");
