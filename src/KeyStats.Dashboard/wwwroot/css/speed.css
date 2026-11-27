@@ -40,3 +40,37 @@
   font-size: 12px;
   font-weight: 400;
 }
+
+.speed-apps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.speed-apps li {
+  display: grid;
+  grid-template-columns: minmax(0, 130px) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+.speed-app-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted-strong);
+}
+.speed-app-bar {
+  display: block;
+  height: 14px;
+  border-radius: 0 4px 4px 0;
+  background: var(--chart);
+}
+.speed-app-value {
+  min-width: 80px;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

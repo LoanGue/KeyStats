@@ -56,8 +56,9 @@ export function legend(items) {
 }
 
 /**
- * Carte d'un graphique. spec : title, note, aside (nœud en haut à droite), wide, et soit
- * empty (message à la place du graphique), soit label, headers, rows (tableau masqué) et option.
+ * Carte d'un graphique. spec : title, note, aside (nœud en haut à droite), wide, footnote, et
+ * soit empty (message à la place du graphique), soit body (contenu HTML déjà lisible), soit
+ * label, headers, rows (tableau masqué) et option.
  */
 export function chartCard(spec) {
   const section = el(
@@ -70,16 +71,18 @@ export function chartCard(spec) {
   head.append(text);
   if (spec.aside) head.append(spec.aside);
   section.append(head);
-  if (spec.empty) {
-    section.append(el("p", "chart chart-missing", spec.empty));
-    return { section, node: null, option: null };
+  let node = null;
+  if (spec.empty) section.append(el("p", "chart chart-missing", spec.empty));
+  else if (spec.body) section.append(spec.body);
+  else {
+    node = el("div", "chart");
+    const { hidden, table } = describedBy(node);
+    node.setAttribute("aria-label", spec.label);
+    fillTable(table, spec.headers, spec.rows);
+    section.append(node, hidden);
   }
-  const node = el("div", "chart");
-  const { hidden, table } = describedBy(node);
-  node.setAttribute("aria-label", spec.label);
-  fillTable(table, spec.headers, spec.rows);
-  section.append(node, hidden);
-  return { section, node, option: spec.option };
+  if (spec.footnote) section.append(el("p", "chart-footnote", spec.footnote));
+  return { section, node, option: node ? spec.option : null };
 }
 
 /** Trace les cartes une fois dans la page ; sans ECharts, seules leurs zones de graphique changent. */
