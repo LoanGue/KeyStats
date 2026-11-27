@@ -14,6 +14,7 @@ public sealed class LogScale
     public static LogScale Flight { get; } = new(10, 2000);
     public static LogScale BigramLatency { get; } = new(10, 1000);
     public static LogScale DetectionDelay { get; } = new(50, 30000);
+    public static LogScale Overlap { get; } = new(5, 1000);
 
     private readonly double _ratio;
 

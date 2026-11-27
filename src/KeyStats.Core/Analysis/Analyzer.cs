@@ -21,6 +21,7 @@ public sealed class Analyzer
     private readonly SessionBuilder _session;
     private readonly CorrectionAnalyzer _corrections;
     private readonly LiveMeter? _live;
+    private readonly OverlapTracker _overlaps;
 
     private int _appId;
     private long _titleId;
@@ -34,6 +35,7 @@ public sealed class Analyzer
     // relâchement appartiennent à l'autre mode et sont ignorés.
     private readonly bool[] _stale = new bool[KeyCode.Count];
     private int _downCount, _textDownCount;
+    private ushort _lastTextKey;
     private long _lastTextUpMs = long.MinValue;
     private bool _capsLock, _numLock;
     private bool _altAlone, _winAlone;
@@ -53,6 +55,7 @@ public sealed class Analyzer
         _live = live;
         _session = new SessionBuilder(stats, _s, live);
         _corrections = new CorrectionAnalyzer(_session, _s);
+        _overlaps = new OverlapTracker(stats, _s.HoldCapMs);
     }
 
     public StatsAccumulator Stats => _stats;
@@ -180,6 +183,7 @@ public sealed class Analyzer
         for (int k = 0; k < _down.Length; k++)
             if (_down[k]) _stale[k] = true;
         _lastTextUpMs = long.MinValue;
+        _overlaps.Clear();
         _altAlone = _winAlone = false;
         _dead = '\0';
         ResetAltCode();
@@ -192,6 +196,7 @@ public sealed class Analyzer
         Array.Clear(_textDown);
         _downCount = _textDownCount = 0;
         _lastTextUpMs = long.MinValue;
+        _overlaps.Clear();
         _altAlone = _winAlone = false;
         _dead = '\0';
         ResetAltCode();
@@ -270,6 +275,8 @@ public sealed class Analyzer
         }
         bool stale = _stale[k];
         _stale[k] = false;
+        if (e.Kind == EventKind.ForcedUp || stale || _excluded) _overlaps.Cancel(k);
+        else _overlaps.Release(k, ms);
         if (e.Kind == EventKind.ForcedUp || stale)
         {
             // Relâchement perdu : on corrige l'état sans rien en déduire.
@@ -346,6 +353,9 @@ public sealed class Analyzer
             {
                 overlap = true;
                 _stats.AddMetric(day, DayMetric.Overlaps, 1);
+                // Durée mesurée seulement contre la dernière touche de caractère, si elle est encore tenue : la somme
+                // des histogrammes OverlapMs peut rester sous la métrique Overlaps, qui compte tous les appuis.
+                if (_textDown[_lastTextKey]) _overlaps.Start(_lastTextKey, k, ms);
             }
             else if (_lastTextUpMs != long.MinValue)
             {
@@ -358,6 +368,7 @@ public sealed class Analyzer
                 _textDown[k] = true;
                 _textDownCount++;
             }
+            _lastTextKey = k;
         }
         _session.TextKey(ms, repeat, overlap);
 

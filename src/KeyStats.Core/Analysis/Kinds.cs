@@ -136,4 +136,9 @@ public enum HistogramKind
     Chord = 3,
     /// <summary>Délai entre une faute et le premier retour arrière qui la corrige.</summary>
     DetectionDelayMs = 4,
+    /// <summary>
+    /// Chevauchement de deux touches de caractère, du second appui au premier relâchement
+    /// (sous-clé = paire de touches, voir <c>OverlapTracker.Sub</c>).
+    /// </summary>
+    OverlapMs = 5,
 }
