@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="css/states.css">
   <link rel="stylesheet" href="css/unlock.css">
   <script type="module" src="js/main.js"></script>
-  <script src="app.js" defer></script>
 </head>
 <body>
   <div class="app">
@@ -60,24 +59,6 @@
         </div>
       </header>
       <div id="view" class="view"></div>
-      <!-- Déverrouillage d'avant la maquette, gardé jusqu'à l'arrivée de son dialogue. -->
-      <section class="view legacy-key">
-        <p id="status">Lecture de l'état…</p>
-        <section id="key" hidden>
-          <h2>Données chiffrées</h2>
-          <p id="key-state"></p>
-          <div id="unlock" hidden>
-            <button id="hello" type="button" hidden>Déverrouiller avec Windows Hello</button>
-            <form id="phrase-form" hidden>
-              <label for="phrase">Phrase de secours</label>
-              <input id="phrase" type="password" autocomplete="off" spellcheck="false" required>
-              <button type="submit">Déverrouiller</button>
-            </form>
-          </div>
-          <button id="lock" type="button" hidden>Verrouiller</button>
-          <p id="key-message" role="status"></p>
-        </section>
-      </section>
     </main>
   </div>
 
