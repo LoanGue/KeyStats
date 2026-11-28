@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Réglages page recomputes the statistics of a past
+  period with the current thresholds, from the encrypted raw input, after
+  unlocking. The card shows the day in progress, the days done and an estimated
+  remaining time, and can cancel between two days. Days without complete raw
+  input are kept as they were.
+
 - `KeyStats.Dashboard`: the Réglages page exports statistics per day, per
   session and per key as CSV files, for the whole history, the period of the
   filters or chosen dates, into a folder picked in the Windows folder picker.
