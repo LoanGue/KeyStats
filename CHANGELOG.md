@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Agent`: the live counter takes its corner of the work area and its
+  opacity (20 to 100 %) from `liveCounter.position` and `liveCounter.opacity`
+  in `settings.json`, applied at once on `reload`.
+
 - `KeyStats.Dashboard`: the Activité et origine page shows one day minute by
   minute as a strip: typing shaded by keys per minute, pauses, and hatched
   unobserved time, with the three totals and the pause threshold from the
