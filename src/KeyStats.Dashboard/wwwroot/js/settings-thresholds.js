@@ -45,7 +45,7 @@ function check(active, session) {
   return "";
 }
 
-export function thresholdsCard(settings, locked) {
+export function thresholdsCard(settings) {
   const { section } = settingsCard(
     "Seuils de détection",
     "S'appliquent aux nouvelles frappes. Pour l'historique, lancez un recalcul.",
@@ -102,7 +102,5 @@ export function thresholdsCard(settings, locked) {
   const actions = el("div", "settings-actions");
   actions.append(reset, save);
   section.append(active.row, session.row, error, actions, status.node);
-  for (const node of [active.input, session.input, reset, save])
-    node.disabled = locked;
   return section;
 }

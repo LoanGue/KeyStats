@@ -40,17 +40,31 @@ export function statusLine() {
   };
 }
 
+/** Bandeau d'un settings.json refusé : la page ne montre alors aucune carte, faute de valeurs sûres. */
+export function refusedAlert() {
+  const box = el("div", "settings-alert");
+  box.setAttribute("role", "alert");
+  box.append(
+    el(
+      "p",
+      null,
+      "Le fichier settings.json est refusé : une valeur y est hors bornes ou mal écrite. L'agent garde les réglages qu'il a déjà, ou les valeurs par défaut à son prochain démarrage, et cette page ne réécrit pas le fichier. Corrigez-le ou supprimez-le, puis rouvrez la page.",
+    ),
+  );
+  return box;
+}
+
 const failures = {
   invalid: "Valeur refusée : rien n'a été enregistré.",
-  unreadable:
-    "Le fichier settings.json est refusé : il n'est pas réécrit. Corrigez-le ou supprimez-le, puis rouvrez cette page.",
   failed: "Le fichier settings.json n'a pas pu être écrit. Réessayez.",
 };
 
 /**
  * Envoie patch à /api/settings et affiche le résultat dans status. Renvoie la réponse, ou null si la
  * requête a échoué. applied et pending : messages quand l'agent a pris le réglage, ou pas ; restarted,
- * s'il est donné, quand l'agent a été relancé pour le prendre.
+ * s'il est donné, quand l'agent a été relancé pour le prendre. Un fichier refusé entre l'ouverture
+ * de la page et l'enregistrement remplace les cartes par le bandeau et renvoie null. Les appelants ne
+ * touchent ensuite qu'aux nœuds de leur carte, détachés si la page a changé : pas de ctx.isCurrent().
  */
 export async function saveSettings(
   patch,
@@ -62,6 +76,10 @@ export async function saveSettings(
     result = await postJson("/api/settings", patch);
   } catch {
     status.show(failures.failed, true);
+    return null;
+  }
+  if (result.outcome === "unreadable") {
+    status.node.closest(".settings-grid")?.replaceWith(refusedAlert());
     return null;
   }
   if (result.outcome !== "saved") status.show(failures[result.outcome], true);
