@@ -28,6 +28,8 @@ public static class StatusApi
 [JsonSerializable(typeof(UnlockRequest))]
 [JsonSerializable(typeof(SetupRequest))]
 [JsonSerializable(typeof(SetupResult))]
+[JsonSerializable(typeof(PassphraseChange))]
+[JsonSerializable(typeof(KeyChangeResult))]
 [JsonSerializable(typeof(SettingsView))]
 [JsonSerializable(typeof(LiveCounterView))]
 [JsonSerializable(typeof(LiveCounterPatch))]
