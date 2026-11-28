@@ -196,7 +196,9 @@ export function recomputeCard(ctx) {
       status.show(failure(error), true);
     }
     cancel.disabled = false;
+    // Une réponse déjà finale a masqué le panneau : le focus revient sur Recalculer.
     if (!panel.hidden) cancel.focus();
+    else run.focus();
   }
 
   // Un recalcul lancé avant l'ouverture de la page est repris tel quel.
