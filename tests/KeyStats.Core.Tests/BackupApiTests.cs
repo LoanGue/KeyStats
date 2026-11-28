@@ -160,11 +160,10 @@ public sealed class BackupApiTests : IDisposable
         Assert.True(entered.Wait(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
         var second = await router.HandleAsync("POST", WebRouter.Origin + BackupApi.RunPath, "{}"u8.ToArray());
         Assert.Equal("busy", JsonDocument.Parse(second.Body).RootElement.GetProperty("outcome").GetString());
+        // Un autre routeur a son propre verrou : il sauvegarde pendant que la première copie est retenue.
+        Assert.Equal("done", (await Post(BackupApi.RunPath)).GetProperty("outcome").GetString());
         release.Set();
         Assert.Equal("done", JsonDocument.Parse((await first).Body).RootElement.GetProperty("outcome").GetString());
-
-        // Les autres routeurs ont leur propre verrou.
-        Assert.Equal("done", (await Post(BackupApi.RunPath)).GetProperty("outcome").GetString());
     }
 
     [Fact]
