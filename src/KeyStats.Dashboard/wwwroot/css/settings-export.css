@@ -1,0 +1,50 @@
+/* Carte Export CSV de la page Réglages : période, dates d'une période personnalisée, fichiers. */
+
+.settings-select,
+.settings-date {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.settings-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.settings-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.settings-date {
+  font-size: 13px;
+  color: var(--muted);
+}
+.settings-date input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+.settings-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+.settings-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+.settings-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+}
