@@ -21,6 +21,9 @@ public enum DayReplay
     /// le groupe n'a pas de bord libre, rien n'est rejoué.
     /// </summary>
     TooWide,
+
+    /// <summary>Le groupe touche un jour que l'agent écrit encore (aujourd'hui) : rien n'est rejoué.</summary>
+    Current,
 }
 
 /// <param name="Outcome">Issue du rejeu.</param>
@@ -68,12 +71,16 @@ public sealed class HistoryReplay
         _maxSpreadDays = maxSpreadDays;
     }
 
-    /// <summary>Rejoue le jour local <paramref name="day"/> (aaaammjj), avec les jours que ses sessions touchent.</summary>
-    public ReplayResult Replay(int day, MasterKey master)
+    /// <summary>
+    /// Rejoue le jour local <paramref name="day"/> (aaaammjj), avec les jours que ses sessions touchent. Un groupe
+    /// qui atteint <paramref name="beforeDay"/> (le jour en cours) n'est pas rejoué : l'agent y écrit encore.
+    /// </summary>
+    public ReplayResult Replay(int day, MasterKey master, int beforeDay = int.MaxValue)
     {
         ArgumentNullException.ThrowIfNull(master);
         var (fromDay, toDay, bounded) = GroupOf(day);
         if (!bounded) return new(DayReplay.TooWide, fromDay, toDay);
+        if (toDay >= beforeDay) return new(DayReplay.Current, fromDay, toDay);
         for (var d = LocalDayClock.DateOf(fromDay); LocalDayClock.KeyOf(d) <= toDay; d = d.AddDays(1))
         {
             if (!HasRawFor(LocalDayClock.KeyOf(d))) return new(DayReplay.NoRaw, fromDay, toDay);
