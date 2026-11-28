@@ -41,6 +41,14 @@ function lockCard(ctx) {
     phrase.addEventListener("click", () => ctx.unlock("phrase"));
     box.append(phrase);
   }
+  if (!ctx.key?.hello && !ctx.key?.passphrase)
+    text.append(
+      el(
+        "p",
+        null,
+        "Aucun moyen de déverrouillage n'est disponible pour le moment. La page Réglages indique l'état du chiffrement.",
+      ),
+    );
   const wrap = el("div", "detail-lock-wrap");
   wrap.append(box);
   return wrap;
@@ -143,12 +151,16 @@ export async function renderDetail(view, ctx) {
         place(failed);
         return;
       }
-      if (!ctx.isCurrent() || id !== asked) return;
+      if (!ctx.isCurrent()) return;
+      // Gardées même pour un choix dépassé : rechoisir la session ne relit pas les frappes.
       read.set(session.id, keys);
+      if (id !== asked) return;
     }
     place(keysCard(session, keys));
   }
 
-  grid.append(sessionsCard(data, show), slot);
+  // slot est dans la grille avant la liste, qui choisit sa première session pendant sa construction.
+  grid.append(slot);
+  grid.prepend(sessionsCard(data, show));
   view.replaceChildren(grid);
 }
