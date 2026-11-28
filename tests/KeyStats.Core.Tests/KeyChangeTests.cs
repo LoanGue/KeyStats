@@ -27,10 +27,12 @@ public sealed class KeyChangeTests : IDisposable
     {
         public byte[]? Signature { get; set; } = signature;
         public List<string> Created { get; } = [];
+        public Action? DuringPrompt { get; set; }
 
         public Task<byte[]?> CreateAndSignAsync(string credentialId, byte[] challenge)
         {
             Created.Add(credentialId);
+            DuringPrompt?.Invoke();
             return Task.FromResult(Signature?.ToArray());
         }
 
@@ -109,6 +111,13 @@ public sealed class KeyChangeTests : IDisposable
         SetUp(withHello: false);
         Assert.Equal("locked", Outcome(await Post(url, "{}")));
         Assert.Empty(_hello.Created);
+
+        // Session verrouillée pendant l'invite de Windows : rien n'est écrit.
+        Assert.True(_session.TryUnlockWithPassphrase(_temp.Db, Phrase));
+        _hello.DuringPrompt = _session.Lock;
+        Assert.Equal("locked", Outcome(await Post(url, "{}")));
+        Assert.DoesNotContain(_temp.Db.GetKeyStore(), e => e.Kind == KeyStoreKind.WindowsHello);
+        _hello.DuringPrompt = null;
 
         Assert.True(_session.TryUnlockWithPassphrase(_temp.Db, Phrase));
         _hello.Signature = null;
