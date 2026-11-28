@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Réglages page exports statistics per day, per
+  session and per key as CSV files, for the whole history, the period of the
+  filters or chosen dates, into a folder picked in the Windows folder picker.
+
 - `KeyStats.Dashboard`: the Réglages page shows the backup folder and the time
   of the last backup, picks a new folder in the Windows folder picker and
   backs up on demand.
