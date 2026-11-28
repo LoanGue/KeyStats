@@ -45,11 +45,11 @@ public sealed class HistoryReplayTests
         long keys = tmp.Count("SELECT SUM(keys) FROM minute_total");
 
         var replay = new HistoryReplay(tmp.Db, Clock, new AnalysisSettings { SessionGapMs = 2_000 });
-        Assert.Equal(DayReplay.Done, replay.ReplayDay(Day, master));
+        Assert.Equal(DayReplay.Done, replay.Replay(Day, master).Outcome);
 
         Assert.Equal(2, tmp.Count("SELECT COUNT(*) FROM session"));
         Assert.Equal(keys, tmp.Count("SELECT SUM(keys) FROM minute_total"));
-        Assert.Equal(DayReplay.Done, replay.ReplayDay(Day, master));
+        Assert.Equal(DayReplay.Done, replay.Replay(Day, master).Outcome);
         Assert.Equal(2, tmp.Count("SELECT COUNT(*) FROM session"));
         Assert.Equal(keys, tmp.Count("SELECT SUM(keys) FROM minute_total"));
     }
@@ -66,30 +66,56 @@ public sealed class HistoryReplayTests
         long excluded = tmp.Count("SELECT SUM(excluded_keys) FROM minute_total");
         Assert.True(excluded > 0);
 
-        Assert.Equal(DayReplay.Done, new HistoryReplay(tmp.Db, Clock, AnalysisSettings.Default).ReplayDay(Day, master));
+        Assert.Equal(DayReplay.Done, new HistoryReplay(tmp.Db, Clock, AnalysisSettings.Default).Replay(Day, master).Outcome);
 
         Assert.Equal(excluded, tmp.Count("SELECT SUM(excluded_keys) FROM minute_total"));
     }
 
+    /// <summary>Par jour : sessions, caractères des sessions, caractères du jour et touches par minute.</summary>
+    private static string Snapshot(TempDb tmp, long midnight) =>
+        $"{tmp.Count("SELECT COUNT(*) FROM session WHERE day = 20261102")} {tmp.Count("SELECT COUNT(*) FROM session WHERE day = 20261103")}"
+        + $" {tmp.Count("SELECT coalesce(SUM(chars), 0) FROM session WHERE day = 20261102")} {tmp.Count("SELECT coalesce(SUM(chars), 0) FROM session WHERE day = 20261103")}"
+        + $" {tmp.Count("SELECT coalesce(SUM(n), 0) FROM day_char WHERE day = 20261102")} {tmp.Count("SELECT coalesce(SUM(n), 0) FROM day_char WHERE day = 20261103")}"
+        + $" {tmp.Count($"SELECT SUM(keys) FROM minute_total WHERE ts_min < {midnight / 60_000}")} {tmp.Count($"SELECT SUM(keys) FROM minute_total WHERE ts_min >= {midnight / 60_000}")}";
+
     [Fact]
-    public void Frappes_d_apres_minuit_d_un_bloc_commence_la_veille()
+    public void Session_a_cheval_sur_minuit_rejouee_avec_la_veille()
     {
         using var tmp = new TempDb();
         using var master = MasterKey.Generate();
         long midnight = Clock.MidnightUtcMs(new DateTime(2026, 11, 3));
         var rec = Recorder(tmp, master);
         rec.OnFocus(Focus(midnight - 20_000, "winword.exe"));
-        long end = Feed(rec, Text + Text, midnight - 15_000);
-        Assert.True(rec.Close(end));
+        Assert.True(rec.Close(Feed(rec, Text + Text, midnight - 15_000)));
+        Assert.Equal(1, tmp.Count($"SELECT COUNT(*) FROM session WHERE start_ms < {midnight} AND end_ms > {midnight}"));
         Assert.True(tmp.Count($"SELECT COUNT(*) FROM raw_block WHERE start_ms < {midnight} AND end_ms >= {midnight}") > 0);
-        long after = tmp.Count($"SELECT SUM(keys) FROM minute_total WHERE ts_min >= {midnight / 60_000}");
-        long before = tmp.Count($"SELECT SUM(keys) FROM minute_total WHERE ts_min < {midnight / 60_000}");
+        string before = Snapshot(tmp, midnight);
 
         var replay = new HistoryReplay(tmp.Db, Clock, AnalysisSettings.Default);
-        Assert.Equal(DayReplay.Done, replay.ReplayDay(20261103, master));
+        Assert.Equal(new ReplayResult(DayReplay.Done, 20261102, 20261103), replay.Replay(20261103, master));
+        Assert.Equal(before, Snapshot(tmp, midnight));
+        Assert.Equal(new ReplayResult(DayReplay.Done, 20261102, 20261103), replay.Replay(20261102, master));
+        Assert.Equal(before, Snapshot(tmp, midnight));
+    }
 
-        Assert.Equal(after, tmp.Count($"SELECT SUM(keys) FROM minute_total WHERE ts_min >= {midnight / 60_000}"));
-        Assert.Equal(before, tmp.Count($"SELECT SUM(keys) FROM minute_total WHERE ts_min < {midnight / 60_000}"));
+    [Fact]
+    public void Brut_perdu_annule_le_rejeu()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        var rec = Recorder(tmp, master);
+        long end = RecordTwoPhrases(rec, Typist.Start);
+        rec.OnFocus(Focus(end + 100, "notepad.exe"));
+        Assert.True(rec.Close(Feed(rec, Text, end + 200)));
+        Assert.True(tmp.Count("SELECT COUNT(*) FROM raw_block") > 1);
+        tmp.Db.Exec("DELETE FROM raw_block WHERE id = (SELECT max(id) FROM raw_block)");
+        long keys = tmp.Count("SELECT SUM(keys) FROM minute_total");
+
+        var replay = new HistoryReplay(tmp.Db, Clock, new AnalysisSettings { SessionGapMs = 2_000 });
+        Assert.Equal(DayReplay.Incomplete, replay.Replay(Day, master).Outcome);
+
+        Assert.Equal(2, tmp.Count("SELECT COUNT(*) FROM session"));
+        Assert.Equal(keys, tmp.Count("SELECT SUM(keys) FROM minute_total"));
     }
 
     [Fact]
@@ -101,12 +127,12 @@ public sealed class HistoryReplayTests
         using var master = MasterKey.Generate();
         var replay = new HistoryReplay(tmp.Db, Clock, new AnalysisSettings { SessionGapMs = 2_000 });
 
-        Assert.Equal(DayReplay.NoRaw, replay.ReplayDay(Day, master));
+        Assert.Equal(DayReplay.NoRaw, replay.Replay(Day, master).Outcome);
 
         var rec = new Recorder(tmp.Db, new RawArchiveWriter(tmp.Db, master.PublicKey, new TitleHasher(TitleHasher.NewKey())),
             Clock, Typist.Start + 3_600_000);
         Assert.True(rec.Close(RecordTwoPhrases(rec, Typist.Start + 3_600_000)));
-        Assert.Equal(DayReplay.NoRaw, replay.ReplayDay(Day, master));
+        Assert.Equal(DayReplay.NoRaw, replay.Replay(Day, master).Outcome);
         Assert.Equal(2, tmp.Count("SELECT COUNT(*) FROM session"));
     }
 }

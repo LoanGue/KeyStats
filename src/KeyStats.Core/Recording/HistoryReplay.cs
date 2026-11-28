@@ -4,30 +4,42 @@ using KeyStats.Core.Storage;
 
 namespace KeyStats.Core.Recording;
 
-/// <summary>Issue du rejeu d'un jour.</summary>
+/// <summary>Issue du rejeu d'un groupe de jours.</summary>
 public enum DayReplay
 {
-    /// <summary>Statistiques du jour effacées puis recalculées depuis le brut.</summary>
+    /// <summary>Statistiques des jours effacées puis recalculées depuis le brut.</summary>
     Done,
 
-    /// <summary>Jour commencé avant le premier brut chiffré : ses statistiques sont gardées telles quelles.</summary>
+    /// <summary>Un jour du groupe a des frappes comptées avant le premier brut chiffré : statistiques gardées telles quelles.</summary>
     NoRaw,
+
+    /// <summary>Le brut relu compte moins de touches que les statistiques (brut perdu à l'écriture) : rejeu annulé, statistiques gardées.</summary>
+    Incomplete,
 }
+
+/// <param name="Outcome">Issue du rejeu.</param>
+/// <param name="FromDay">Premier jour du groupe rejoué (aaaammjj).</param>
+/// <param name="ToDay">Dernier jour du groupe rejoué.</param>
+public sealed record ReplayResult(DayReplay Outcome, int FromDay, int ToDay);
 
 /// <summary>
 /// Recalcul de l'historique : rejoue le brut chiffré d'un jour local dans un <see cref="Analyzer"/> neuf,
-/// avec les réglages donnés (seuils actuels), et remplace les statistiques du jour dans une seule
-/// transaction. Les frappes enregistrées ne changent pas. Les touches des applis exclues et des champs
-/// secrets n'ont pas de brut : leurs compteurs sont gardés (<see cref="StatsWriter.DeleteDays"/>).
-/// Une session à cheval sur minuit est coupée en deux, chaque jour étant rejoué seul.
+/// avec les réglages donnés (seuils actuels), et remplace les statistiques dans une seule transaction.
+/// Une session est rangée dans le jour où elle commence : un jour est donc rejoué avec ses voisins tant
+/// qu'une session enregistrée traverse le minuit qui les sépare. Les frappes enregistrées ne changent pas.
+/// Les touches des applis exclues et des champs secrets n'ont pas de brut : leurs compteurs sont gardés
+/// (<see cref="StatsWriter.DeleteDays"/>).
 /// </summary>
 public sealed class HistoryReplay
 {
     /// <summary>
     /// Un bloc brut s'étend sur une minute environ (écriture toutes les 60 s) : on relit aussi ceux commencés
-    /// un peu avant le jour, pour garder leurs frappes d'après minuit, et on écarte celles d'avant.
+    /// un peu avant le groupe, pour garder leurs frappes d'après minuit, et on écarte celles d'avant.
     /// </summary>
     public const long BlockMarginMs = 10 * 60_000;
+
+    /// <summary>Jours ajoutés au plus de chaque côté pour suivre une session à cheval sur minuit.</summary>
+    public const int MaxSpreadDays = 7;
 
     private readonly KeyStatsDb _db;
     private readonly LocalDayClock _clock;
@@ -43,14 +55,20 @@ public sealed class HistoryReplay
         _settings = settings;
     }
 
-    /// <summary>Rejoue le jour local <paramref name="day"/> (aaaammjj) avec la clé maîtresse déverrouillée.</summary>
-    public DayReplay ReplayDay(int day, MasterKey master)
+    /// <summary>Rejoue le jour local <paramref name="day"/> (aaaammjj), avec les jours que ses sessions touchent.</summary>
+    public ReplayResult Replay(int day, MasterKey master)
     {
         ArgumentNullException.ThrowIfNull(master);
-        if (!HasRawFor(day)) return DayReplay.NoRaw;
+        var (fromDay, toDay) = GroupOf(day);
+        for (var d = LocalDayClock.DateOf(fromDay); LocalDayClock.KeyOf(d) <= toDay; d = d.AddDays(1))
+        {
+            if (!HasRawFor(LocalDayClock.KeyOf(d))) return new(DayReplay.NoRaw, fromDay, toDay);
+        }
         using var tx = _db.BeginTransaction();
+        long fromMs = Midnight(fromDay, 0), toMs = Midnight(toDay, 1);
+        long keys = Keys(fromMs, toMs);
         var writer = new StatsWriter(_db);
-        var (fromMs, toMs) = writer.DeleteDays(day, day, _clock);
+        writer.DeleteDays(fromDay, toDay, _clock);
         var analyzer = new Analyzer(new StatsAccumulator(_clock), _settings);
         var focus = _db.GetFocus(fromMs - BlockMarginMs, toMs);
         int next = 0;
@@ -72,8 +90,33 @@ public sealed class HistoryReplay
         analyzer.Tick(toMs);
         analyzer.EndAll();
         writer.Write(analyzer.Stats);
+        // Transaction abandonnée sans validation : tout revient comme avant.
+        if (Keys(fromMs, toMs) < keys) return new(DayReplay.Incomplete, fromDay, toDay);
         tx.Commit();
-        return DayReplay.Done;
+        return new(DayReplay.Done, fromDay, toDay);
+    }
+
+    /// <summary>Le jour et ses voisins reliés par une session enregistrée qui traverse minuit.</summary>
+    public (int FromDay, int ToDay) GroupOf(int day)
+    {
+        var from = LocalDayClock.DateOf(day);
+        var to = from;
+        for (int i = 0; i < MaxSpreadDays && Crosses(_clock.MidnightUtcMs(from)); i++) from = from.AddDays(-1);
+        for (int i = 0; i < MaxSpreadDays && Crosses(_clock.MidnightUtcMs(to.AddDays(1))); i++) to = to.AddDays(1);
+        return (LocalDayClock.KeyOf(from), LocalDayClock.KeyOf(to));
+    }
+
+    private bool Crosses(long midnightMs)
+    {
+        using var cmd = _db.Command("SELECT 1 FROM session WHERE start_ms < $m AND end_ms > $m LIMIT 1", midnightMs);
+        return cmd.ExecuteScalar() is not null;
+    }
+
+    private long Keys(long fromMs, long toMs)
+    {
+        using var cmd = _db.Command("SELECT coalesce(sum(keys), 0) FROM minute_total WHERE ts_min >= $a AND ts_min < $b",
+            LocalDayClock.MinuteOf(fromMs), LocalDayClock.MinuteOf(toMs));
+        return (long)cmd.ExecuteScalar()!;
     }
 
     /// <summary>
@@ -83,14 +126,11 @@ public sealed class HistoryReplay
     private bool HasRawFor(int day)
     {
         if (_db.Scalar("SELECT min(start_ms) FROM raw_block") is not long firstRawMs) return false;
-        long dayStartMs = _clock.MidnightUtcMs(LocalDayClock.DateOf(day));
-        if (firstRawMs <= dayStartMs) return true;
-        long dayEndMs = _clock.MidnightUtcMs(LocalDayClock.DateOf(day).AddDays(1));
-        using var cmd = _db.Command(
-            "SELECT 1 FROM minute_total WHERE ts_min >= $a AND ts_min < $b AND keys > 0 LIMIT 1",
-            LocalDayClock.MinuteOf(dayStartMs), LocalDayClock.MinuteOf(Math.Min(firstRawMs, dayEndMs)));
-        return cmd.ExecuteScalar() is null;
+        long dayStartMs = Midnight(day, 0);
+        return firstRawMs <= dayStartMs || Keys(dayStartMs, Math.Min(firstRawMs, Midnight(day, 1))) == 0;
     }
+
+    private long Midnight(int day, int addDays) => _clock.MidnightUtcMs(LocalDayClock.DateOf(day).AddDays(addDays));
 
     private FocusInfo Info(StoredFocus f) =>
         new(f.Ms, f.AppId, f.TitleId ?? 0, f.LayoutId is int id ? _db.GetLayout(id) : null, f.Flags);
