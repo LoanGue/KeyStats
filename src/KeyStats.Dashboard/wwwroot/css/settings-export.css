@@ -30,6 +30,9 @@
   background: var(--surface);
   color: var(--text);
 }
+.settings-date input[aria-invalid="true"] {
+  border-color: var(--field-bad);
+}
 .settings-checks {
   display: flex;
   flex-direction: column;
