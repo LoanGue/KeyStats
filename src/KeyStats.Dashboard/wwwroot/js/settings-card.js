@@ -79,7 +79,14 @@ export async function saveSettings(
     return null;
   }
   if (result.outcome === "unreadable") {
-    status.node.closest(".settings-grid")?.replaceWith(refusedAlert());
+    const grid = status.node.closest(".settings-grid");
+    if (grid) {
+      // Le focus était dans une carte qui disparaît : il passe au bandeau.
+      const alert = refusedAlert();
+      alert.tabIndex = -1;
+      grid.replaceWith(alert);
+      alert.focus();
+    }
     return null;
   }
   if (result.outcome !== "saved") status.show(failures[result.outcome], true);
