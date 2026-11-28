@@ -236,6 +236,22 @@ public sealed class KeyChangeTests : IDisposable
         Assert.Equal(("KeyStats-old", _hello.Created[^1]), Assert.Single(_hello.Deleted));
     }
 
+    [Fact]
+    public async Task Exception_avant_l_ecriture_supprime_seulement_la_nouvelle_cle()
+    {
+        var router = new WebRouter(Path.GetTempPath());
+        KeyChangeApi.Register(router, _temp.Db, _session, _hello, _hello, () => throw new InvalidOperationException("horloge"), Iterations);
+        SetUp(withHello: true);
+        _hello.StoredId = () => _temp.Db.GetKeyStore().SingleOrDefault(e => e.Kind == KeyStoreKind.WindowsHello)?.CredentialId;
+        Assert.True(_session.TryUnlockWithPassphrase(_temp.Db, Phrase));
+        _hello.Signature = OtherSignature;
+
+        var response = await router.HandleAsync("POST", WebRouter.Origin + KeyChangeApi.HelloPath, "{}"u8.ToArray());
+
+        Assert.Equal(500, response.Status);
+        Assert.Equal((_hello.Created[^1], "KeyStats-old"), Assert.Single(_hello.Deleted));
+    }
+
     private static string Change(string method, string? current, string next) =>
         $$"""{"method":"{{method}}","passphrase":{{(current is null ? "null" : $"\"{current}\"")}},"newPassphrase":"{{next}}"}""";
 
