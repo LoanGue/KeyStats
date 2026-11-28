@@ -37,6 +37,16 @@ public sealed class KeyChangeTests : IDisposable
         }
 
         public Task<byte[]?> SignAsync(string credentialId, byte[] challenge) => Task.FromResult(Signature?.ToArray());
+
+        /// <summary>Clés supprimées, avec la clé Hello enregistrée dans la base au moment de la suppression.</summary>
+        public List<(string Deleted, string? Stored)> Deleted { get; } = [];
+        public Func<string?>? StoredId { get; set; }
+
+        public Task DeleteAsync(string credentialId)
+        {
+            Deleted.Add((credentialId, StoredId?.Invoke()));
+            return Task.CompletedTask;
+        }
     }
 
     private void SetUp(bool withHello)
@@ -134,6 +144,30 @@ public sealed class KeyChangeTests : IDisposable
         Assert.StartsWith("KeyStats-", entry.CredentialId, StringComparison.Ordinal);
         using var other = new KeySession();
         Assert.True(await other.TryUnlockWithHelloAsync(_temp.Db, _hello));
+    }
+
+    [Fact]
+    public async Task Ancienne_cle_hello_supprimee_seulement_apres_l_ecriture_de_la_nouvelle()
+    {
+        string url = WebRouter.Origin + KeyChangeApi.HelloPath;
+        SetUp(withHello: true);
+        _hello.StoredId = () => _temp.Db.GetKeyStore().SingleOrDefault(e => e.Kind == KeyStoreKind.WindowsHello)?.CredentialId;
+        Assert.True(_session.TryUnlockWithPassphrase(_temp.Db, Phrase));
+
+        // Échecs après la création : la nouvelle clé, rattachée à rien, est supprimée ; l'ancienne reste.
+        _hello.DuringPrompt = _session.Lock;
+        Assert.Equal("locked", Outcome(await Post(url, "{}")));
+        _hello.DuringPrompt = null;
+        Assert.True(_session.TryUnlockWithPassphrase(_temp.Db, Phrase));
+        _hello.Signature = new byte[16];
+        Assert.Equal("hello", Outcome(await Post(url, "{}")));
+        Assert.Equal(_hello.Created, _hello.Deleted.Select(d => d.Deleted));
+        Assert.All(_hello.Deleted, d => Assert.Equal("KeyStats-old", d.Stored));
+
+        _hello.Deleted.Clear();
+        _hello.Signature = OtherSignature;
+        Assert.Equal("done", Outcome(await Post(url, "{}")));
+        Assert.Equal(("KeyStats-old", _hello.Created[^1]), Assert.Single(_hello.Deleted));
     }
 
     private static string Change(string method, string? current, string next) =>

@@ -9,6 +9,9 @@ public interface IHelloEnroller
     /// <summary>Crée la clé <paramref name="credentialId"/>, puis lui fait signer le défi.</summary>
     /// <returns>La signature, ou null si l'utilisateur annule ou si Hello n'est pas disponible.</returns>
     Task<byte[]?> CreateAndSignAsync(string credentialId, byte[] challenge);
+
+    /// <summary>Supprime la clé <paramref name="credentialId"/> du magasin de Windows, au mieux : jamais d'exception.</summary>
+    Task DeleteAsync(string credentialId);
 }
 
 /// <param name="Signature">Effacée par l'appelant une fois la clé enveloppée.</param>
