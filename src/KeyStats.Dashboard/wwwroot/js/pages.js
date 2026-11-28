@@ -2,12 +2,14 @@
 // Une page sans render n'est pas encore livrée.
 //
 // render(view, ctx) remplit view, où l'état de chargement est déjà affiché. ctx porte filters,
-// query (à ajouter aux routes de l'API), status, key, setFilters(next), retry() et unlock(), qui
-// ouvre le dialogue de déverrouillage. Après chaque await, la vue vérifie ctx.isCurrent() avant
-// d'écrire, car une autre page a pu être ouverte entre-temps.
+// query (à ajouter aux routes de l'API), status, key, setFilters(next), retry() et unlock(mode), qui
+// ouvre le dialogue de déverrouillage (mode « phrase » : directement sur la phrase de secours).
+// Après chaque await, la vue vérifie ctx.isCurrent() avant d'écrire, car une autre page a pu être
+// ouverte entre-temps.
 // Une exception levée par render affiche l'état d'erreur avec « Réessayer ».
 
 import { renderActivity } from "./activity.js";
+import { renderDetail } from "./detail.js";
 import { renderKeyboard } from "./keyboard.js";
 import { renderLetters } from "./letters.js";
 import { renderOverview } from "./overview.js";
@@ -74,6 +76,7 @@ export const pages = {
     description:
       "Une session rejouée touche par touche : appuis, relâchements, chevauchements.",
     filters: true,
+    render: renderDetail,
   },
   reglages: {
     title: "Réglages",
