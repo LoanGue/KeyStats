@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Activité et origine page shows one day minute by
+  minute as a strip: typing shaded by keys per minute, pauses, and hatched
+  unobserved time, with the three totals and the pause threshold from the
+  settings. Buttons move to the previous or next written day; a hidden table
+  gives the keys and unobserved time per hour for screen readers.
+
 - `KeyStats.Dashboard`: the Réglages page edits the detection thresholds. A
   change restarts a running agent, which reads them only at start. A refused
   `settings.json` is shown, never rewritten.
