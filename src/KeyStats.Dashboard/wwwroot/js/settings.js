@@ -1,9 +1,10 @@
 // Page Réglages : seuils de détection, compteur à l'écran, applications exclues (/api/settings),
-// chiffrement (/api/key) et dossier de sauvegarde (/api/backup).
+// chiffrement (/api/key), dossier de sauvegarde (/api/backup) et export CSV (/api/export).
 
 import { getJson } from "./api.js";
 import { appsCard } from "./settings-apps.js";
 import { backupCard } from "./settings-backup.js";
+import { exportCard } from "./settings-export.js";
 import { refusedAlert } from "./settings-card.js";
 import { keyCard } from "./settings-key.js";
 import { liveCard } from "./settings-live.js";
@@ -29,6 +30,7 @@ export async function renderSettings(view, ctx) {
     appsCard(settings),
     keyCard(ctx),
     backupCard(backup, ctx.retry),
+    exportCard(ctx.query),
   );
   view.replaceChildren(grid);
 }
