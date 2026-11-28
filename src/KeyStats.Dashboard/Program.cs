@@ -41,6 +41,7 @@ internal static class Program
         ActivityApi.Register(router, stats, session);
         ShortcutsApi.Register(router, stats);
         BackupApi.Register(router, dbPath, folderPicker, agent, () => stats.NowMs);
+        ExportApi.Register(router, stats, dbPath, folderPicker, Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
         using var form = new DashboardForm(router, Path.Combine(dataDir, "webview"));
         folderPicker.Owner = form;
         // La clé privée ne survit pas à la fenêtre.

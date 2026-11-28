@@ -37,4 +37,6 @@ public static class StatusApi
 [JsonSerializable(typeof(SettingsSaved))]
 [JsonSerializable(typeof(BackupView))]
 [JsonSerializable(typeof(BackupOutcome))]
+[JsonSerializable(typeof(ExportRequest))]
+[JsonSerializable(typeof(ExportOutcome))]
 public sealed partial class WebJson : JsonSerializerContext;
