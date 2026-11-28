@@ -25,6 +25,8 @@ public sealed class KeySetupTests : IDisposable
         }
 
         public Task<byte[]?> SignAsync(string credentialId, byte[] challenge) => Task.FromResult(signature?.ToArray());
+
+        public Task DeleteAsync(string credentialId) => Task.CompletedTask;
     }
 
     [Fact]

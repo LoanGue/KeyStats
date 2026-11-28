@@ -7,6 +7,7 @@ namespace KeyStats.Dashboard;
 /// <summary>
 /// Création d'une clé Windows Hello liée au TPM (<c>KeyCredentialManager</c>), puis signature du défi qui
 /// enveloppe la clé maîtresse. Annulation, Hello indisponible ou erreur : null, jamais d'exception.
+/// Suppression d'une clé remplacée ou rattachée à rien, au mieux.
 /// </summary>
 internal sealed class HelloEnroller : IHelloEnroller
 {
@@ -27,6 +28,19 @@ internal sealed class HelloEnroller : IHelloEnroller
         {
             // CsWinRT traduit les HRESULT en exceptions variées (COM, argument, annulation…) : toutes valent un refus.
             return null;
+        }
+    }
+
+    public async Task DeleteAsync(string credentialId)
+    {
+        try
+        {
+            // Sans invite : la clé est celle de cet utilisateur. Une clé déjà absente vaut une réussite.
+            await KeyCredentialManager.DeleteAsync(credentialId);
+        }
+        catch (Exception)
+        {
+            // Hello indisponible ou clé introuvable : la clé reste dans le magasin, rattachée à rien.
         }
     }
 }
