@@ -41,7 +41,8 @@ public static class ControlProtocol
 
     /// <summary>
     /// Un agent par base et par session Windows : la clé vient du chemin complet de la base, sans casse,
-    /// pour que <c>--db</c> sur une base de test ne gêne pas l'agent installé.
+    /// pour que <c>--db</c> sur une base de test ne gêne pas l'agent installé. Calcul repris dans
+    /// <c>tools/install-common.ps1</c> (arrêt propre avant mise à jour) : le changer là aussi.
     /// </summary>
     public static string InstanceKey(string dbPath)
     {
