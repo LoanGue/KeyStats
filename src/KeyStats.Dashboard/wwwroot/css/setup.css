@@ -83,7 +83,7 @@ body.setup-open .app {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border: 1px solid #c2c7cf;
+  border: 1px solid var(--step-border);
   border-radius: 50%;
   font-size: 12px;
   font-weight: 600;
