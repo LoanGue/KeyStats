@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Chiffrement card changes the recovery passphrase
+  after the current one or Windows Hello. Backups made before a change still
+  open with the old passphrase, since the master key stays the same.
+
 - `KeyStats.Dashboard`: the Réglages page shows the encryption state and
   re-enables Windows Hello for an unlocked session.
 
