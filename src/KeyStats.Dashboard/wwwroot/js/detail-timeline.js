@@ -18,11 +18,13 @@ const spans = [
   250, 500, 1000, 2000, 5000, 10e3, 30e3, 60e3, 120e3, 300e3, 600e3, 1800e3,
 ];
 const firstSpan = 1000;
+/** Crans du curseur de position par largeur de fenêtre. */
+const notches = 20;
 const columns = [
   "Touche",
   "Enfoncée à",
   "Durée d'appui",
-  "Depuis la précédente",
+  "Depuis la touche précédente",
   "Chevauchement",
   "Effacée ensuite",
 ];
@@ -52,17 +54,12 @@ function legend() {
   return box;
 }
 
-/** Mesures de l'appui choisi, annoncées à chaque changement. */
+/** Mesures de l'appui choisi ; la frise, en curseur, les annonce elle-même. */
 function factsRow(presses) {
   const box = el("div", "detail-facts");
-  box.setAttribute("aria-live", "polite");
+  box.setAttribute("aria-hidden", "true");
   const kbd = el("kbd", "detail-kbd");
-  const values = [
-    "Enfoncée à",
-    "Durée d'appui",
-    "Depuis la touche précédente",
-    "Chevauchement",
-  ].map((label) => {
+  const values = columns.slice(1, 5).map((label) => {
     const cell = el("div");
     const value = el("div", "detail-fact-value");
     cell.append(el("div", "detail-fact-label", label), value);
@@ -73,7 +70,6 @@ function factsRow(presses) {
   const show = (i) => {
     const p = presses[i];
     kbd.textContent = keyLabel(p.key);
-    kbd.setAttribute("aria-label", keyFull(p.key));
     row(presses, i)
       .slice(1, 5)
       .forEach((text, k) => (values[k].textContent = text));
@@ -95,8 +91,9 @@ function row(presses, i) {
 }
 
 /**
- * Frise d'une session : presses de /api/detail/keys. Renvoie aside (zoom), note (fenêtre affichée)
- * et body ; title est donné par l'appelant.
+ * Frise d'une session : presses de /api/detail/keys, au moins un appui. Renvoie aside (zoom), note
+ * (fenêtre affichée) et body ; title est donné par l'appelant. La frise est un curseur : la valeur
+ * est l'appui choisi, que les flèches déplacent.
  */
 export function timeline(presses, durationMs, sessionText) {
   const total = Math.max(1, durationMs, ...presses.slice(-50).map(end));
@@ -114,7 +111,9 @@ export function timeline(presses, durationMs, sessionText) {
   aside.append(zoomOut, zoomIn, whole);
 
   const chart = friezeSvg();
-  const { hidden, table } = describedBy(chart);
+  const { hidden, table } = describedBy(chart, "slider");
+  chart.setAttribute("aria-valuemin", "1");
+  chart.setAttribute("aria-valuemax", String(presses.length));
   const position = el("input", "detail-position");
   position.type = "range";
   position.min = "0";
@@ -124,14 +123,25 @@ export function timeline(presses, durationMs, sessionText) {
   body.append(chart, hidden, position, legend(), facts.box);
 
   const clamp = (f) => Math.max(0, Math.min(f, total - span));
+  /** Un appui est visible quand il tient entier dans la fenêtre. */
+  const visible = (p) => p.downMs >= from && end(p) <= from + span;
+  /** Pas du curseur de position : la fenêtre en notches crans, le dernier cran touche la fin. */
+  const notch = () => span / notches;
 
   function draw() {
     const to = from + span;
     const range = `${offset(from)} – ${offset(to)}`;
     const shown = drawFrieze(chart, presses, { from, span, sel });
+    const n = shown.length;
     chart.setAttribute(
       "aria-label",
-      `Frise de ${nf.format(shown.length)} appuis, de ${offset(from)} à ${offset(to)} ; valeurs dans le tableau qui suit. Flèches gauche et droite : touche précédente ou suivante.`,
+      `Frise de ${nf.format(n)} appui${n > 1 ? "s" : ""}, de ${offset(from)} à ${offset(to)} ; valeurs dans le tableau qui suit. Flèches gauche et droite : touche précédente ou suivante.`,
+    );
+    const p = presses[sel];
+    chart.setAttribute("aria-valuenow", String(sel + 1));
+    chart.setAttribute(
+      "aria-valuetext",
+      `${keyFull(p.key)}, enfoncée à ${offset(p.downMs)}, appui ${row(presses, sel)[2]}`,
     );
     fillTable(
       table,
@@ -140,9 +150,8 @@ export function timeline(presses, durationMs, sessionText) {
     );
     note.textContent = `${sessionText} · fenêtre affichée : ${range}`;
     position.hidden = span >= total;
-    position.max = String(Math.round(total - span));
-    position.step = String(Math.max(1, Math.round(span / 20)));
-    position.value = String(Math.round(from));
+    position.max = String(Math.ceil((total - span) / notch()));
+    position.value = String(Math.round(from / notch()));
     position.setAttribute("aria-valuetext", range);
     zoomIn.disabled = span <= spans[0];
     zoomOut.disabled = whole.disabled = span >= total;
@@ -153,16 +162,14 @@ export function timeline(presses, durationMs, sessionText) {
   function select(i) {
     sel = Math.max(0, Math.min(i, presses.length - 1));
     const p = presses[sel];
-    if (p.downMs < from || end(p) > from + span)
-      from = clamp(p.downMs - span / 5);
+    if (!visible(p)) from = clamp(p.downMs - span / 5);
     draw();
   }
 
   /** Nouvelle largeur de fenêtre, centrée sur l'appui choisi s'il est visible. */
   function zoom(next) {
     const p = presses[sel];
-    const visible = p.downMs >= from && p.downMs < from + span;
-    const center = visible ? p.downMs : from + span / 2;
+    const center = visible(p) ? p.downMs : from + span / 2;
     span = Math.min(total, next);
     from = clamp(center - span / 2);
     draw();
@@ -176,7 +183,7 @@ export function timeline(presses, durationMs, sessionText) {
   );
   whole.addEventListener("click", () => zoom(total));
   position.addEventListener("input", () => {
-    from = clamp(Number(position.value));
+    from = clamp(Number(position.value) * notch());
     draw();
   });
   chart.addEventListener("click", (event) => {

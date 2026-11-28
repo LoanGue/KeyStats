@@ -42,7 +42,10 @@ function option(s) {
   return node;
 }
 
-/** Carte des sessions ; onPick(session) à chaque choix, la première est choisie d'emblée. */
+/**
+ * Carte des sessions de data (au moins une) ; onPick(session) à chaque choix, la première est
+ * choisie d'emblée, pendant l'appel.
+ */
 export function sessionsCard(data, onPick) {
   const section = el("section", "card detail-sessions");
   const head = el("div", "detail-sessions-head");
@@ -60,8 +63,9 @@ export function sessionsCard(data, onPick) {
   list.setAttribute("aria-label", "Sessions");
   const options = data.sessions.map(option);
   list.append(...options);
-  const none = el("p", "detail-none", "Aucune session ne correspond.");
-  none.hidden = true;
+  // Toujours présent, vide quand la recherche trouve : un lecteur d'écran annonce le message.
+  const none = el("p", "detail-none");
+  none.setAttribute("role", "status");
   section.append(head, label, list, none);
   if (data.truncated)
     section.append(
@@ -113,7 +117,7 @@ export function sessionsCard(data, onPick) {
       node.hidden = !words.every((w) => node.dataset.search.includes(w));
       if (!node.hidden && first < 0) first = i;
     });
-    none.hidden = first >= 0;
+    none.textContent = first >= 0 ? "" : "Aucune session ne correspond.";
     // La liste garde une option atteignable au clavier quand la choisie est masquée.
     for (const node of options) node.tabIndex = -1;
     const reach = options[current]?.hidden ? options[first] : options[current];
