@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- `KeyStats.Dashboard`: re-enrolling Windows Hello from the Réglages page
+  deletes the replaced Hello key from the Windows store once the new one is
+  written and checked. A key created by a failed attempt is deleted too.
 - `KeyStats.Dashboard`: a renderer crash dump may hold the passphrase or
   decrypted text. WebView2 crash reports are no longer sent to Microsoft, the
   profile's Crashpad report folders deny file creation to the user, and
