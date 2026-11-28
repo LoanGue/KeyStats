@@ -19,6 +19,9 @@
   font-weight: 600;
   color: var(--muted-strong);
 }
+.day-status:not(:empty) {
+  margin-bottom: 12px;
+}
 .day-body {
   display: flex;
   flex-direction: column;
