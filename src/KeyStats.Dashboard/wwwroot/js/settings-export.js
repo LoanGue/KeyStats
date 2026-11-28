@@ -95,6 +95,14 @@ export function exportCard(query) {
   actions.append(run);
   section.append(period, range, checks, actions, status.node);
 
+  /** Marque le champ de date fautif, ou aucun. */
+  function markDates(bad) {
+    for (const input of [from.input, to.input])
+      input.setAttribute("aria-invalid", String(input === bad));
+  }
+  for (const f of [from, to])
+    f.input.addEventListener("input", () => markDates(null));
+
   /** Corps de la demande, ou un message quand le choix ne peut pas partir. */
   function request() {
     const body = {
@@ -107,13 +115,21 @@ export function exportCard(query) {
     if (select.value !== "custom") return body;
     const max = isoDay(new Date());
     const [a, b] = [from.input.value, to.input.value];
-    if (!a || !b || a > b || b > max) return texts.dates;
+    const bad =
+      !a || a > max ? from.input : !b || b > max || a > b ? to.input : null;
+    markDates(bad);
+    if (bad) return texts.dates;
     return { ...body, from: a, to: b };
   }
 
   async function start() {
     const body = request();
-    if (typeof body === "string") return status.show(body, true);
+    if (typeof body === "string") {
+      status.show(body, true);
+      if (body === texts.dates)
+        range.querySelector("[aria-invalid=true]").focus();
+      return;
+    }
     run.disabled = true;
     status.show(texts.picking);
     let result;
