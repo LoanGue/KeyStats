@@ -8,7 +8,8 @@ namespace KeyStats.Core.Web;
 public interface IFolderPicker
 {
     /// <summary>Dossier choisi, chemin complet ; <c>null</c> si la fenêtre est fermée sans choix.</summary>
-    Task<string?> PickAsync(string initialFolder);
+    /// <param name="title">Titre de la fenêtre, qui dit à quoi sert le dossier.</param>
+    Task<string?> PickAsync(string initialFolder, string title);
 }
 
 /// <param name="Folder">Dossier du miroir en vigueur, chemin complet.</param>
@@ -46,7 +47,7 @@ public static class BackupApi
         router.Get(Path, () => WebResponse.Json(View(dbPath), WebJson.Default.BackupView));
         router.Post(FolderPath, async _ =>
         {
-            string? picked = await picker.PickAsync(View(dbPath).Folder).ConfigureAwait(true);
+            string? picked = await picker.PickAsync(View(dbPath).Folder, "Dossier de sauvegarde").ConfigureAwait(true);
             string outcome = picked is null ? "cancelled" : SaveFolder(dbPath, settingsPath, picked);
             bool applied = outcome == "saved" && await agent.ReloadAsync().ConfigureAwait(true);
             return Respond(outcome, applied, dbPath);
