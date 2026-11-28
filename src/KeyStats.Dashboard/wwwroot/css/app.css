@@ -42,6 +42,15 @@
   --activity-2: var(--chart-session);
   --activity-3: #338ced;
   --activity-4: var(--chart-median);
+  /* Frise d'une journée : frappe de faible à forte, pause, hachures du non observé, graduations. */
+  --day-1: var(--heat-2);
+  --day-2: var(--heat-3);
+  --day-3: var(--heat-4);
+  --day-4: var(--heat-5);
+  --day-pause: var(--border);
+  --day-hatch-bg: var(--chart-track);
+  --day-hatch: #c2c7cf;
+  --day-tick: #c2c2c2;
   --warn-bg: #fdf0e6;
   --warn-text: #8a3c08;
   --nav-bg: #121823;
