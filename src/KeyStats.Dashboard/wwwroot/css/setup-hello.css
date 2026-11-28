@@ -1,0 +1,97 @@
+/* Étape « Windows Hello » de l'assistant : le choix, l'attente de l'invite système. */
+
+.setup-check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.setup-check.setup-check-on {
+  /* 1px de marge en moins compense la bordure plus épaisse : la carte ne bouge pas. */
+  padding: 15px 17px;
+  border: 2px solid var(--primary);
+  background: var(--choice-on-bg);
+}
+.setup-check:has(input:disabled) {
+  cursor: default;
+  opacity: 0.7;
+}
+.setup-check input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  flex: none;
+  accent-color: var(--primary);
+}
+.setup-check-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted-strong);
+}
+.setup-check-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.setup-wait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 10px;
+  background: var(--bg);
+  text-align: center;
+}
+.setup-wait:focus {
+  outline: none;
+}
+.setup-wait[hidden] {
+  display: none;
+}
+.setup-wait-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.setup-sketch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 220px;
+  padding: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  text-align: left;
+}
+.setup-sketch-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.setup-sketch span:not(.setup-sketch-title) {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+}
+.setup-sketch span:last-child {
+  width: 60%;
+}
+.setup-wait-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+.setup-actions {
+  display: flex;
+  gap: 12px;
+}
