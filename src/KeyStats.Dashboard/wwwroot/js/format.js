@@ -22,8 +22,7 @@ export const dayLong = new Intl.DateTimeFormat("fr-FR", {
   month: "long",
 });
 
-/** Jour aaaa-mm-jj en toutes lettres, lu en minuit UTC pour que le fuseau local ne décale pas la date :
- * « vendredi 27 novembre 2026 ». */
+/** Jour aaaa-mm-jj en toutes lettres, lu en minuit UTC (le fuseau local décalerait la date). */
 const isoDayFull = new Intl.DateTimeFormat("fr-FR", {
   weekday: "long",
   day: "numeric",
