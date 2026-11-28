@@ -26,8 +26,10 @@ internal static class Program
         router.Get(StatusApi.Path, () => StatusApi.Respond(db, agent.IsRunning));
         SettingsApi.Register(router, SettingsStore.PathFor(dbPath), agent);
         using var session = new KeySession();
-        KeyApi.Register(router, db, session, new HelloSigner());
+        var helloSigner = new HelloSigner();
+        KeyApi.Register(router, db, session, helloSigner);
         var stats = new StatsContext(db, () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        KeyChangeApi.Register(router, db, session, helloSigner, new HelloEnroller(), () => stats.NowMs);
         FiltersApi.Register(router, stats);
         OverviewApi.Register(router, stats);
         SpeedApi.Register(router, stats);

@@ -38,7 +38,8 @@ internal sealed partial class HelloSigner : IHelloSigner
 
     // Minuterie WinForms : il faut être sur le thread de l'interface, ce que garantissent KeySession et
     // KeyApi en reprenant avec ConfigureAwait(true). Un ConfigureAwait(false) en amont la rendrait muette.
-    private static System.Windows.Forms.Timer BringPromptForward()
+    // Partagée avec HelloEnroller.
+    internal static System.Windows.Forms.Timer BringPromptForward()
     {
         var timer = new System.Windows.Forms.Timer { Interval = 100 };
         int ticks = 0;
