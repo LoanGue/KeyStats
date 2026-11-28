@@ -2,11 +2,9 @@
 // vérification en direct et le message d'échec de l'envoi. La phrase ne quitte les champs que pour
 // l'envoi, à l'étape suivante, et clear() les vide une fois la configuration faite.
 
+import { MinLength, normalized } from "./passphrase.js";
 import { el } from "./states.js";
 import { action, fieldMessage, icon, intro, note } from "./setup-ui.js";
-
-/** Longueur minimale, comme KeySetup.MinPassphraseLength dans KeyStats.Core. */
-export const MinLength = 12;
 
 /**
  * Étape 2, construite une fois pour que Retour puis Commencer garde la saisie. back : retour à
@@ -88,9 +86,10 @@ export function phraseStep(back, next) {
   foot.append(action("Retour", false, back), go);
 
   function check() {
-    const [a, b] = [first.value, second.value];
-    const typed = a.length > 0 || b.length > 0;
-    const tooShort = a.length > 0 && a.length < MinLength;
+    // Comptées et comparées comme le tableau de bord les lira : espaces des bords et doublés ignorés.
+    const [a, b] = [normalized(first.value), normalized(second.value)];
+    const typed = first.value.length > 0 || second.value.length > 0;
+    const tooShort = first.value.length > 0 && a.length < MinLength;
     const different = b.length > 0 && a !== b && !tooShort;
     const valid = a.length >= MinLength && a === b;
     counter.textContent = typed
