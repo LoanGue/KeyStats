@@ -34,9 +34,10 @@ export function keyFull(code) {
 
 /** Instant depuis le début de la session : « 412 ms », « 12,4 s », « 3 min 05 s ». */
 export function offset(ms) {
-  if (ms < 1000) return `${nf.format(Math.round(ms))} ms`;
-  if (ms < 60e3) return `${upTo1.format(ms / 1000)} s`;
-  const s = Math.floor(ms / 1000);
+  // Les seuils portent sur la valeur arrondie : 999,6 ms donne « 1 s », pas « 1 000 ms ».
+  if (Math.round(ms) < 1000) return `${nf.format(Math.round(ms))} ms`;
+  if (Math.round(ms / 100) < 600) return `${upTo1.format(ms / 1000)} s`;
+  const s = Math.round(ms / 1000);
   return `${nf.format(Math.floor(s / 60))} min ${String(s % 60).padStart(2, "0")} s`;
 }
 
@@ -88,9 +89,9 @@ function hatch() {
 function laneNames() {
   const names = svg("g", { class: "detail-lane-name" });
   names.append(
-    svg("text", { x: 0, y: 34 }, "voie 1"),
-    svg("text", { x: 0, y: 74 }, "voie 2"),
-    svg("text", { x: 0, y: 110 }, "chev."),
+    svg("text", { x: 0, y: lanes[0] + 16 }, "voie 1"),
+    svg("text", { x: 0, y: lanes[1] + 16 }, "voie 2"),
+    svg("text", { x: 0, y: overlapY + 10 }, "chev."),
   );
   return names;
 }
@@ -128,7 +129,10 @@ export function drawFrieze(chart, presses, { from, span, sel }) {
     rect.setAttribute("rx", 4);
     const group = svg("g", { "data-index": i });
     group.append(rect);
-    if (Number(rect.getAttribute("width")) >= 14 && x(p.downMs) >= left)
+    const label = keyLabel(p.key);
+    // Libellé posé seulement s'il tient dans la barre (environ 8 px par caractère).
+    const room = 10 + 8 * label.length;
+    if (Number(rect.getAttribute("width")) >= room && x(p.downMs) >= left)
       group.append(
         svg(
           "text",
@@ -137,7 +141,7 @@ export function drawFrieze(chart, presses, { from, span, sel }) {
             y: y + 17,
             class: "detail-bar-label",
           },
-          keyLabel(p.key),
+          label,
         ),
       );
     return group;
