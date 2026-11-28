@@ -1,0 +1,167 @@
+/* Assistant de première installation : plein écran tant que le chiffrement n'est pas configuré. */
+
+body.setup-open .app {
+  display: none;
+}
+#setup {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+#setup[hidden] {
+  display: none;
+}
+#setup svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.setup-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 14px 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.setup-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+#setup .setup-brand svg {
+  width: 30px;
+  height: 30px;
+  stroke: none;
+}
+.setup-brand .brand-tile {
+  fill: var(--primary);
+}
+.setup-brand .brand-keys {
+  stroke: var(--on-primary);
+}
+.setup-muted {
+  font-weight: 400;
+  color: var(--muted);
+}
+.setup-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--muted);
+}
+.setup-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.setup-steps li[aria-current="step"] {
+  color: var(--text);
+  font-weight: 600;
+}
+.setup-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+}
+[aria-current="step"] .setup-dot {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.setup-past .setup-dot {
+  border-color: var(--info-bg);
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+.setup-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 48px 20px;
+}
+.setup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 560px;
+  padding: 36px 40px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.setup-card-wide {
+  max-width: 640px;
+}
+.setup-card h1 {
+  margin: 4px 0 8px;
+  font-size: 24px;
+  line-height: 1.25;
+}
+.setup-card h1:focus {
+  outline: none;
+}
+.setup-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted-strong);
+}
+.setup-step {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.setup-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.setup-note-info {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+.setup-note-warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.setup-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+.setup-foot-end {
+  justify-content: flex-end;
+}
