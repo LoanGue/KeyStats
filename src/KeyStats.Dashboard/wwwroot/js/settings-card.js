@@ -100,3 +100,20 @@ export async function saveSettings(
   else status.show(result.agentApplied ? applied : pending);
   return result;
 }
+
+/** Jour local au format aaaa-mm-jj. */
+export function isoDay(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** Champ de date avec son libellé ; max au format aaaa-mm-jj. */
+export function dateField(label, value, max) {
+  const row = el("label", "settings-date");
+  const input = el("input");
+  input.type = "date";
+  input.value = value;
+  input.max = max;
+  row.append(el("span", null, label), input);
+  return { row, input };
+}
