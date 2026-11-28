@@ -30,15 +30,18 @@ public static class DetailPresses
 
     /// <summary>
     /// Appuis du clavier <paramref name="device"/> enfoncés dans [<paramref name="startMs"/>, <paramref name="endMs"/>],
-    /// <paramref name="max"/> au plus. Les événements suivants servent aux relâchements et aux effacements.
+    /// <paramref name="max"/> au plus. Les événements suivants servent aux relâchements et aux effacements : l'appelant
+    /// n'en passe que quelques secondes.
     /// </summary>
     public static (List<DetailPress> Presses, bool Truncated) Extract(IEnumerable<InputEvent> events, int device, long startMs, long endMs, int max)
     {
         ArgumentNullException.ThrowIfNull(events);
+        ArgumentOutOfRangeException.ThrowIfNegative(max);
         var presses = new List<Press>();
         var held = new Dictionary<ushort, int>();
-        var typed = new Stack<int>();
-        bool ctrl = false, leftAlt = false, rightAlt = false, truncated = false;
+        // Touches effaçables : appui de la frise (-1 s'il n'y figure pas) et touche, pour reconnaître l'espace.
+        var typed = new Stack<(int At, ushort Key)>();
+        bool leftCtrl = false, rightCtrl = false, leftAlt = false, rightAlt = false, win = false, truncated = false;
         foreach (var e in events)
         {
             if (e.Kind == EventKind.MouseDown)
@@ -51,16 +54,18 @@ public static class DetailPresses
             {
                 held.Clear();
                 typed.Clear();
-                ctrl = leftAlt = rightAlt = false;
+                leftCtrl = rightCtrl = leftAlt = rightAlt = win = false;
                 continue;
             }
             if (!e.IsKeyboard) continue;
             bool down = e.Kind == EventKind.KeyDown;
             if (KeyCode.IsModifier(e.Key))
             {
-                if (e.Key is KeyCode.LeftCtrl or KeyCode.RightCtrl) ctrl = down;
+                if (e.Key == KeyCode.LeftCtrl) leftCtrl = down;
+                else if (e.Key == KeyCode.RightCtrl) rightCtrl = down;
                 else if (e.Key == KeyCode.LeftAlt) leftAlt = down;
                 else if (e.Key == KeyCode.RightAlt) rightAlt = down;
+                else if (e.Key is KeyCode.LeftWin or KeyCode.RightWin) win = down;
                 continue;
             }
             if (KeyCode.IsLock(e.Key)) continue;
@@ -89,43 +94,48 @@ public static class DetailPresses
                 }
                 held[e.Key] = at;
             }
-            // AltGr arrive précédé d'un faux Ctrl gauche : avec Alt droit tenu, Ctrl n'est pas un raccourci.
-            if (e.Ms <= endMs) Edit(presses, typed, e.Key, at, ctrl && !rightAlt, leftAlt && !rightAlt);
+            // AltGr arrive précédé d'un faux Ctrl gauche : avec Alt droit tenu, Ctrl gauche n'est pas un raccourci.
+            bool ctrl = rightCtrl || (leftCtrl && !rightAlt);
+            Edit(presses, typed, e.Key, at, ctrl, (leftAlt && !rightAlt) || win);
         }
         return (Results(presses, startMs), truncated);
     }
 
-    /// <summary>Effet d'un enfoncement (ou d'une répétition) sur la pile des touches effaçables ; <paramref name="at"/> : appui de la frise, ou -1.</summary>
-    private static void Edit(List<Press> presses, Stack<int> typed, ushort key, int at, bool ctrl, bool alt)
+    /// <summary>
+    /// Effet d'un enfoncement (ou d'une répétition) sur la pile des touches effaçables ; <paramref name="at"/> : appui de
+    /// la frise, ou -1. <paramref name="shortcut"/> : Alt gauche ou Windows tenu.
+    /// </summary>
+    private static void Edit(List<Press> presses, Stack<(int At, ushort Key)> typed, ushort key, int at, bool ctrl, bool shortcut)
     {
-        if (key == KeyCode.Backspace && !alt)
+        if (key == KeyCode.Backspace && !shortcut)
         {
             if (!ctrl) Erase(presses, typed);
             else
             {
-                while (typed.TryPeek(out int top) && IsSpace(presses, top)) Erase(presses, typed);
-                while (typed.TryPeek(out int top) && !IsSpace(presses, top)) Erase(presses, typed);
+                while (typed.TryPeek(out var top) && top.Key == KeyCode.Space) Erase(presses, typed);
+                while (typed.TryPeek(out var top) && top.Key != KeyCode.Space) Erase(presses, typed);
             }
         }
-        else if (IsCharacter(key) && !ctrl && !alt) typed.Push(at);
+        else if (IsCharacter(key) && !ctrl && !shortcut) typed.Push((at, key));
         else typed.Clear();
     }
 
-    private static bool IsSpace(List<Press> presses, int index) => index >= 0 && presses[index].Key == KeyCode.Space;
-
-    private static void Erase(List<Press> presses, Stack<int> typed)
+    private static void Erase(List<Press> presses, Stack<(int At, ushort Key)> typed)
     {
-        if (!typed.TryPop(out int index) || index < 0) return;
+        if (!typed.TryPop(out var top) || top.At < 0) return;
+        int index = top.At;
         var p = presses[index];
         p.Erased = true;
         presses[index] = p;
     }
 
-    /// <summary>Touche qui écrit un caractère (lettres, chiffres, ponctuation, espace, Entrée, pavé numérique).</summary>
+    /// <summary>
+    /// Touche qui écrit un caractère (lettres, chiffres, ponctuation, espace, Entrée, pavé numérique). Le pavé sans
+    /// Verr Num déplace le curseur : sans l'état du verrou, il compte comme chiffres.
+    /// </summary>
     internal static bool IsCharacter(ushort key) =>
         key is KeyCode.NumEnter or KeyCode.NumDivide
-        || (key < KeyCode.E0 && key is not (KeyCode.Escape or KeyCode.Backspace or KeyCode.Tab)
-            && key is not (>= KeyCode.F1 and <= KeyCode.F10) and not KeyCode.F11 and not KeyCode.F12);
+        || (key < KeyCode.E0 && key is not (KeyCode.Escape or KeyCode.Backspace or KeyCode.Tab) && !KeyCode.IsFunctionKey(key));
 
     private static List<DetailPress> Results(List<Press> presses, long startMs)
     {

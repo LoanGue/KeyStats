@@ -159,6 +159,49 @@ public sealed class DetailPressesTests
     }
 
     [Fact]
+    public void ABackspaceJustAfterTheEndStillErases()
+    {
+        var presses = Extract([Down(0, E), Up(50, E), Down(1200, KeyCode.Backspace), Up(1250, KeyCode.Backspace)], endAt: 1000);
+
+        Assert.True(Assert.Single(presses).Erased);
+    }
+
+    [Fact]
+    public void CtrlBackspaceStopsAtASpaceLeftOutByTheCap()
+    {
+        // e x tracées, puis le plafond : l'espace et le r ne sont pas tracés, Ctrl+Retour arrière s'arrête à l'espace.
+        var (presses, _) = DetailPresses.Extract([
+            Down(0, E), Up(50, E), Down(100, X), Up(150, X), Down(200, KeyCode.Space), Up(250, KeyCode.Space), Down(300, R), Up(350, R),
+            Down(400, KeyCode.LeftCtrl), Down(420, KeyCode.Backspace), Up(460, KeyCode.Backspace), Up(480, KeyCode.LeftCtrl),
+        ], Kb, T0, T0 + 10_000, 2);
+
+        Assert.DoesNotContain(presses, p => p.Erased);
+    }
+
+    [Fact]
+    public void ReleasingOneCtrlKeepsTheOtherHeld()
+    {
+        var presses = Extract([
+            Down(0, E), Up(50, E), Down(100, KeyCode.LeftCtrl), Down(110, KeyCode.RightCtrl), Up(120, KeyCode.LeftCtrl),
+            Down(130, X), Up(160, X), Up(170, KeyCode.RightCtrl), Down(200, KeyCode.Backspace), Up(250, KeyCode.Backspace),
+        ]);
+
+        Assert.DoesNotContain(presses, p => p.Erased);
+    }
+
+    [Theory]
+    [InlineData(KeyCode.LeftWin, E)]
+    [InlineData(KeyCode.LeftShift, 0x64)]
+    public void WindowsShortcutsAndF13AreNotErasable(ushort modifier, ushort key)
+    {
+        var presses = Extract([
+            Down(0, modifier), Down(10, key), Up(40, key), Up(50, modifier), Down(100, KeyCode.Backspace), Up(150, KeyCode.Backspace),
+        ]);
+
+        Assert.DoesNotContain(presses, p => p.Erased);
+    }
+
+    [Fact]
     public void TheCapStopsTheListAndSaysSo()
     {
         var events = Enumerable.Range(0, 10).SelectMany(i => new[] { Down(i * 100, E), Up(i * 100 + 50, E) });
