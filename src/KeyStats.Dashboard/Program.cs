@@ -25,6 +25,7 @@ internal static class Program
         var agent = new AgentControl(dbPath);
         router.Get(StatusApi.Path, () => StatusApi.Respond(db, agent.IsRunning));
         SettingsApi.Register(router, SettingsStore.PathFor(dbPath), agent);
+        var folderPicker = new FolderPicker();
         using var session = new KeySession();
         var helloSigner = new HelloSigner();
         KeyApi.Register(router, db, session, helloSigner);
@@ -39,7 +40,9 @@ internal static class Program
         RhythmApi.Register(router, stats);
         ActivityApi.Register(router, stats, session);
         ShortcutsApi.Register(router, stats);
+        BackupApi.Register(router, dbPath, folderPicker, agent, () => stats.NowMs);
         using var form = new DashboardForm(router, Path.Combine(dataDir, "webview"));
+        folderPicker.Owner = form;
         // La clé privée ne survit pas à la fenêtre.
         form.FormClosed += (_, _) => session.Lock();
         Application.Run(form);
