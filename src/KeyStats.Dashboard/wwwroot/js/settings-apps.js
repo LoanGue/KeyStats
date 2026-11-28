@@ -17,6 +17,9 @@ const messages = {
 const emptied =
   "Plus aucune application n'est exclue, pas même les gestionnaires de mots de passe proposés par défaut.";
 
+// SettingsApi.MaxExcludedApps : au-delà, le serveur refuse la liste.
+const maxApps = 64;
+
 // Seul le nom du fichier compte : l'agent compare le nom de l'exécutable au premier plan.
 const appName = (exe) => exe.replace(/\.exe$/i, "");
 
@@ -54,6 +57,8 @@ export function appsCard(settings) {
   async function save(next, focusAt) {
     for (const b of section.querySelectorAll("button")) b.disabled = true;
     const result = await saveSettings({ excludedApps: next }, status, messages);
+    // Fichier refusé : le bandeau a remplacé la carte et pris le focus.
+    if (!section.isConnected) return;
     if (result) apps = result.settings.excludedApps;
     if (result && result.outcome === "saved" && !apps.length)
       status.show(`${status.node.textContent} ${emptied}`);
@@ -103,6 +108,13 @@ export function appsCard(settings) {
     }
     if (apps.some((a) => a.toLowerCase() === lower)) {
       status.show(`${file.name} est déjà exclue.`);
+      return;
+    }
+    if (apps.length >= maxApps) {
+      status.show(
+        `La liste compte déjà ${maxApps} applications, le maximum. Retirez-en une avant d'en ajouter.`,
+        true,
+      );
       return;
     }
     save([...apps, file.name]);
