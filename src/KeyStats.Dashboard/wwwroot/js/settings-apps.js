@@ -33,7 +33,7 @@ function emptyBox() {
   return box;
 }
 
-export function appsCard(settings, locked) {
+export function appsCard(settings) {
   const { section } = settingsCard(
     "Applications exclues",
     "Quand l'une d'elles est au premier plan, seul le nombre de touches est compté : ni texte, ni titre, ni analyse.",
@@ -82,14 +82,13 @@ export function appsCard(settings, locked) {
       removes.push(remove);
       remove.classList.add("btn-sm");
       remove.setAttribute("aria-label", `Retirer ${exe}`);
-      remove.disabled = locked;
       row.append(icon, name, remove);
       return row;
     });
     list.replaceChildren(...rows);
     list.hidden = !apps.length;
     empty.hidden = apps.length > 0;
-    add.disabled = locked;
+    add.disabled = false;
     return removes;
   }
 
