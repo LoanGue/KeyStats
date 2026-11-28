@@ -23,6 +23,10 @@ All notable changes to this project are documented here. The format follows
 - `KeyStats.Dashboard`: the Réglages page shows the encryption state and
   re-enables Windows Hello for an unlocked session.
 
+- `KeyStats.Dashboard`: `GET /api/backup` gives the backup folder and the time
+  of the last backup, `POST /api/backup/folder` sets the folder through the
+  Windows folder picker, and `POST /api/backup/run` backs up now.
+
 - `KeyStats.Dashboard`: `POST /api/key/passphrase` replaces the recovery
   passphrase once the current one or Windows Hello is given, and
   `POST /api/key/hello` enrols a new Windows Hello key for an unlocked session.
