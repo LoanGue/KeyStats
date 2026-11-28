@@ -19,6 +19,29 @@ public static class KeyStoreQueries
         cmd.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Remplace la protection du même type en une transaction : l'ancienne enveloppe est écrasée de zéros
+    /// dans sa page (<c>secure_delete</c>), puis le journal WAL est reporté dans la base et vidé, pour que
+    /// ni le fichier ni son journal ne la gardent. Faux si le report a été bloqué par une lecture en cours
+    /// (l'agent) : l'ancienne enveloppe peut alors rester dans le journal jusqu'au prochain report complet.
+    /// </summary>
+    public static bool ReplaceKeyStore(this KeyStatsDb db, KeyStoreEntry e)
+    {
+        db.Exec("PRAGMA secure_delete = ON");
+        try
+        {
+            using var tx = db.BeginTransaction();
+            db.DeleteKeyStore(e.Kind);
+            db.AddKeyStore(e);
+            tx.Commit();
+        }
+        finally
+        {
+            db.Exec("PRAGMA secure_delete = OFF");
+        }
+        return db.TruncateWal();
+    }
+
     public static IReadOnlyList<KeyStoreEntry> GetKeyStore(this KeyStatsDb db)
     {
         var list = new List<KeyStoreEntry>();

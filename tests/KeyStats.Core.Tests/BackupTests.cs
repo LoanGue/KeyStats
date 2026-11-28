@@ -1,3 +1,4 @@
+using KeyStats.Core.Crypto;
 using KeyStats.Core.Storage;
 
 namespace KeyStats.Core.Tests;
@@ -52,6 +53,25 @@ public sealed class BackupTests
         var listed = BackupMirror.AppendOnly.Concat(BackupMirror.Replaced).ToList();
         Assert.Equal(listed.Count, listed.Distinct().Count());
         Assert.Equal(tables.Order(), listed.Order());
+    }
+
+    [Fact]
+    public void Miroir_efface_l_ancienne_enveloppe_de_la_phrase()
+    {
+        using var tmp = new TempDb();
+        var hello = new HelloEnrollment("KeyStats-a", KeyWrap.NewHelloChallenge(), [.. Enumerable.Range(0, 256).Select(i => (byte)i)]);
+        KeySetup.TryWrite(tmp.Db, "cheval agrafe batterie", hello, 1, 100_000)!.Dispose();
+        var old = Assert.Single(tmp.Db.GetKeyStore(), e => e.Kind == KeyStoreKind.Passphrase);
+        string mirror = MirrorOf(tmp);
+        BackupMirror.Run(tmp.DbPath, mirror, 1);
+
+        using var session = new KeySession();
+        Assert.True(session.TryUnlockWithPassphrase(tmp.Db, "cheval agrafe batterie"));
+        KeyRewrap.SetPassphrase(tmp.Db, session, "lampe girafe parapluie", 2, 100_000);
+        BackupMirror.Run(tmp.DbPath, mirror, 2);
+
+        Assert.Equal(0, Differences(tmp, mirror));
+        Assert.True(File.ReadAllBytes(mirror).AsSpan().IndexOf(old.Wrapped) < 0);
     }
 
     [Fact]
