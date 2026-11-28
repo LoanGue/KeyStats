@@ -16,6 +16,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Réglages page shows the backup folder and the time
+  of the last backup, picks a new folder in the Windows folder picker and
+  backs up on demand.
+
 - `KeyStats.Dashboard`: the Chiffrement card changes the recovery passphrase
   after the current one or Windows Hello. Backups made before a change still
   open with the old passphrase, since the master key stays the same.
