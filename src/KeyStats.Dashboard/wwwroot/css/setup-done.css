@@ -1,0 +1,57 @@
+/* Étape Confirmation de l'assistant de première installation. */
+
+.setup-done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+#setup .setup-done svg {
+  width: 26px;
+  height: 26px;
+  stroke-width: 2.4;
+}
+.setup-summary {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.setup-summary li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+.setup-summary li + li {
+  border-top: 1px solid var(--border);
+}
+.setup-yes,
+.setup-no {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.setup-yes {
+  color: var(--ok-text);
+}
+.setup-no {
+  color: var(--muted-strong);
+  font-weight: 400;
+}
+#setup .setup-summary svg {
+  width: 16px;
+  height: 16px;
+}
+.setup-no a {
+  margin-left: 4px;
+  color: var(--primary);
+}
