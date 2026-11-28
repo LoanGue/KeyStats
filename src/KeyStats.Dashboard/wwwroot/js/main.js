@@ -90,6 +90,8 @@ async function render() {
     setFilters: (next) => go(id, next),
     retry: render,
     unlock: openUnlock,
+    // Relit l'état de la clé pour l'en-tête, sans redessiner la vue.
+    refreshKey: refreshStatus,
     // Une vue plus récente a pu être demandée pendant le chargement.
     isCurrent: () => current === renderId,
   };
