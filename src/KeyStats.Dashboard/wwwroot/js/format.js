@@ -22,6 +22,18 @@ export const dayLong = new Intl.DateTimeFormat("fr-FR", {
   month: "long",
 });
 
+/** Jour aaaa-mm-jj en toutes lettres, lu en minuit UTC pour que le fuseau local ne décale pas la date :
+ * « vendredi 27 novembre 2026 ». */
+const isoDayFull = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+export const isoDayLong = (iso) =>
+  isoDayFull.format(new Date(`${iso}T00:00:00Z`));
+
 /** Vitesse arrondie au mot près : « 58 mots/min ». */
 export const wpm = (v) => `${nf.format(Math.round(v))}\u00a0mots/min`;
 

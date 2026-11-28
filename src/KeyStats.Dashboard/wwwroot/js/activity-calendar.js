@@ -2,7 +2,7 @@
 
 import { cell, levels, rampLegend } from "./activity-ramp.js";
 import { describedBy, fillTable } from "./chart-card.js";
-import { duration, nf } from "./format.js";
+import { duration, isoDayLong, nf } from "./format.js";
 import { el } from "./states.js";
 
 const months = [
@@ -19,15 +19,8 @@ const months = [
   "nov.",
   "déc.",
 ];
-// Jours aaaa-mm-jj lus en minuit UTC : les formateurs partagés suivent le fuseau local, qui décalerait la date.
+// Mois aaaa-mm lus en minuit UTC : le fuseau local décalerait la date.
 const monthLong = new Intl.DateTimeFormat("fr-FR", {
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
-const dayFull = new Intl.DateTimeFormat("fr-FR", {
-  weekday: "long",
-  day: "numeric",
   month: "long",
   year: "numeric",
   timeZone: "UTC",
@@ -82,7 +75,7 @@ export function calendarCard(data) {
         continue;
       }
       const ms = written.get(day) ?? 0;
-      const date = dayFull.format(new Date(`${day}T00:00:00Z`));
+      const date = isoDayLong(day);
       const node = cell(level(ms), `${date} : ${ms ? duration(ms) : "rien"}`);
       if (day === data.to) node.classList.add("today");
       column.append(node);
