@@ -16,6 +16,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Activité et origine page shows one day minute by
+  minute as a strip: typing shaded by keys per minute, pauses, and hatched
+  unobserved time, with the three totals and the pause threshold from the
+  settings. Buttons move to the previous or next written day; a hidden table
+  gives the keys and unobserved time per hour for screen readers.
+
 - `KeyStats.Dashboard`: the Réglages page lists the excluded applications.
   An executable is added through the Windows file picker or removed. A running
   agent applies the list at once, a stopped one at its next start.
