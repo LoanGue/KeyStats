@@ -24,8 +24,7 @@ public static class CsvExport
 {
     /// <summary>
     /// Écrit les fichiers de <paramref name="tables"/> dans <paramref name="folder"/>, chacun par un fichier
-    /// temporaire renommé ensuite, et rend leurs noms. Un export du même jour et de la même période remplace le
-    /// précédent.
+    /// temporaire renommé ensuite, et rend leurs noms. Un export de la même période remplace le précédent.
     /// </summary>
     public static IReadOnlyList<string> Write(KeyStatsDb db, LocalDayClock clock, StatsFilter filter, CsvTables tables, string folder)
     {
@@ -45,7 +44,7 @@ public static class CsvExport
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(filter);
-        var csv = new CsvTable("jour", "sessions", "durée (min)", "écriture active (min)", "touches", "caractères",
+        var csv = new CsvTable("jour", "sessions", "durée (min)", "écriture active (min)", "touches (en session)", "caractères",
             "vitesse réelle (mots/min)", "précision (%)");
         var (where, values) = filter.SessionWhere(filter.Range);
         using var cmd = db.Command(
@@ -100,12 +99,9 @@ public static class CsvExport
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(filter);
         var csv = new CsvTable("touche", "code", "appuis", "répétitions");
-        long from = LocalDayClock.MinuteOf(clock.MidnightUtcMs(LocalDayClock.DateOf(filter.Range.FromDay)));
-        long to = LocalDayClock.MinuteOf(clock.MidnightUtcMs(LocalDayClock.DateOf(filter.Range.ToDay).AddDays(1)));
-        string device = filter.DeviceId is null ? "" : " AND device_id = $device";
+        string where = KeyboardApi.KeyMinuteWhere(clock, filter, filter.Range, out object?[] values);
         using var cmd = db.Command(
-            $"SELECT key, TOTAL(presses), TOTAL(repeats) FROM key_minute WHERE ts_min >= $from AND ts_min < $to{device} "
-            + "GROUP BY key ORDER BY TOTAL(presses) DESC, key", filter.DeviceId is { } id ? new object?[] { from, to, id } : [from, to]);
+            $"SELECT key, TOTAL(presses), TOTAL(repeats) FROM key_minute WHERE {where} GROUP BY key ORDER BY TOTAL(presses) DESC, key", values);
         using var r = cmd.ExecuteReader();
         while (r.Read())
         {

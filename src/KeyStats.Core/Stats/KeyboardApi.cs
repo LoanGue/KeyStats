@@ -106,7 +106,7 @@ public static class KeyboardApi
     }
 
     /// <summary>Condition sur <c>key_minute</c> : minutes UTC des jours locaux de <paramref name="range"/>, et clavier choisi.</summary>
-    private static string KeyMinuteWhere(LocalDayClock clock, StatsFilter filter, DayRange range, out object?[] values)
+    internal static string KeyMinuteWhere(LocalDayClock clock, StatsFilter filter, DayRange range, out object?[] values)
     {
         long from = LocalDayClock.MinuteOf(clock.MidnightUtcMs(LocalDayClock.DateOf(range.FromDay)));
         long to = LocalDayClock.MinuteOf(clock.MidnightUtcMs(LocalDayClock.DateOf(range.ToDay).AddDays(1)));

@@ -6,7 +6,7 @@ namespace KeyStats.Core.Stats;
 /// <summary>
 /// Fichier CSV tel que l'ouvre un tableur réglé en français : séparateur <c>;</c>, virgule décimale, UTF-8 avec
 /// BOM, fins de ligne CRLF. Un champ qui contient <c>;</c>, un guillemet ou un saut de ligne est mis entre
-/// guillemets ; un texte qui commence comme une formule (<c>= + - @</c>) est précédé d'une apostrophe.
+/// guillemets ; un texte qui commence comme une formule (<c>= + - @</c>, tabulation, retour chariot) est précédé d'une apostrophe.
 /// </summary>
 public sealed class CsvTable
 {
@@ -24,7 +24,7 @@ public sealed class CsvTable
     public CsvTable Text(string? value)
     {
         string v = value ?? "";
-        if (v.Length > 0 && v[0] is '=' or '+' or '-' or '@') v = "'" + v;
+        if (v.Length > 0 && v[0] is '=' or '+' or '-' or '@' or '\t' or '\r') v = "'" + v;
         if (v.AsSpan().IndexOfAny(";\"\r\n") >= 0) v = "\"" + v.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
         return Cell(v);
     }

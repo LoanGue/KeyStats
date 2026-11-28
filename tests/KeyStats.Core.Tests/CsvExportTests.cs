@@ -27,6 +27,8 @@ public sealed class CsvExportTests : IDisposable
         AddPresses(At(2026, 11, 26, 9, 0), 0x39, _laptop, 50, 0);
         // 24 novembre à 23 h 59 heure de Paris : hors de la période.
         AddPresses(At(2026, 11, 24, 22, 59), 0x39, _laptop, 1000, 0);
+        // 27 novembre à minuit heure de Paris : hors de la période aussi.
+        AddPresses(At(2026, 11, 26, 23, 0), 0x39, _laptop, 1000, 0);
     }
 
     public void Dispose()
@@ -63,8 +65,8 @@ public sealed class CsvExportTests : IDisposable
     [Fact]
     public void Champs_proteges_et_virgule_decimale()
     {
-        var csv = new CsvTable("a", "b", "c", "d", "e").Text("x;y").Text("dit \"oui\"").Text("-2+3").Number(12.346, 2).Number(null);
-        Assert.Equal(["a;b;c;d;e", "\"x;y\";\"dit \"\"oui\"\"\";'-2+3;12,35;"], Lines(csv));
+        var csv = new CsvTable("a", "b", "c", "d", "e", "f").Text("x;y").Text("dit \"oui\"").Text("-2+3").Text("\tx").Number(12.346, 2).Number(null);
+        Assert.Equal(["a;b;c;d;e;f", "\"x;y\";\"dit \"\"oui\"\"\";'-2+3;'\tx;12,35;"], Lines(csv));
         Assert.Throws<InvalidOperationException>(() => new CsvTable("a", "b").Text("seul").ToBytes());
     }
 
@@ -72,7 +74,7 @@ public sealed class CsvExportTests : IDisposable
     public void Un_jour_par_ligne_vitesse_et_precision_sur_les_sommes()
     {
         Assert.Equal([
-            "jour;sessions;durée (min);écriture active (min);touches;caractères;vitesse réelle (mots/min);précision (%)",
+            "jour;sessions;durée (min);écriture active (min);touches (en session);caractères;vitesse réelle (mots/min);précision (%)",
             "2026-11-25;1;0,5;0,3;105;100;40;100",
             // 400 caractères en 2 minutes ; précision sur la prose seule : 1 − 13 / 260.
             "2026-11-26;2;2;1,5;430;400;40;95",
