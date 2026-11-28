@@ -8,9 +8,9 @@ export const chartsMissing =
 
 let serial = 0;
 
-/** Rend node lisible comme une image décrite par un tableau masqué, à placer à côté de lui. */
-export function describedBy(node) {
-  node.setAttribute("role", "img");
+/** Donne à node le rôle voulu (img par défaut), décrit par un tableau masqué à placer à côté de lui. */
+export function describedBy(node, role = "img") {
+  node.setAttribute("role", role);
   // Masqué dans un bloc : un tableau ne se réduit pas sous la largeur de son contenu.
   const hidden = el("div", "sr-only");
   const table = el("table");
