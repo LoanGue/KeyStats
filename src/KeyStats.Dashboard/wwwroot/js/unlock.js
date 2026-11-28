@@ -33,7 +33,10 @@ const failure = (error) =>
     ? `La demande a échoué (erreur ${error.status}). Réessayez.`
     : "Le tableau de bord n'a pas répondu. Réessayez.";
 
-/** Branche les boutons de l'en-tête ; renvoie open(), onChange suit chaque changement de clé. */
+/**
+ * Branche les boutons de l'en-tête ; renvoie open(mode), onChange suit chaque changement de clé. Le
+ * dialogue s'ouvre sur Windows Hello quand il est configuré, sur la phrase avec mode « phrase ».
+ */
 export function initUnlock(getKey, onChange) {
   const dialog = $("unlock-dialog");
   const input = $("unlock-input");
@@ -133,7 +136,7 @@ export function initUnlock(getKey, onChange) {
     });
   }
 
-  function open() {
+  function open(mode) {
     key = getKey();
     if (!key || key.unlocked || !(key.hello || key.passphrase)) return;
     dialog.showModal();
@@ -141,7 +144,10 @@ export function initUnlock(getKey, onChange) {
       // La réponse de l'invite encore ouverte s'affiche dans ce dialogue.
       request = hello.id;
       show("waiting");
-    } else show(key.hello ? "invite" : "phrase");
+    } else {
+      const wantPhrase = mode === "phrase" && key.passphrase;
+      show(key.hello && !wantPhrase ? "invite" : "phrase");
+    }
   }
 
   $("unlock-main").addEventListener("click", (event) => {
@@ -166,7 +172,7 @@ export function initUnlock(getKey, onChange) {
     input.focus();
   });
 
-  $("unlock-open").addEventListener("click", open);
+  $("unlock-open").addEventListener("click", () => open());
   $("key-lock").addEventListener("click", async () => {
     $("key-lock").disabled = true;
     try {
