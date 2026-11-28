@@ -51,28 +51,52 @@ public static class KeyChangeApi
         {
             if (!KeySetup.IsSetUp(db)) return Result(db, session, "setup");
             if (!session.IsUnlocked) return Result(db, session, "locked");
+            string? previous = StoredHelloId(db);
             string id = KeySetup.NewCredentialId();
             byte[] challenge = KeyWrap.NewHelloChallenge();
-            if (await enroller.CreateAndSignAsync(id, challenge).ConfigureAwait(true) is not { } signature)
-                return Result(db, session, "hello");
+            byte[]? signature = await enroller.CreateAndSignAsync(id, challenge).ConfigureAwait(true);
+            string outcome = "hello";
             try
             {
-                // Verrouillée pendant l'invite : rien n'est écrit. Reprise sur le thread de l'interface, la
-                // session ne peut plus changer d'ici l'écriture.
-                if (!session.IsUnlocked) return Result(db, session, "locked");
-                KeyRewrap.SetHello(db, session, new HelloEnrollment(id, challenge, signature), nowMs());
-            }
-            catch (ArgumentException)
-            {
-                // Signature inutilisable : rien n'a été écrit.
-                return Result(db, session, "hello");
+                // Reprise sur le thread de l'interface : la base et la session y sont utilisées.
+                outcome = Enroll(db, session, new HelloEnrollment(id, challenge, signature ?? []), nowMs);
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(signature);
+                // Après l'écriture, et d'après ce que la base contient, même après une exception : seule la clé
+                // que l'enveloppe enregistrée ne désigne pas est supprimée. Une interruption laisse au pire une
+                // clé rattachée à rien dans le magasin de Windows, jamais une enveloppe sans sa clé.
+                string? stored = StoredHelloId(db);
+                string? orphan = stored == id ? previous : id;
+                if (orphan is not null && orphan != stored) await enroller.DeleteAsync(orphan).ConfigureAwait(true);
             }
-            return Result(db, session, "done");
+            return Result(db, session, outcome);
         });
+    }
+
+    private static string? StoredHelloId(KeyStatsDb db) =>
+        db.GetKeyStore().LastOrDefault(e => e.Kind == KeyStoreKind.WindowsHello)?.CredentialId;
+
+    /// <summary>Écrit l'enveloppe de la nouvelle clé Hello ; la signature est effacée dans tous les cas.</summary>
+    private static string Enroll(KeyStatsDb db, KeySession session, HelloEnrollment hello, Func<long> nowMs)
+    {
+        try
+        {
+            if (hello.Signature.Length == 0) return "hello";
+            // Verrouillée pendant l'invite : rien n'est écrit. La session ne peut plus changer d'ici l'écriture.
+            if (!session.IsUnlocked) return "locked";
+            KeyRewrap.SetHello(db, session, hello, nowMs());
+            return "done";
+        }
+        catch (ArgumentException)
+        {
+            // Signature inutilisable : rien n'a été écrit.
+            return "hello";
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(hello.Signature);
+        }
     }
 
     private static WebResponse Result(KeyStatsDb db, KeySession session, string outcome) =>
