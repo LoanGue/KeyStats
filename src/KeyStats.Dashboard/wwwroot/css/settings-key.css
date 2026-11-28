@@ -41,11 +41,6 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.settings-off {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--bad-text);
-}
 .settings-note {
   margin: 0;
   font-size: 12px;

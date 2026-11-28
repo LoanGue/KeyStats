@@ -1,0 +1,44 @@
+/* Carte Dossier de sauvegarde de la page Réglages : chemin du dossier, dernière sauvegarde. */
+
+.settings-backup-pick,
+.settings-backup-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-backup-line {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+}
+.settings-path {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted-strong);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.settings-backup-pick .btn,
+.settings-backup-line .btn {
+  flex: none;
+}
+.settings-backup-pick .btn {
+  font-weight: 400;
+}
+.settings-backup-last {
+  color: var(--muted);
+}
+.settings-backup-last span {
+  color: var(--muted-strong);
+}
