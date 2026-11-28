@@ -28,7 +28,7 @@ public sealed class BackupApiTests : IDisposable
         public string? Answer;
         public string? Initial;
 
-        public Task<string?> PickAsync(string initialFolder)
+        public Task<string?> PickAsync(string initialFolder, string title)
         {
             Initial = initialFolder;
             return Task.FromResult(Answer);
