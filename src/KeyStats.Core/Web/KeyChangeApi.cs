@@ -57,12 +57,15 @@ public static class KeyChangeApi
                 return Result(db, session, "hello");
             try
             {
+                // Verrouillée pendant l'invite : rien n'est écrit. Reprise sur le thread de l'interface, la
+                // session ne peut plus changer d'ici l'écriture.
+                if (!session.IsUnlocked) return Result(db, session, "locked");
                 KeyRewrap.SetHello(db, session, new HelloEnrollment(id, challenge, signature), nowMs());
             }
-            catch (Exception e) when (e is ArgumentException or InvalidOperationException)
+            catch (ArgumentException)
             {
-                // Signature inutilisable, ou session verrouillée pendant l'invite : rien n'a été écrit.
-                return Result(db, session, e is ArgumentException ? "hello" : "locked");
+                // Signature inutilisable : rien n'a été écrit.
+                return Result(db, session, "hello");
             }
             finally
             {
