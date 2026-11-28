@@ -16,6 +16,7 @@ const texts = {
     "Windows Hello n'a pas confirmé votre identité, ou la fenêtre a été fermée.",
   waiting:
     "Confirmez votre identité dans la fenêtre de Windows. Elle peut s'ouvrir derrière cette fenêtre.",
+  checking: "Vérification de la phrase actuelle…",
   done: "Phrase changée. Les sauvegardes faites avant ce changement s'ouvrent encore avec l'ancienne phrase.",
 };
 
@@ -76,8 +77,12 @@ function proofChoice(key, onChange) {
   return { box, first: options[0]?.[0] };
 }
 
-/** onKey reçoit l'état de la clé renvoyé ; onClose ferme le formulaire. */
-export function phraseForm(key, { onKey, onClose }) {
+/**
+ * onKey reçoit l'état de la clé renvoyé ; onClose ferme le formulaire ; onBusy(true/false) encadre la
+ * requête, pour que la carte retienne ce qui fermerait ou redessinerait le formulaire ; onLost reçoit le
+ * message d'un changement fait alors que le formulaire n'est plus affiché.
+ */
+export function phraseForm(key, { onKey, onClose, onBusy, onLost }) {
   const form = el("form", "settings-phrase");
   const current = field("Phrase actuelle");
   const next = field("Nouvelle phrase de secours");
@@ -88,7 +93,9 @@ export function phraseForm(key, { onKey, onClose }) {
   const submit = button("Changer la phrase", true);
   submit.type = "submit";
   const actions = el("div", "settings-actions");
-  actions.append(button("Annuler", false, onClose), submit);
+  // Une demande partie ne s'annule pas : le bouton attend la réponse, qui s'affiche dans le formulaire.
+  const cancel = button("Annuler", false, onClose);
+  actions.append(cancel, submit);
   form.append(
     choice.box,
     current.wrap,
@@ -121,16 +128,24 @@ export function phraseForm(key, { onKey, onClose }) {
     const body = { method: proof, newPassphrase: next.input.value };
     if (proof === "passphrase") body.passphrase = current.input.value;
     current.input.value = "";
-    status.show(proof === "hello" ? texts.waiting : "");
+    status.show(proof === "hello" ? texts.waiting : texts.checking);
     let result;
     try {
       result = await postJson("/api/key/passphrase", body);
     } catch (error) {
+      if (!form.isConnected) next.input.value = again.input.value = "";
       status.show(failure(error), true);
       return;
     }
-    if (!form.isConnected) return;
+    // Une preuve acceptée déverrouille la session : l'en-tête suit, même si la carte a disparu pendant la
+    // requête (autre page, ou setup : la carte change de forme). Détaché, le formulaire ne garde aucune phrase.
     onKey(result.key);
+    if (!form.isConnected) {
+      next.input.value = again.input.value = "";
+      // Une phrase changée ne passe jamais sous silence : la carte prend le message.
+      if (result.outcome === "done") onLost(texts.done);
+      return;
+    }
     if (result.outcome === "done") {
       next.input.value = again.input.value = "";
       status.show(texts.done);
@@ -146,9 +161,14 @@ export function phraseForm(key, { onKey, onClose }) {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (submit.disabled || check() !== true) return;
-    submit.disabled = true;
-    await send();
-    submit.disabled = false;
+    submit.disabled = cancel.disabled = true;
+    onBusy(true);
+    try {
+      await send();
+    } finally {
+      submit.disabled = cancel.disabled = false;
+      onBusy(false);
+    }
   });
   return {
     form,

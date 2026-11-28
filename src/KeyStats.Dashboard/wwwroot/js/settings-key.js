@@ -43,6 +43,14 @@ export function keyCard(ctx) {
   );
   let key = ctx.key;
   let open = false;
+  // Pendant une demande (phrase ou Windows Hello), les boutons de ligne restent inactifs : aucun ne peut
+  // fermer ni redessiner le formulaire dont la réponse est attendue.
+  let phraseBusy = false;
+  let enrolling = false;
+  const lock = () => {
+    for (const node of rows.querySelectorAll(".settings-row > .btn"))
+      node.disabled = phraseBusy || enrolling;
+  };
   const rows = el("div", "settings-rows");
   const status = statusLine();
   // Le bouton de réactivation disparaît une fois Windows Hello activé : le focus passe au message.
@@ -64,23 +72,25 @@ export function keyCard(ctx) {
     if (redraw || changed) draw();
   }
 
-  async function enrol(trigger) {
+  async function enrol() {
     if (!key.unlocked) {
       status.show(texts.locked);
       return ctx.unlock();
     }
-    trigger.disabled = true;
+    enrolling = true;
+    lock();
     status.show(texts.waiting);
     let result;
     try {
       result = await postJson("/api/key/hello", {});
     } catch (error) {
+      enrolling = false;
+      lock();
       if (!section.isConnected) return;
-      trigger.disabled = false;
       return status.show(failure(error), true);
     }
+    enrolling = false;
     if (!section.isConnected) return;
-    trigger.disabled = false;
     const outcome = result.outcome;
     if (outcome === "locked") ctx.unlock();
     const known = {
@@ -131,17 +141,24 @@ export function keyCard(ctx) {
       const form = phraseForm(key, {
         onKey: (next) => adopt(next, false),
         onClose: () => toggle(false),
+        onBusy: (value) => {
+          phraseBusy = value;
+          lock();
+        },
+        onLost: (text) => {
+          status.show(text);
+          if (!section.contains(document.activeElement)) status.node.focus();
+        },
       });
       rows.append(form.form);
       if (focused) form.focus();
     }
-    const reenable = button("Réactiver Windows Hello", true, () =>
-      enrol(reenable),
-    );
+    const reenable = button("Réactiver Windows Hello", true, enrol);
     const hello = row("Windows Hello", key.hello ? on("Actif") : reenable);
     if (!key.hello)
       hello.name.append(el("span", "settings-off", " · désactivé"));
     rows.append(hello.node);
+    lock();
   }
 
   function toggle(value) {
