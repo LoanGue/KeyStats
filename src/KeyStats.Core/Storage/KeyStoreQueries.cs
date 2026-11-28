@@ -22,11 +22,13 @@ public static class KeyStoreQueries
     /// <summary>
     /// Remplace la protection du même type en une transaction : l'ancienne enveloppe est écrasée de zéros
     /// dans sa page (<c>secure_delete</c>), puis le journal WAL est reporté dans la base et vidé, pour que
-    /// ni le fichier ni son journal ne la gardent. Faux si le report a été bloqué par une lecture en cours
-    /// (l'agent) : l'ancienne enveloppe peut alors rester dans le journal jusqu'au prochain report complet.
+    /// ni le fichier ni son journal ne la gardent. Si une lecture d'une autre connexion (l'agent) bloque ce
+    /// report au-delà du délai d'attente, l'écriture reste faite, mais les anciennes pages restent dans le
+    /// journal jusqu'à ce que l'agent le réécrive ou le vide en fermant la base.
     /// </summary>
-    public static bool ReplaceKeyStore(this KeyStatsDb db, KeyStoreEntry e)
+    public static void ReplaceKeyStore(this KeyStatsDb db, KeyStoreEntry e)
     {
+        long previous = (long)db.Scalar("PRAGMA secure_delete")!;
         db.Exec("PRAGMA secure_delete = ON");
         try
         {
@@ -37,9 +39,9 @@ public static class KeyStoreQueries
         }
         finally
         {
-            db.Exec("PRAGMA secure_delete = OFF");
+            db.Exec($"PRAGMA secure_delete = {previous}");
         }
-        return db.TruncateWal();
+        db.TruncateWal();
     }
 
     public static IReadOnlyList<KeyStoreEntry> GetKeyStore(this KeyStatsDb db)
