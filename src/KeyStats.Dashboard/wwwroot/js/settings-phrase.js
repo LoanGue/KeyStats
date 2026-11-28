@@ -16,6 +16,8 @@ const texts = {
     "Windows Hello n'a pas confirmé votre identité, ou la fenêtre a été fermée.",
   waiting:
     "Confirmez votre identité dans la fenêtre de Windows. Elle peut s'ouvrir derrière cette fenêtre.",
+  checking: "Vérification de la phrase actuelle…",
+  setup: "Le chiffrement n'est pas encore configuré.",
   done: "Phrase changée. Les sauvegardes faites avant ce changement s'ouvrent encore avec l'ancienne phrase.",
 };
 
@@ -121,16 +123,22 @@ export function phraseForm(key, { onKey, onClose }) {
     const body = { method: proof, newPassphrase: next.input.value };
     if (proof === "passphrase") body.passphrase = current.input.value;
     current.input.value = "";
-    status.show(proof === "hello" ? texts.waiting : "");
+    status.show(proof === "hello" ? texts.waiting : texts.checking);
     let result;
     try {
       result = await postJson("/api/key/passphrase", body);
     } catch (error) {
+      if (!form.isConnected) next.input.value = again.input.value = "";
       status.show(failure(error), true);
       return;
     }
-    if (!form.isConnected) return;
+    // Une preuve acceptée déverrouille la session : l'en-tête suit, même si le formulaire a été fermé
+    // pendant la requête. Fermé, il ne garde aucune phrase.
     onKey(result.key);
+    if (!form.isConnected) {
+      next.input.value = again.input.value = "";
+      return;
+    }
     if (result.outcome === "done") {
       next.input.value = again.input.value = "";
       status.show(texts.done);
@@ -140,7 +148,8 @@ export function phraseForm(key, { onKey, onClose }) {
     } else if (result.outcome === "proof" && proof === "passphrase") {
       status.show("");
       current.show(texts.wrong);
-    } else status.show(texts.hello, true);
+    } else if (result.outcome === "setup") status.show(texts.setup, true);
+    else status.show(texts.hello, true);
   }
 
   form.addEventListener("submit", async (event) => {
