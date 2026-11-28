@@ -139,6 +139,23 @@ public sealed class HistoryReplayTests
     }
 
     [Fact]
+    public void Groupe_qui_touche_le_jour_en_cours_refuse()
+    {
+        using var tmp = new TempDb();
+        using var master = MasterKey.Generate();
+        long midnight = Clock.MidnightUtcMs(new DateTime(2026, 11, 3));
+        var rec = Recorder(tmp, master);
+        rec.OnFocus(Focus(midnight - 20_000, "winword.exe"));
+        Assert.True(rec.Close(Feed(rec, Text + Text, midnight - 15_000)));
+        string before = Snapshot(tmp, midnight);
+
+        // Le 3 est le jour en cours : la session de la veille qui y déborde ne permet pas de rejouer le 2.
+        var replay = new HistoryReplay(tmp.Db, Clock, AnalysisSettings.Default);
+        Assert.Equal(new ReplayResult(DayReplay.Current, 20261102, 20261103), replay.Replay(20261102, master, beforeDay: 20261103));
+        Assert.Equal(before, Snapshot(tmp, midnight));
+    }
+
+    [Fact]
     public void Jour_sans_brut_garde_tel_quel()
     {
         using var tmp = new TempDb();
