@@ -373,6 +373,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- `README.md` rewritten for the first installable version, in an impersonal
+  register: what KeyStats records, privacy guarantees, requirements, install,
+  upgrade and uninstall, tray icon, unlock, data and backup locations, build
+  commands.
 - `KeyStats.Core`: schema version 2. `day_wordlen` gains a session kind, so
   word lengths can be read for prose and code apart. Rows recorded earlier
   have no kind: they stay in the totals under kind 0 until a recalculation
