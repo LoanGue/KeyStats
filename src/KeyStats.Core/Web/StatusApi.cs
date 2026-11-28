@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using KeyStats.Core.Recording;
 using KeyStats.Core.Storage;
 
 namespace KeyStats.Core.Web;
@@ -39,4 +40,7 @@ public static class StatusApi
 [JsonSerializable(typeof(BackupOutcome))]
 [JsonSerializable(typeof(ExportRequest))]
 [JsonSerializable(typeof(ExportOutcome))]
+[JsonSerializable(typeof(RecomputeRequest))]
+[JsonSerializable(typeof(RecomputeStart))]
+[JsonSerializable(typeof(RecomputeView))]
 public sealed partial class WebJson : JsonSerializerContext;
