@@ -94,4 +94,6 @@ public static class FiltersApi
 [JsonSerializable(typeof(ActivityTitleList))]
 [JsonSerializable(typeof(DayTimeline))]
 [JsonSerializable(typeof(Shortcuts))]
+[JsonSerializable(typeof(DetailSessions))]
+[JsonSerializable(typeof(DetailKeys))]
 public sealed partial class StatsJson : JsonSerializerContext;
