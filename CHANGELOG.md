@@ -25,6 +25,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the "Détail à la milliseconde" page replays one
+  session key by key once the data is unlocked. Sessions of the period are
+  listed with a search by application or date; the chosen one is drawn on two
+  lanes with each press from key down to key up, overlaps, keys erased
+  afterwards and backspaces, with zoom, a window position slider, and the
+  selected key's timings. Keys are labelled with their AZERTY keycap: the typed
+  text is not rebuilt. The page asks to unlock while the data is locked.
 - `tools/install.ps1` builds the NativeAOT agent and the dashboard and installs
   them for the current user, without administrator rights, in
   `%LOCALAPPDATA%\Programs\KeyStats`: start-up entry in the per-user Run key,
