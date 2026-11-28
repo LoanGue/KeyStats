@@ -43,6 +43,7 @@ internal static class Program
         RhythmApi.Register(router, stats);
         ActivityApi.Register(router, stats, session);
         ShortcutsApi.Register(router, stats);
+        DetailApi.Register(router, stats, session);
         BackupApi.Register(router, dbPath, folderPicker, agent, () => stats.NowMs);
         ExportApi.Register(router, stats, dbPath, folderPicker, Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
         RecomputeApi.Register(router, stats, dbPath, session, new RecomputeJob(dbPath, session, () => stats.NowMs));
