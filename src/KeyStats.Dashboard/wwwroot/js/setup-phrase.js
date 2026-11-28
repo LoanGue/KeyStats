@@ -5,7 +5,7 @@
 import { el } from "./states.js";
 import { action, fieldMessage, icon, intro, note } from "./setup-ui.js";
 
-/** Longueur minimale, comme KeySetup.MinPassphraseLength côté tableau de bord. */
+/** Longueur minimale, comme KeySetup.MinPassphraseLength dans KeyStats.Core. */
 export const MinLength = 12;
 
 /**
@@ -133,6 +133,8 @@ export function phraseStep(back, submit) {
     fail(text) {
       alert.replaceChildren(icon("error"), el("span", null, text));
       alert.hidden = false;
+      // Continuer, désactivé pendant l'envoi, a perdu le focus : il revient au premier champ.
+      first.focus();
     },
     clear() {
       first.value = "";
