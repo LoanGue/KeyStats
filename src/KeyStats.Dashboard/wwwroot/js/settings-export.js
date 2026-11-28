@@ -2,7 +2,13 @@
 // dans la fenêtre de Windows. La page ne donne que la période, les filtres et les fichiers voulus.
 
 import { postJson } from "./api.js";
-import { button, settingsCard, statusLine } from "./settings-card.js";
+import {
+  button,
+  dateField,
+  isoDay,
+  settingsCard,
+  statusLine,
+} from "./settings-card.js";
 import { el } from "./states.js";
 
 let serial = 0;
@@ -22,28 +28,12 @@ const failure = (error) =>
     ? `La demande a échoué (erreur ${error.status}). Réessayez.`
     : "Le tableau de bord n'a pas répondu. Réessayez.";
 
-/** Jour local au format aaaa-mm-jj. */
-function isoDay(date) {
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
 function checkbox(label, checked) {
   const row = el("label", "settings-check");
   const input = el("input");
   input.type = "checkbox";
   input.checked = checked;
   row.append(input, label);
-  return { row, input };
-}
-
-function dateField(label, value, max) {
-  const row = el("label", "settings-date");
-  const input = el("input");
-  input.type = "date";
-  input.value = value;
-  input.max = max;
-  row.append(el("span", null, label), input);
   return { row, input };
 }
 
