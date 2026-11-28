@@ -87,7 +87,10 @@ async function render() {
     filters,
     query: filterQuery(filters),
     status,
-    key,
+    // Lu à chaque accès : refreshKey peut changer l'état après le rendu.
+    get key() {
+      return key;
+    },
     setFilters: (next) => go(id, next),
     retry: render,
     unlock: openUnlock,
