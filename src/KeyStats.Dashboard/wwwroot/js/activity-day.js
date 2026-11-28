@@ -182,6 +182,11 @@ const unread = "La journée n'a pas pu être lue.";
 export function dayCard(day, gapMs, ctx) {
   if (!day) return { title, empty: unread, wide: true };
   const body = el("div", "day-body");
+  // Zone live présente dès l'affichage : un message inséré d'un bloc n'est pas toujours annoncé.
+  const status = el("p", "activity-note day-status");
+  status.setAttribute("role", "status");
+  const card = el("div");
+  card.append(status, body);
   const label = el("span", "day-label");
   label.setAttribute("aria-live", "polite");
   const prev = stepButton("prev", "Jour précédent");
@@ -193,6 +198,7 @@ export function dayCard(day, gapMs, ctx) {
   const show = (d) => {
     shown = d;
     label.textContent = isoDayLong(d.day);
+    status.textContent = "";
     // Un bouton désactivé perd le focus : il passe à l'autre bouton, pour enchaîner les jours au clavier.
     const focused = document.activeElement;
     prev.disabled = !d.prev;
@@ -211,9 +217,7 @@ export function dayCard(day, gapMs, ctx) {
     } catch {
       if (!ctx.isCurrent() || !body.isConnected) return;
       show(shown);
-      const note = el("p", "activity-note", unread);
-      note.setAttribute("role", "status");
-      body.prepend(note);
+      status.textContent = unread;
     } finally {
       loading = false;
       nav.removeAttribute("aria-busy");
@@ -227,6 +231,6 @@ export function dayCard(day, gapMs, ctx) {
     note: "Plus la minute est foncée, plus vous y avez tapé.",
     aside: nav,
     wide: true,
-    body,
+    body: card,
   };
 }
