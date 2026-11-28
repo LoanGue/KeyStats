@@ -90,6 +90,8 @@ export function phraseForm(key, { onKey, onClose, onBusy, onLost }) {
   const choice = proofChoice(key, (value) => showProof(value));
   let proof = choice.first;
   const status = statusLine();
+  // Le bouton d'envoi, inactif pendant la demande, a perdu le focus : il passe au message.
+  status.node.tabIndex = -1;
   const submit = button("Changer la phrase", true);
   submit.type = "submit";
   const actions = el("div", "settings-actions");
@@ -149,6 +151,7 @@ export function phraseForm(key, { onKey, onClose, onBusy, onLost }) {
     if (result.outcome === "done") {
       next.input.value = again.input.value = "";
       status.show(texts.done);
+      status.node.focus();
     } else if (result.outcome === "phrase") {
       status.show("");
       next.show(texts.short);

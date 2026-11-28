@@ -43,6 +43,7 @@ export function keyCard(ctx) {
   );
   let key = ctx.key;
   let open = false;
+  const rows = el("div", "settings-rows");
   // Pendant une demande (phrase ou Windows Hello), les boutons de ligne restent inactifs : aucun ne peut
   // fermer ni redessiner le formulaire dont la réponse est attendue.
   let phraseBusy = false;
@@ -51,7 +52,6 @@ export function keyCard(ctx) {
     for (const node of rows.querySelectorAll(".settings-row > .btn"))
       node.disabled = phraseBusy || enrolling;
   };
-  const rows = el("div", "settings-rows");
   const status = statusLine();
   // Le bouton de réactivation disparaît une fois Windows Hello activé : le focus passe au message.
   status.node.tabIndex = -1;
