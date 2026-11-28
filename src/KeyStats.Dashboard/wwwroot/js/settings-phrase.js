@@ -2,10 +2,9 @@
 // nouvelle phrase et confirmation. Les phrases ne quittent les champs que pour la requête, puis sont effacées.
 
 import { postJson } from "./api.js";
+import { MinLength, normalized } from "./passphrase.js";
 import { button, statusLine } from "./settings-card.js";
 import { el } from "./states.js";
-
-const minLength = 12;
 
 const texts = {
   short: "Trop courte : 12 caractères minimum.",
@@ -19,9 +18,6 @@ const texts = {
   checking: "Vérification de la phrase actuelle…",
   done: "Phrase changée. Les sauvegardes faites avant ce changement s'ouvrent encore avec l'ancienne phrase.",
 };
-
-/** Même forme que KeyWrap.NormalizePassphrase : NFC, bords retirés, suites d'espaces réduites. */
-const normalized = (s) => s.normalize("NFC").trim().split(/\s+/).join(" ");
 
 const failure = (error) =>
   error.status
@@ -119,7 +115,7 @@ export function phraseForm(key, { onKey, onClose, onBusy, onLost }) {
     // Le premier champ fautif, dans l'ordre du formulaire, reçoit le message et le focus.
     if (proof === "passphrase" && !current.input.value)
       return current.show(texts.current);
-    if (normalized(next.input.value).length < minLength)
+    if (normalized(next.input.value).length < MinLength)
       return next.show(texts.short);
     if (normalized(again.input.value) !== normalized(next.input.value))
       return again.show(texts.mismatch);

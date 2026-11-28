@@ -6,7 +6,8 @@ import { postJson } from "./api.js";
 import { el } from "./states.js";
 import { done } from "./setup-done.js";
 import { helloStep } from "./setup-hello.js";
-import { MinLength, phraseStep } from "./setup-phrase.js";
+import { MinLength } from "./passphrase.js";
+import { phraseStep } from "./setup-phrase.js";
 import { steps } from "./setup-ui.js";
 import { welcome } from "./setup-welcome.js";
 
