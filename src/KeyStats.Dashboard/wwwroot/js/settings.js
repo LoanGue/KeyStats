@@ -1,8 +1,9 @@
-// Page Réglages : seuils de détection et applications exclues (/api/settings).
+// Page Réglages : seuils de détection, compteur à l'écran et applications exclues (/api/settings).
 
 import { getJson } from "./api.js";
 import { appsCard } from "./settings-apps.js";
 import { refusedAlert } from "./settings-card.js";
+import { liveCard } from "./settings-live.js";
 import { thresholdsCard } from "./settings-thresholds.js";
 import { el } from "./states.js";
 
@@ -15,6 +16,6 @@ export async function renderSettings(view, ctx) {
     return;
   }
   const grid = el("div", "settings-grid");
-  grid.append(thresholdsCard(settings), appsCard(settings));
+  grid.append(thresholdsCard(settings), liveCard(settings), appsCard(settings));
   view.replaceChildren(grid);
 }
