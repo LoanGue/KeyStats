@@ -56,22 +56,26 @@ public sealed class BackupTests
     }
 
     [Fact]
-    public void Miroir_efface_l_ancienne_enveloppe_de_la_phrase()
+    public void Miroir_efface_les_enveloppes_remplacees()
     {
         using var tmp = new TempDb();
         var hello = new HelloEnrollment("KeyStats-a", KeyWrap.NewHelloChallenge(), [.. Enumerable.Range(0, 256).Select(i => (byte)i)]);
         KeySetup.TryWrite(tmp.Db, "cheval agrafe batterie", hello, 1, 100_000)!.Dispose();
-        var old = Assert.Single(tmp.Db.GetKeyStore(), e => e.Kind == KeyStoreKind.Passphrase);
+        var old = tmp.Db.GetKeyStore();
         string mirror = MirrorOf(tmp);
         BackupMirror.Run(tmp.DbPath, mirror, 1);
 
+        // Nouvelle phrase, et plus d'enveloppe Hello (base recréée sans Windows Hello) : le miroir rétrécit,
+        // ses nouvelles lignes ne recouvrent pas toutes les anciennes.
         using var session = new KeySession();
         Assert.True(session.TryUnlockWithPassphrase(tmp.Db, "cheval agrafe batterie"));
         KeyRewrap.SetPassphrase(tmp.Db, session, "lampe girafe parapluie", 2, 100_000);
+        tmp.Db.DeleteKeyStore(KeyStoreKind.WindowsHello);
         BackupMirror.Run(tmp.DbPath, mirror, 2);
 
         Assert.Equal(0, Differences(tmp, mirror));
-        Assert.True(File.ReadAllBytes(mirror).AsSpan().IndexOf(old.Wrapped) < 0);
+        byte[] bytes = File.ReadAllBytes(mirror);
+        Assert.All(old, e => Assert.True(bytes.AsSpan().IndexOf(e.Wrapped) < 0, e.Kind.ToString()));
     }
 
     [Fact]

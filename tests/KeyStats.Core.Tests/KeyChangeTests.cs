@@ -63,19 +63,50 @@ public sealed class KeyChangeTests : IDisposable
         Assert.Equal(_publicKey, other.Use(k => k.PublicKey));
     }
 
-    [Fact]
-    public void Ancienne_enveloppe_de_la_phrase_effacee_du_fichier()
+    [Theory]
+    [InlineData(KeyStoreKind.Passphrase)]
+    [InlineData(KeyStoreKind.WindowsHello)]
+    public void Ancienne_enveloppe_effacee_du_fichier(KeyStoreKind kind)
     {
         SetUp(withHello: true);
-        var old = Assert.Single(_temp.Db.GetKeyStore(), e => e.Kind == KeyStoreKind.Passphrase);
+        var old = Assert.Single(_temp.Db.GetKeyStore(), e => e.Kind == kind);
         Assert.True(_session.TryUnlockWithPassphrase(_temp.Db, Phrase));
 
-        KeyRewrap.SetPassphrase(_temp.Db, _session, NewPhrase, 2, Iterations);
+        Rewrap(kind);
 
         // Base ouverte (l'agent la garde ouverte) : ni le fichier ni son journal WAL ne gardent l'ancienne enveloppe.
         Assert.False(Contains(ReadFilesOpen(), old.Wrapped));
         Assert.False(Contains(_temp.ReadAllBytesClosed(), old.Wrapped));
-        Assert.True(new KeySession().TryUnlockWithPassphrase(_temp.Db, NewPhrase));
+        Assert.True(new KeySession().TryUnlockWithPassphrase(_temp.Db, kind == KeyStoreKind.Passphrase ? NewPhrase : Phrase));
+    }
+
+    [Fact]
+    public void Lecture_de_l_agent_retarde_seulement_l_effacement_du_journal()
+    {
+        SetUp(withHello: true);
+        var old = Assert.Single(_temp.Db.GetKeyStore(), e => e.Kind == KeyStoreKind.Passphrase);
+        Assert.True(_session.TryUnlockWithPassphrase(_temp.Db, Phrase));
+        _temp.Db.Exec("PRAGMA busy_timeout = 100");
+
+        using (var agent = KeyStatsDb.Open(_temp.DbPath))
+        {
+            agent.Exec("BEGIN");
+            Assert.Equal(2L, agent.Scalar("SELECT count(*) FROM key_store"));
+            Rewrap(KeyStoreKind.Passphrase);
+            Assert.False(_temp.Db.TruncateWal());
+            using var other = new KeySession();
+            Assert.False(other.TryUnlockWithPassphrase(_temp.Db, Phrase));
+            Assert.True(other.TryUnlockWithPassphrase(_temp.Db, NewPhrase));
+            agent.Exec("COMMIT");
+        }
+        Assert.True(_temp.Db.TruncateWal());
+        Assert.False(Contains(ReadFilesOpen(), old.Wrapped));
+    }
+
+    private void Rewrap(KeyStoreKind kind)
+    {
+        if (kind == KeyStoreKind.Passphrase) KeyRewrap.SetPassphrase(_temp.Db, _session, NewPhrase, 2, Iterations);
+        else KeyRewrap.SetHello(_temp.Db, _session, new HelloEnrollment("KeyStats-new", KeyWrap.NewHelloChallenge(), OtherSignature.ToArray()), 2);
     }
 
     private byte[] ReadFilesOpen()
