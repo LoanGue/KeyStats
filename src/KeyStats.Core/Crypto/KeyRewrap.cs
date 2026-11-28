@@ -5,7 +5,9 @@ namespace KeyStats.Core.Crypto;
 
 /// <summary>
 /// Nouvelle enveloppe de la clé maîtresse déverrouillée : la clé elle-même ne change pas, donc le brut déjà
-/// chiffré reste lisible et l'agent garde sa clé publique. L'ancienne enveloppe du même type est remplacée.
+/// chiffré reste lisible et l'agent garde sa clé publique. L'ancienne enveloppe du même type est remplacée et
+/// effacée du fichier (<see cref="KeyStoreQueries.ReplaceKeyStore"/>). Les copies de la base faites avant,
+/// sauvegarde comprise jusqu'à son prochain passage, s'ouvrent encore avec l'ancienne phrase.
 /// </summary>
 public static class KeyRewrap
 {
@@ -41,9 +43,6 @@ public static class KeyRewrap
         {
             CryptographicOperations.ZeroMemory(pkcs8);
         }
-        using var tx = db.BeginTransaction();
-        db.DeleteKeyStore(entry.Kind);
-        db.AddKeyStore(entry);
-        tx.Commit();
+        db.ReplaceKeyStore(entry);
     }
 }

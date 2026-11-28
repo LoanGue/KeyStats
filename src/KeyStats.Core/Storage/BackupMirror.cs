@@ -47,6 +47,9 @@ public static class BackupMirror
         using var db = KeyStatsDb.Open(backupPath, wal: false);
         // Les tables sont remplacées l'une après l'autre : les références sont vérifiées dans la source.
         db.Exec("PRAGMA foreign_keys = OFF");
+        // Lignes supprimées mises à zéro dans leur page, sans écriture de plus : une enveloppe de clé
+        // remplacée (ancienne phrase de secours) ne survit pas dans le miroir.
+        db.Exec("PRAGMA secure_delete = FAST");
         using (var attach = db.Command("ATTACH $p AS src", sourcePath)) attach.ExecuteNonQuery();
         try
         {

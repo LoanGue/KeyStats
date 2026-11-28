@@ -64,6 +64,36 @@ public sealed class KeyChangeTests : IDisposable
     }
 
     [Fact]
+    public void Ancienne_enveloppe_de_la_phrase_effacee_du_fichier()
+    {
+        SetUp(withHello: true);
+        var old = Assert.Single(_temp.Db.GetKeyStore(), e => e.Kind == KeyStoreKind.Passphrase);
+        Assert.True(_session.TryUnlockWithPassphrase(_temp.Db, Phrase));
+
+        KeyRewrap.SetPassphrase(_temp.Db, _session, NewPhrase, 2, Iterations);
+
+        // Base ouverte (l'agent la garde ouverte) : ni le fichier ni son journal WAL ne gardent l'ancienne enveloppe.
+        Assert.False(Contains(ReadFilesOpen(), old.Wrapped));
+        Assert.False(Contains(_temp.ReadAllBytesClosed(), old.Wrapped));
+        Assert.True(new KeySession().TryUnlockWithPassphrase(_temp.Db, NewPhrase));
+    }
+
+    private byte[] ReadFilesOpen()
+    {
+        var bytes = new List<byte>();
+        foreach (string f in Directory.GetFiles(Path.GetDirectoryName(_temp.DbPath)!))
+        {
+            using var s = new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            var buffer = new byte[s.Length];
+            s.ReadExactly(buffer);
+            bytes.AddRange(buffer);
+        }
+        return [.. bytes];
+    }
+
+    private static bool Contains(byte[] haystack, byte[] needle) => haystack.AsSpan().IndexOf(needle) >= 0;
+
+    [Fact]
     public async Task Nouvelle_cle_hello_remplace_l_ancienne()
     {
         SetUp(withHello: true);

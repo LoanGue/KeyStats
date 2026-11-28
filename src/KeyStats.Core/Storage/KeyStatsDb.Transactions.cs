@@ -21,6 +21,17 @@ public sealed partial class KeyStatsDb
         return new DbTransaction(this);
     }
 
+    /// <summary>
+    /// Reporte tout le journal WAL dans la base et le ramène à zéro octet. Faux si une lecture ou une
+    /// écriture d'une autre connexion l'en a empêché au-delà du délai d'attente.
+    /// </summary>
+    public bool TruncateWal()
+    {
+        using var cmd = Command("PRAGMA wal_checkpoint(TRUNCATE)");
+        using var r = cmd.ExecuteReader();
+        return r.Read() && r.GetInt64(0) == 0;
+    }
+
     public sealed class DbTransaction : IDisposable
     {
         private KeyStatsDb? _db;
