@@ -1,8 +1,9 @@
-// Carte « Chiffrement » : état du chiffrement et réactivation de Windows Hello (/api/key/hello).
-// Aucune réponse ne contient de phrase ni de clé.
+// Carte « Chiffrement » : état du chiffrement, changement de la phrase de secours (/api/key/passphrase)
+// et réactivation de Windows Hello (/api/key/hello). Aucune réponse ne contient de phrase ni de clé.
 
 import { postJson } from "./api.js";
 import { button, settingsCard, statusLine } from "./settings-card.js";
+import { phraseForm } from "./settings-phrase.js";
 import { el } from "./states.js";
 
 const texts = {
@@ -41,16 +42,26 @@ export function keyCard(ctx) {
     "Le détail des frappes et les titres de fenêtre sont chiffrés.",
   );
   let key = ctx.key;
+  let open = false;
   const rows = el("div", "settings-rows");
   const status = statusLine();
   // Le bouton de réactivation disparaît une fois Windows Hello activé : le focus passe au message.
   status.node.tabIndex = -1;
-  section.append(rows, status.node);
+  const note = el(
+    "p",
+    "settings-note",
+    "Changer la phrase demande l'ancienne phrase ou Windows Hello.",
+  );
+  section.append(rows, status.node, note);
 
-  function adopt(next) {
+  // Une preuve déverrouille aussi la session : l'en-tête est relu. Le formulaire ouvert n'est redessiné
+  // que si la carte change de forme, pour garder ses champs.
+  function adopt(next, redraw = true) {
+    const shape = (k) => `${k?.setup}${k?.hello}`;
+    const changed = shape(next) !== shape(key);
     key = next;
     ctx.refreshKey();
-    draw();
+    if (redraw || changed) draw();
   }
 
   async function enrol(trigger) {
@@ -89,6 +100,7 @@ export function keyCard(ctx) {
   }
 
   function draw() {
+    const focused = section.contains(document.activeElement);
     rows.replaceChildren();
     // /api/key n'a pas répondu : l'état est inconnu, rien n'est affirmé.
     if (!key) {
@@ -99,6 +111,7 @@ export function keyCard(ctx) {
       const unknown = row("Chiffrement", retry);
       unknown.name.append(el("span", "settings-off", " · état indisponible"));
       rows.append(unknown.node);
+      note.hidden = true;
       return;
     }
     if (!key.setup) {
@@ -106,9 +119,22 @@ export function keyCard(ctx) {
         row("Chiffrement", el("span", "settings-unit", "Pas encore configuré"))
           .node,
       );
+      note.hidden = true;
       return;
     }
+    note.hidden = false;
     rows.append(row("Chiffrement", on("Actif")).node);
+    const change = button("Changer la phrase…", false, () => toggle(!open));
+    change.setAttribute("aria-expanded", String(open));
+    rows.append(row("Phrase de secours", change).node);
+    if (open) {
+      const form = phraseForm(key, {
+        onKey: (next) => adopt(next, false),
+        onClose: () => toggle(false),
+      });
+      rows.append(form.form);
+      if (focused) form.focus();
+    }
     const reenable = button("Réactiver Windows Hello", true, () =>
       enrol(reenable),
     );
@@ -116,6 +142,13 @@ export function keyCard(ctx) {
     if (!key.hello)
       hello.name.append(el("span", "settings-off", " · désactivé"));
     rows.append(hello.node);
+  }
+
+  function toggle(value) {
+    open = value;
+    status.show("");
+    draw();
+    if (!open) section.querySelector("[aria-expanded]")?.focus();
   }
 
   draw();
