@@ -16,6 +16,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `tools/install.ps1` builds the NativeAOT agent and the dashboard and installs
+  them for the current user, without administrator rights, in
+  `%LOCALAPPDATA%\Programs\KeyStats`: start-up entry in the per-user Run key,
+  "KeyStats" Start-menu shortcut, then the agent starts and the dashboard opens
+  on the first-run wizard. Running it again upgrades in place after asking the
+  running agent to quit. `tools/uninstall.ps1` reverses it and keeps
+  `%LOCALAPPDATA%\KeyStats` unless `-RemoveData` is passed. Neither script
+  writes to the data folder otherwise.
 - `KeyStats.Dashboard`: on first run, a full-window wizard sets up encryption
   before the dashboard opens. It explains what is encrypted and what stays
   readable, asks for the recovery passphrase (12 characters minimum, typed
