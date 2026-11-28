@@ -16,6 +16,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: `POST /api/key/passphrase` replaces the recovery
+  passphrase once the current one or Windows Hello is given, and
+  `POST /api/key/hello` enrols a new Windows Hello key for an unlocked session.
+  The master key itself does not change.
+
 - `KeyStats.Dashboard`: the Réglages page switches the live counter on or off
   and sets its corner and opacity. Each change is saved at once.
 
