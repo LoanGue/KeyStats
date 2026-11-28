@@ -26,6 +26,14 @@
   --chart-amber: #f2a600;
   --chart-english: #c24e14;
   --key-typed-bg: #fff6f0;
+  --detail-press: var(--chart-key);
+  --detail-erased: var(--heat-warm-3);
+  --detail-backspace: var(--pill-muted-text);
+  --detail-selected: var(--chart);
+  --detail-overlap-bg: var(--heat-warm-1);
+  --detail-overlap: var(--heat-warm-4);
+  --detail-origin: #e7e7e7;
+  --detail-axis: var(--day-tick);
   /* Rampes de la carte de chaleur du clavier : 0 sans mesure, puis de faible à élevé ; la chaude pour un défaut. */
   --heat-0: #f1f3f6;
   --heat-1: #cce3fd;
