@@ -1,6 +1,6 @@
 // Étape « Phrase de secours » de l'assistant de première installation : deux champs, leur
 // vérification en direct et le message d'échec de l'envoi. La phrase ne quitte les champs que pour
-// l'envoi, et clear() les vide une fois la configuration faite.
+// l'envoi, à l'étape suivante, et clear() les vide une fois la configuration faite.
 
 import { el } from "./states.js";
 import { action, fieldMessage, icon, intro, note } from "./setup-ui.js";
@@ -10,9 +10,9 @@ export const MinLength = 12;
 
 /**
  * Étape 2, construite une fois pour que Retour puis Commencer garde la saisie. back : retour à
- * l'étape 1 ; submit(passphrase) : envoi, une fois les deux champs valides et identiques.
+ * l'étape 1 ; next() : passage à l'étape suivante, une fois les deux champs valides et identiques.
  */
-export function phraseStep(back, submit) {
+export function phraseStep(back, next) {
   const { head, h1 } = intro(
     2,
     "Choisissez une phrase de secours",
@@ -83,7 +83,7 @@ export function phraseStep(back, submit) {
   const label2 = el("div", "setup-field");
   label2.append(name2, second, differ, same);
 
-  const go = action("Continuer", true, () => submit(first.value));
+  const go = action("Continuer", true, next);
   const foot = el("div", "setup-foot");
   foot.append(action("Retour", false, back), go);
 
@@ -126,14 +126,11 @@ export function phraseStep(back, submit) {
       foot,
     ],
     focus: h1,
-    busy(value) {
-      go.disabled = value;
-      if (!value) check();
-    },
+    value: () => first.value,
     fail(text) {
       alert.replaceChildren(icon("error"), el("span", null, text));
       alert.hidden = false;
-      // Continuer, désactivé pendant l'envoi, a perdu le focus : il revient au premier champ.
+      // L'échec ramène à cette étape depuis la suivante : le focus va à la phrase à corriger.
       first.focus();
     },
     clear() {

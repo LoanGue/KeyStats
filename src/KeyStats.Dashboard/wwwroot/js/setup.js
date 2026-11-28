@@ -1,10 +1,11 @@
-// Assistant de première installation : phrase de secours puis POST /api/setup. Il couvre toute la
-// fenêtre tant que le chiffrement n'est pas configuré. Les phrases ne vivent que dans les champs,
+// Assistant de première installation : phrase de secours, Windows Hello, puis POST /api/setup. Il
+// couvre toute la fenêtre tant que le chiffrement n'est pas configuré. Les phrases ne vivent que dans les champs,
 // vidés dès la configuration faite.
 
 import { postJson } from "./api.js";
 import { el } from "./states.js";
 import { done } from "./setup-done.js";
+import { helloStep } from "./setup-hello.js";
 import { MinLength, phraseStep } from "./setup-phrase.js";
 import { steps } from "./setup-ui.js";
 import { welcome } from "./setup-welcome.js";
@@ -63,33 +64,37 @@ export function openSetup(onDone) {
       ? `La configuration a échoué (erreur ${error.status}). Réessayez.`
       : "Le tableau de bord n'a pas répondu. Réessayez.";
 
-  async function submit(passphrase) {
-    phrase.busy(true);
+  // Étape 3 : la phrase saisie à l'étape 2 part avec le choix de Windows Hello.
+  async function submit(hello) {
+    hello3.prompt();
     let result;
     try {
-      result = await postJson("/api/setup", { passphrase, hello: false });
+      result = await postJson("/api/setup", {
+        passphrase: phrase.value(),
+        hello,
+      });
     } catch (error) {
-      phrase.busy(false);
-      phrase.fail(failure(error));
-      return;
+      return hello3.failed(failure(error));
     }
+    if (result.outcome === "hello") return hello3.failed();
     if (result.outcome === "phrase") {
-      phrase.busy(false);
-      phrase.fail(`Trop courte : ${MinLength} caractères minimum.`);
-      return;
+      hello3.reset();
+      show(2, phrase);
+      return phrase.fail(`Trop courte : ${MinLength} caractères minimum.`);
     }
     phrase.clear();
     // « already » : configuré entre-temps (autre fenêtre) ; l'assistant n'a plus rien à faire.
     if (result.outcome !== "done") return finish(null);
-    // Windows Hello n'est pas activé : son étape ne doit pas paraître faite.
-    show(
-      4,
-      done({ hello: false, restarted: result.agentRestarted }, finish),
-      [3],
-    );
+    // Sans Windows Hello, son étape ne doit pas paraître faite.
+    const card = done({ hello, restarted: result.agentRestarted }, finish);
+    show(4, card, hello ? [] : [3]);
   }
 
   const first = welcome(() => show(2, phrase));
-  const phrase = phraseStep(() => show(1, first), submit);
+  const phrase = phraseStep(
+    () => show(1, first),
+    () => show(3, hello3),
+  );
+  const hello3 = helloStep(() => show(2, phrase), submit);
   show(1, first);
 }
