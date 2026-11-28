@@ -42,6 +42,9 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'install-common.ps1')
 
+# A trailing backslash before the closing quote would escape it in robocopy's command line.
+$InstallDir = [IO.Path]::GetFullPath($InstallDir).TrimEnd('\')
+
 $repo = Split-Path -Parent $PSScriptRoot
 $dbPath = Get-KeyStatsDbPath $DataDir
 $dbArgument = Get-KeyStatsDbArgument $dbPath
@@ -71,6 +74,7 @@ Assert-KeyStatsInstallDir $InstallDir $DataDir
 
 # Build into a staging folder first: a failed build leaves the current install untouched.
 $stage = Join-Path ([IO.Path]::GetTempPath()) "KeyStats-install-$PID"
+if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 try {
     Write-Host 'Publishing the agent (NativeAOT)...'
     & dotnet publish (Join-Path $repo 'src\KeyStats.Agent') -c Release -o (Join-Path $stage 'agent') --nologo -v quiet
@@ -87,7 +91,9 @@ try {
     Write-Host "Copying to $InstallDir..."
     [void] (New-Item -ItemType Directory -Force -Path $InstallDir)
     & robocopy (Join-Path $stage 'app') $InstallDir /MIR /R:3 /W:1 /NJH /NJS /NFL /NDL /NP | Out-Null
-    if ($LASTEXITCODE -ge 8) { throw "Copy to '$InstallDir' failed (robocopy exit code $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ge 8) {
+        throw "Copy to '$InstallDir' failed (robocopy exit code $LASTEXITCODE). The agent is stopped and the install may be partial: run install.ps1 again."
+    }
 }
 finally {
     if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
