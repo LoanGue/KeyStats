@@ -1,0 +1,106 @@
+/* Carte « Une journée, minute par minute » de la page Activité. */
+.day-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.activity-step {
+  width: 36px;
+  height: 36px;
+}
+.activity-step:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.day-label {
+  min-width: 150px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted-strong);
+}
+.day-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.day-frieze {
+  display: block;
+}
+.day-level-1 {
+  fill: var(--day-1);
+}
+.day-level-2 {
+  fill: var(--day-2);
+}
+.day-level-3 {
+  fill: var(--day-3);
+}
+.day-level-4 {
+  fill: var(--day-4);
+}
+.day-pause {
+  fill: var(--day-pause);
+}
+.day-unobserved {
+  fill: url(#day-hatch);
+}
+.day-hatch-bg {
+  fill: var(--day-hatch-bg);
+}
+.day-hatch {
+  stroke: var(--day-hatch);
+  stroke-width: 2;
+}
+.day-tick {
+  stroke: var(--day-tick);
+}
+.day-axis {
+  position: relative;
+  height: 16px;
+  margin-top: -8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.day-axis span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.day-axis .day-axis-start {
+  transform: none;
+}
+.day-axis .day-axis-end {
+  transform: translateX(-100%);
+}
+.day-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  font-size: 13px;
+  color: var(--muted-strong);
+}
+.day-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.day-legend-value {
+  color: var(--muted);
+}
+.day-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+.day-swatch-typing {
+  background: var(--day-3);
+}
+.day-swatch-pause {
+  background: var(--day-pause);
+}
+.day-swatch-unobserved {
+  border: 1px solid var(--day-hatch);
+  background: var(--day-hatch-bg);
+}
