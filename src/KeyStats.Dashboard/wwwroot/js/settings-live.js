@@ -11,22 +11,21 @@ const cornerLabels = [
 ];
 
 const messages = {
-  applied: "Enregistré. Le compteur suit ce réglage dès la prochaine frappe.",
+  applied: "Enregistré. L'agent applique ce réglage dès maintenant.",
   pending:
     "Enregistré. L'agent appliquera ce réglage à son prochain démarrage.",
 };
 
-function toggle(checked) {
+function toggle() {
   const node = el("button", "settings-switch");
   node.type = "button";
   node.setAttribute("role", "switch");
   node.setAttribute("aria-label", "Afficher le compteur");
-  node.setAttribute("aria-checked", String(checked));
   node.append(el("span", "settings-switch-knob"));
   return node;
 }
 
-/** Groupe de boutons radio à tabulation unique : les flèches changent le coin choisi. */
+/** Groupe de boutons radio à tabulation unique : flèches, Début et Fin changent le coin choisi. */
 function cornerGroup(onPick) {
   const group = el("div", "settings-corners");
   group.setAttribute("role", "radiogroup");
@@ -44,15 +43,22 @@ function cornerGroup(onPick) {
     return b;
   });
   group.addEventListener("keydown", (e) => {
-    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[
-      e.key
-    ];
-    if (!step) return;
-    e.preventDefault();
     const i = buttons.indexOf(document.activeElement);
-    const next = buttons[(i + step + buttons.length) % buttons.length];
-    next.focus();
-    onPick(next.dataset.corner);
+    const last = buttons.length - 1;
+    const next = i === last ? 0 : i + 1;
+    const previous = i === 0 ? last : i - 1;
+    const target = {
+      ArrowRight: next,
+      ArrowDown: next,
+      ArrowLeft: previous,
+      ArrowUp: previous,
+      Home: 0,
+      End: last,
+    }[e.key];
+    if (target === undefined || i < 0) return;
+    e.preventDefault();
+    buttons[target].focus();
+    onPick(buttons[target].dataset.corner);
   });
   group.append(...buttons);
   const select = (id) => {
@@ -65,68 +71,87 @@ function cornerGroup(onPick) {
   return { group, buttons, select };
 }
 
-export function liveCard(settings) {
-  const { section, head } = settingsCard(
-    "Compteur à l'écran",
-    "Une petite fenêtre qui affiche votre vitesse en direct.",
-  );
-  let live = settings.liveCounter;
-  const status = statusLine();
-  const sw = toggle(live.enabled);
-  head.append(sw);
-
-  const body = el("div", "settings-live");
-  const positionTitle = el("span", "settings-subtitle", "Position");
-  const picker = cornerGroup((id) => {
-    if (id !== live.position) save({ position: id });
-  });
-  const position = el("div", "settings-live-part");
-  position.append(positionTitle, picker.group);
-
-  const opacity = el("label", "settings-live-part");
+function opacitySlider(onChange) {
+  const part = el("div", "settings-live-part");
   const value = el("span", "settings-unit");
+  value.setAttribute("aria-hidden", "true");
   const range = el("input");
   range.type = "range";
   range.min = "20";
   range.max = "100";
   range.step = "5";
+  range.setAttribute("aria-label", "Opacité");
   const line = el("span", "settings-range-head");
   line.append(el("span", "settings-subtitle", "Opacité"), value);
-  opacity.append(line, range);
-  range.addEventListener("input", () => {
-    value.textContent = `${range.value} %`;
-  });
-  range.addEventListener("change", () =>
-    save({ opacity: Number(range.value) }),
-  );
-  body.append(position, opacity);
+  part.append(line, range);
+  const show = (v) => {
+    value.textContent = `${v} %`;
+    range.setAttribute("aria-valuetext", `${v} %`);
+  };
+  range.addEventListener("input", () => show(range.value));
+  range.addEventListener("change", () => onChange(Number(range.value)));
+  const set = (v) => {
+    range.value = String(v);
+    show(v);
+  };
+  return { part, range, set };
+}
 
-  const controls = () => [sw, range, ...picker.buttons];
+export function liveCard(settings) {
+  const { section, head } = settingsCard(
+    "Compteur à l'écran",
+    "Une petite fenêtre qui affiche votre vitesse en direct.",
+  );
+  // live : l'état enregistré ; shown : ce que la carte affiche, changements en attente compris.
+  let live = settings.liveCounter;
+  let shown = live;
+  const status = statusLine();
+  const sw = toggle();
+  head.append(sw);
+
+  const body = el("div", "settings-live");
+  const picker = cornerGroup((id) => change({ position: id }));
+  const position = el("div", "settings-live-part");
+  position.append(el("span", "settings-subtitle", "Position"), picker.group);
+  const opacity = opacitySlider((v) => change({ opacity: v }));
+  body.append(position, opacity.part);
+
   function draw() {
-    sw.setAttribute("aria-checked", String(live.enabled));
-    picker.select(live.position);
-    range.value = String(live.opacity);
-    value.textContent = `${live.opacity} %`;
-    body.classList.toggle("off", !live.enabled);
-    for (const c of controls()) c.disabled = c !== sw && !live.enabled;
+    sw.setAttribute("aria-checked", String(shown.enabled));
+    picker.select(shown.position);
+    opacity.set(shown.opacity);
+    body.classList.toggle("off", !shown.enabled);
+    for (const c of [opacity.range, ...picker.buttons])
+      c.disabled = !shown.enabled;
   }
 
-  // Pas de désactivation pendant l'enregistrement : le focus clavier reste sur le contrôle utilisé.
+  // Les contrôles restent actifs pendant l'enregistrement, pour garder le focus clavier : un changement
+  // fait entre-temps est fusionné aux autres et envoyé ensuite, jamais perdu.
+  let queued = null;
   let busy = false;
-  async function save(change) {
+  async function change(patch) {
+    shown = { ...shown, ...patch };
+    queued = { ...queued, ...patch };
+    draw();
     if (busy) return;
     busy = true;
-    const result = await saveSettings(
-      { liveCounter: change },
-      status,
-      messages,
-    );
+    while (queued && section.isConnected) {
+      const sent = queued;
+      queued = null;
+      const result = await saveSettings(
+        { liveCounter: sent },
+        status,
+        messages,
+      );
+      if (result) live = result.settings.liveCounter;
+    }
     busy = false;
-    if (result) live = result.settings.liveCounter;
+    queued = null;
+    shown = live;
     draw();
   }
 
-  sw.addEventListener("click", () => save({ enabled: !live.enabled }));
+  sw.addEventListener("click", () => change({ enabled: !shown.enabled }));
   section.append(body, status.node);
   draw();
   return section;
