@@ -17,8 +17,8 @@ All notable changes to this project are documented here. The format follows
 ### Added
 
 - `KeyStats.Dashboard`: the Réglages page lists the excluded applications.
-  An executable is added through the Windows file picker or removed, and the
-  agent applies the list at once.
+  An executable is added through the Windows file picker or removed. A running
+  agent applies the list at once, a stopped one at its next start.
 
 - `KeyStats.Dashboard`: the Réglages page edits the detection thresholds. A
   change restarts a running agent, which reads them only at start. A refused
