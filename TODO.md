@@ -12,5 +12,5 @@ Build plan for KeyStats. One issue and one PR per step.
 - [ ] 6. Dashboard: WebView2 host and JSON API, Windows Hello and setup wizard
   - [ ] Pages and charts, AZERTY heatmap
   - [ ] Millisecond view and history recalculation
-- [ ] 7. `install.ps1`, `uninstall.ps1`, README
+- [x] 7. `install.ps1`, `uninstall.ps1`, README (#59)
 - [ ] Repository standards: LICENSE, SECURITY.md, CONTRIBUTING.md
