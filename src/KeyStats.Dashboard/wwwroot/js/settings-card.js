@@ -54,6 +54,19 @@ export function refusedAlert() {
   return box;
 }
 
+/**
+ * Remplace les cartes par le bandeau d'un settings.json refusé, trouvé à l'enregistrement. Le focus était
+ * dans une carte qui disparaît : il passe au bandeau. node : un nœud de la carte, détaché si la page a changé.
+ */
+export function showRefused(node) {
+  const grid = node.closest(".settings-grid");
+  if (!grid) return;
+  const alert = refusedAlert();
+  alert.tabIndex = -1;
+  grid.replaceWith(alert);
+  alert.focus();
+}
+
 const failures = {
   invalid: "Valeur refusée : rien n'a été enregistré.",
   failed: "Le fichier settings.json n'a pas pu être écrit. Réessayez.",
@@ -79,14 +92,7 @@ export async function saveSettings(
     return null;
   }
   if (result.outcome === "unreadable") {
-    const grid = status.node.closest(".settings-grid");
-    if (grid) {
-      // Le focus était dans une carte qui disparaît : il passe au bandeau.
-      const alert = refusedAlert();
-      alert.tabIndex = -1;
-      grid.replaceWith(alert);
-      alert.focus();
-    }
+    showRefused(status.node);
     return null;
   }
   if (result.outcome !== "saved") status.show(failures[result.outcome], true);
