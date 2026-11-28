@@ -1,0 +1,71 @@
+/* Carte Recalcul de l'historique de la page Réglages : période, avancement d'un recalcul en cours. */
+
+.settings-wide {
+  grid-column: span 2;
+}
+@media (max-width: 900px) {
+  .settings-wide {
+    grid-column: auto;
+  }
+}
+.recompute-form {
+  align-items: flex-end;
+}
+.recompute-form .settings-date > span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.recompute-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.recompute-panel[hidden] {
+  display: none;
+}
+.recompute-top,
+.recompute-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.recompute-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.recompute-day,
+.recompute-count {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.recompute-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--border);
+}
+.recompute-bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+.recompute-bottom span {
+  font-size: 12px;
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .recompute-bar span {
+    transition: none;
+  }
+}
