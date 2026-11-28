@@ -149,3 +149,10 @@
   min-height: 32px;
   padding: 0 10px;
 }
+
+/* Mention d'un état défavorable, à côté d'un libellé (Windows Hello désactivé, sauvegarde indisponible). */
+.settings-off {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bad-text);
+}
