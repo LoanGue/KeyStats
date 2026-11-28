@@ -37,21 +37,45 @@ function Get-KeyStatsInstanceKey([string] $DbPath) {
     -join ($hash[0..7] | ForEach-Object { $_.ToString('x2') })
 }
 
-# Sends 'quit' on the agent's pipe. Returns $true when the agent answered 'ok'.
+# Sends 'quit' on the agent's pipe. Returns $true when the agent answered 'ok' within 5 seconds.
 function Send-KeyStatsQuit([string] $DbPath) {
     $session = (Get-Process -Id $PID).SessionId
-    $pipe = New-Object IO.Pipes.NamedPipeClientStream('.', "KeyStats.Agent.$session.$(Get-KeyStatsInstanceKey $DbPath)", [IO.Pipes.PipeDirection]::InOut)
+    $pipe = New-Object IO.Pipes.NamedPipeClientStream('.', "KeyStats.Agent.$session.$(Get-KeyStatsInstanceKey $DbPath)",
+        [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
     try {
         $pipe.Connect(1000)
         $line = [Text.Encoding]::ASCII.GetBytes("quit`n")
         $pipe.Write($line, 0, $line.Length)
         $pipe.Flush()
         $reader = New-Object IO.StreamReader($pipe, [Text.Encoding]::ASCII)
-        return ($reader.ReadLine() -eq 'ok')
+        $reply = $reader.ReadLineAsync()
+        return ($reply.Wait(5000) -and $reply.Result -eq 'ok')
     }
     catch [TimeoutException] { return $false }
     catch [IO.IOException] { return $false }
+    catch [AggregateException] { return $false }
     finally { $pipe.Dispose() }
+}
+
+# True while an agent holds the single-instance mutex of this database (ControlProtocol.MutexName).
+function Test-KeyStatsAgentRunning([string] $DbPath) {
+    $mutex = $null
+    if (-not [Threading.Mutex]::TryOpenExisting("Local\KeyStats.Agent.$(Get-KeyStatsInstanceKey $DbPath)", [ref] $mutex)) { return $false }
+    $mutex.Dispose()
+    return $true
+}
+
+# Retries a removal for up to 60 seconds: WebView2 processes of a stopped dashboard can take that
+# long to release its profile, even once stopped.
+function Remove-KeyStatsFolder([string] $Path) {
+    for ($i = 1; ; $i++) {
+        try { Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop; return }
+        catch {
+            if ($i -ge 60) { throw "'$Path' is still in use and was only partly removed; run the script again." }
+            if ($i -eq 1) { Write-Host "Waiting for '$Path' to be released..." }
+            Start-Sleep -Seconds 1
+        }
+    }
 }
 
 function Get-KeyStatsProcess([string] $InstallDir, [string] $Exe) {
@@ -67,6 +91,22 @@ function Wait-KeyStatsExit($Processes, [int] $Seconds) {
     return $true
 }
 
+# WebView2 processes of the dashboard's profile outlive a dashboard that was stopped and keep the
+# profile locked: they get 3 seconds to exit on their own, then are stopped. Matched by the profile
+# folder in their command line, so no other WebView2 host is touched.
+function Stop-KeyStatsWebView([string] $WebViewDir) {
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    while ($clock.Elapsed.TotalSeconds -lt 10) {
+        $engines = @(Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" |
+            Where-Object { $_.CommandLine -and $_.CommandLine.IndexOf($WebViewDir, [StringComparison]::OrdinalIgnoreCase) -ge 0 })
+        if ($engines.Count -eq 0) { return }
+        if ($clock.Elapsed.TotalSeconds -ge 3) {
+            $engines | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        }
+        Start-Sleep -Milliseconds 500
+    }
+}
+
 # Stops the dashboard windows and the agent that run from InstallDir, and the agent on DbPath
 # wherever it runs from (a second agent on the same database would exit at once).
 # The agent is asked to quit first so that it writes what it holds; it is killed only if it does not.
@@ -77,13 +117,20 @@ function Stop-KeyStats([string] $InstallDir, [string] $DbPath) {
         $dashboards | Where-Object { -not $_.HasExited } | Stop-Process -Force
         Write-Warning 'A dashboard window did not close and was stopped.'
     }
+    Stop-KeyStatsWebView (Join-Path (Split-Path -Parent $DbPath) 'webview')
 
     $agents = @(Get-KeyStatsProcess $InstallDir $script:AgentExe)
     $asked = Send-KeyStatsQuit $DbPath
     if ($asked) { Write-Host 'Running agent asked to quit.' }
-    if (-not (Wait-KeyStatsExit $agents 15)) {
+    # Waits for every agent on this database, including one started from another folder.
+    $deadline = [DateTime]::UtcNow.AddSeconds(15)
+    while ((Test-KeyStatsAgentRunning $DbPath) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
+    if (-not (Wait-KeyStatsExit $agents ([Math]::Max(0, ($deadline - [DateTime]::UtcNow).TotalSeconds)))) {
         $agents | Where-Object { -not $_.HasExited } | Stop-Process -Force
         Write-Warning 'The agent did not quit in time and was stopped; events not yet written are lost.'
+    }
+    if (Test-KeyStatsAgentRunning $DbPath) {
+        Write-Warning 'An agent started from another folder still runs on this database; quit it from its tray icon.'
     }
 }
 

@@ -48,6 +48,8 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'install-common.ps1')
 
+$InstallDir = [IO.Path]::GetFullPath($InstallDir).TrimEnd('\')
+
 $dbPath = Get-KeyStatsDbPath $DataDir
 Assert-KeyStatsInstallDir $InstallDir $DataDir
 
@@ -69,7 +71,7 @@ if ((Test-Path -LiteralPath $shortcut) -and $PSCmdlet.ShouldProcess($shortcut, '
 }
 
 if ((Test-Path -LiteralPath $InstallDir) -and $PSCmdlet.ShouldProcess($InstallDir, 'Remove install folder')) {
-    Remove-Item -LiteralPath $InstallDir -Recurse -Force
+    Remove-KeyStatsFolder $InstallDir
     Write-Host "Install folder $InstallDir removed."
 }
 
@@ -84,7 +86,7 @@ if (-not (Test-Path -LiteralPath $DataDir)) {
 if (-not $PSCmdlet.ShouldProcess($DataDir, 'Delete data folder')) { return }
 # Deleting the history always asks, unless -Force says so beforehand.
 if ($Force -or $PSCmdlet.ShouldContinue("Delete $DataDir with the whole typing history, settings and backups? This cannot be undone.", 'Remove KeyStats data')) {
-    Remove-Item -LiteralPath $DataDir -Recurse -Force
+    Remove-KeyStatsFolder $DataDir
     Write-Host "Data folder $DataDir deleted. A backup folder chosen outside it is left in place."
 }
 else {
