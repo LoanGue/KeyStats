@@ -1,0 +1,67 @@
+/* Étape Phrase de secours de l'assistant de première installation. */
+
+.setup-alert[hidden] {
+  display: none;
+}
+
+.setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.setup-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.setup-counter {
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.setup-row {
+  display: flex;
+  gap: 6px;
+}
+.setup-row input {
+  flex: 1;
+}
+.setup-field input {
+  min-width: 0;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+}
+.setup-field input[aria-invalid="true"] {
+  border: 2px solid var(--field-bad);
+}
+.setup-field input.setup-valid {
+  border: 2px solid var(--ok-text);
+}
+.setup-msg {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 400;
+}
+.setup-msg[hidden] {
+  display: none;
+}
+#setup .setup-msg svg {
+  width: 16px;
+  height: 16px;
+}
+.setup-msg-bad {
+  color: var(--field-bad);
+}
+.setup-msg-ok {
+  color: var(--ok-text);
+}
