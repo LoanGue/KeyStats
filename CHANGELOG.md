@@ -16,6 +16,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: on first run, a full-window wizard sets up encryption
+  before the dashboard opens. It explains what is encrypted and what stays
+  readable, asks for the recovery passphrase (12 characters minimum, typed
+  twice), then calls `POST /api/setup`, which restarts the agent so that it
+  records the encrypted detail. Windows Hello enrolment in the wizard comes
+  next; until then it is enabled from Réglages.
+
 - `KeyStats.Dashboard`: the Réglages page recomputes the statistics of a past
   period with the current thresholds, from the encrypted raw input, after
   unlocking. The card shows the day in progress, the days done and an estimated
