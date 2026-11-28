@@ -15,7 +15,7 @@ Sans `--db`, l'agent écrit dans `%LOCALAPPDATA%\KeyStats\keystats.db`. Il tourn
 
 ## Compteur en direct
 
-Quand une vraie frappe commence (au moins 12 caractères et 2 espaces en 6 secondes), un petit compteur apparaît en bas à droite de l'écran où se trouve la fenêtre active, au-dessus de la barre des tâches : vitesse en mots par minute, et en caractères par minute en dessous. Après 4 secondes sans frappe, il affiche le bilan de la rafale (vitesse et précision) pendant 3 secondes, puis disparaît. Il laisse passer les clics, ne prend jamais le focus et n'apparaît ni dans Alt+Tab ni sur les captures et partages d'écran. Il reste caché quand une application occupe tout l'écran (jeu, vidéo) et en mode présentation. Une pause le cache aussitôt. `liveCounter.enabled` à `false` dans `settings.json` le désactive.
+Quand une vraie frappe commence (au moins 12 caractères et 2 espaces en 6 secondes), un petit compteur apparaît dans un coin de la zone de travail de l'écran où se trouve la fenêtre active, à l'écart de la barre des tâches (en bas à droite par défaut) : vitesse en mots par minute, et en caractères par minute en dessous. Après 4 secondes sans frappe, il affiche le bilan de la rafale (vitesse et précision) pendant 3 secondes, puis disparaît. Il laisse passer les clics, ne prend jamais le focus et n'apparaît ni dans Alt+Tab ni sur les captures et partages d'écran. Il reste caché quand une application occupe tout l'écran (jeu, vidéo) et en mode présentation. Une pause le cache aussitôt. `liveCounter.enabled` à `false` dans `settings.json` le désactive ; `liveCounter.position` choisit le coin et `liveCounter.opacity` l'opacité, de 20 à 100 % (voir [docs/settings.md](docs/settings.md)).
 
 ## Icône de notification
 
