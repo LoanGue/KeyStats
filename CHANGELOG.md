@@ -16,6 +16,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- `KeyStats.Dashboard`: the Réglages page switches the live counter on or off
+  and sets its corner and opacity. Each change is saved at once.
+
 - `KeyStats.Agent`: the live counter takes its corner of the work area and its
   opacity (20 to 100 %) from `liveCounter.position` and `liveCounter.opacity`
   in `settings.json`, applied at once on `reload`.
