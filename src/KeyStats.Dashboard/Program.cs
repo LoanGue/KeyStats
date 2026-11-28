@@ -31,7 +31,9 @@ internal static class Program
         var helloSigner = new HelloSigner();
         KeyApi.Register(router, db, session, helloSigner);
         var stats = new StatsContext(db, () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        KeyChangeApi.Register(router, db, session, helloSigner, new HelloEnroller(), () => stats.NowMs);
+        var enroller = new HelloEnroller();
+        KeyChangeApi.Register(router, db, session, helloSigner, enroller, () => stats.NowMs);
+        SetupApi.Register(router, db, session, enroller, agent.RestartAsync, () => stats.NowMs);
         FiltersApi.Register(router, stats);
         OverviewApi.Register(router, stats);
         SpeedApi.Register(router, stats);
