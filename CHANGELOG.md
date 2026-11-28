@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Security
 
+- `KeyStats.Core`: after a passphrase change or a Windows Hello re-enrolment,
+  the replaced key envelope is overwritten in the database file and the WAL
+  journal is emptied, and the backup mirror drops it at its next run. Copies
+  made before the change, and the mirror until then, still open with the old
+  passphrase, since the master key is unchanged (rotation tracked in #389).
 - `KeyStats.Dashboard`: a renderer crash dump may hold the passphrase or
   decrypted text. WebView2 crash reports are no longer sent to Microsoft, the
   profile's Crashpad report folders deny file creation to the user, and
