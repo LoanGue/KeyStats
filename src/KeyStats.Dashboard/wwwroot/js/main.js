@@ -9,6 +9,7 @@ import {
 } from "./filters.js";
 import { defaultPage, pages } from "./pages.js";
 import { showError, showLoading, showPending } from "./states.js";
+import { openSetup } from "./setup.js";
 import { initUnlock } from "./unlock.js";
 
 const $ = (id) => document.getElementById(id);
@@ -112,7 +113,9 @@ async function start() {
     await refreshStatus();
     if (status.agentRunning !== before) render();
   });
-  render();
+  // Premier lancement : l'assistant couvre la fenêtre jusqu'à ce que le chiffrement soit configuré.
+  if (key && !key.setup) openSetup(() => refreshStatus().then(render));
+  else render();
 }
 
 start();
