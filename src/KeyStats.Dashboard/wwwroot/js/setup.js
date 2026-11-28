@@ -44,6 +44,7 @@ export function openSetup(onDone) {
         else if (past) li.className = "setup-past";
         li.append(el("span", "setup-dot", past ? "✓" : String(i + 1)), label);
         if (past) li.firstChild.setAttribute("aria-hidden", "true");
+        else if (i + 1 < n) li.append(el("span", "sr-only", " (non faite)"));
         return li;
       }),
     );
