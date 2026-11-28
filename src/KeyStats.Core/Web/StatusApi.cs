@@ -35,4 +35,6 @@ public static class StatusApi
 [JsonSerializable(typeof(LiveCounterPatch))]
 [JsonSerializable(typeof(SettingsPatch))]
 [JsonSerializable(typeof(SettingsSaved))]
+[JsonSerializable(typeof(BackupView))]
+[JsonSerializable(typeof(BackupOutcome))]
 public sealed partial class WebJson : JsonSerializerContext;
